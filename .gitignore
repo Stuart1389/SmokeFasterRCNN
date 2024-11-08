@@ -1,0 +1,22 @@
+# created by virtualenv automatically
+# Python virtual environments
+Dataset
+venv/
+env/
+__pycache__/
+Lib
+savedModels
+
+# Node.js dependencies
+node_modules/
+
+# IDE specific files (PyCharm)
+.idea/
+
+# macOS system files
+.DS_Store
+
+# Log files
+*.log
+*.tmp
+/FasterR-CNN/savedModels/
