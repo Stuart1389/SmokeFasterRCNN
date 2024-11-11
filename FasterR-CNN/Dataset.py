@@ -67,7 +67,7 @@ import albumentations as A
 import cv2
 
 #base dir
-dataset_dir = Path(r"N:\University subjects\Thesis\Python projects\SmokeFasterRCNN\Dataset\Small data")
+dataset_dir = Path(r"N:\University subjects\Thesis\Python projects\SmokeFasterRCNN\Dataset\Large data")
 
 
 BATCH_SIZE = 2 # using 6GB/8GB of vram, > = mega slow

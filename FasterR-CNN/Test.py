@@ -6,26 +6,30 @@ from PIL import Image, ImageDraw
 from pathlib import Path
 import os
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
+import matplotlib
 import matplotlib.pyplot as plt
 from torchvision.io import read_image
 from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
 import torch.utils.benchmark as benchmark
 import time
 
+plot_image = False
+if(plot_image == False):
+    matplotlib.use('Agg')
 
 # device agnostic code
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model = Model.getModel(True) # get model, true used to tell function we want to test
 
 # Test directories
-test_image_dir = r"N:\University subjects\Thesis\Python projects\SmokeFasterRCNN\Dataset\Small data\Test\images"
-test_annot_dir = r"N:\University subjects\Thesis\Python projects\SmokeFasterRCNN\Dataset\Small data\Test\annotations\xmls"
+test_image_dir = r"N:\University subjects\Thesis\Python projects\SmokeFasterRCNN\Dataset\Large data\Test\images"
+test_annot_dir = r"N:\University subjects\Thesis\Python projects\SmokeFasterRCNN\Dataset\Large data\Test\annotations\xmls"
 
 # Initialize mAP metric, intersection over union bbox
 map_metric = MeanAveragePrecision(iou_type='bbox')
 # create global array for benchmark times
 benchmark_times = []
-BENCHMARK = True # Whether to use torch.utils.benchmark
+BENCHMARK = False # Whether to use torch.utils.benchmark
 
 # transform to convert image to tensor before going through model
 def get_transform():
@@ -149,11 +153,13 @@ def predictBbox(image_path):
 
     # Draw bounding boxes over the image
     output_image = draw_bounding_boxes(image, filtered_boxes, filtered_labels, colors="red")
-
+    if (plot_image):
+        time.sleep(2)
     plt.figure(figsize=(12, 12))
     plt.imshow(output_image.permute(1, 2, 0))
     plt.axis('off')
     plt.show()
+
 
 # function to calculate the average time to make a prediction
 def getAvgTime(benchmark_times):
