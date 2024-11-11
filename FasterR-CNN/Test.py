@@ -10,15 +10,8 @@ import matplotlib.pyplot as plt
 from torchvision.io import read_image
 from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
 import torch.utils.benchmark as benchmark
+import time
 
-# transform to convert image to tensor before going through model
-def get_transform():
-    import torch
-    from torchvision.transforms import v2 as T
-    transforms = []
-    transforms.append(T.ToDtype(torch.float, scale=True))
-    transforms.append(T.ToPureTensor())
-    return T.Compose(transforms)
 
 # device agnostic code
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -30,6 +23,18 @@ test_annot_dir = r"N:\University subjects\Thesis\Python projects\SmokeFasterRCNN
 
 # Initialize mAP metric, intersection over union bbox
 map_metric = MeanAveragePrecision(iou_type='bbox')
+# create global array for benchmark times
+benchmark_times = []
+BENCHMARK = True # Whether to use torch.utils.benchmark
+
+# transform to convert image to tensor before going through model
+def get_transform():
+    import torch
+    from torchvision.transforms import v2 as T
+    transforms = []
+    transforms.append(T.ToDtype(torch.float, scale=True))
+    transforms.append(T.ToPureTensor())
+    return T.Compose(transforms)
 
 # Need ground truths to calculate mAP
 # Function parse xml for ground truths (copied from Dataset class)
@@ -84,16 +89,18 @@ def predictBbox(image_path):
     # convert RGBA -> RGB and move to device
     x = x[:3, ...].to(device)
 
-    # start torch.utils.benchmark
-    # will run the below code a second time to measure performance
-    timer = benchmark.Timer(
-        stmt="model([x, ])",  #specify code to be benchmarked
-        globals={"x": x, "model": model}  #pass x and model to be used by benchmark
-    )
+    if BENCHMARK == True:
+        # start torch.utils.benchmark
+        # will run the below code a second time to measure performance
+        timer = benchmark.Timer(
+            stmt="model([x, ])",  #specify code to be benchmarked
+            globals={"x": x, "model": model}  #pass x and model to be used by benchmark
+        )
 
-    # record time taken
-    time_taken = timer.timeit(5)  # run code n times, gives average = time taken / n
-    print(f"Prediction time taken: {time_taken.mean:.4f} seconds")
+        # record time taken
+        time_taken = timer.timeit(5)  # run code n times, gives average = time taken / n
+        print(f"Prediction time taken: {time_taken.mean:.4f} seconds")
+        benchmark_times.append(time_taken.mean)
 
     with torch.no_grad():
         # Create predictions
@@ -148,6 +155,27 @@ def predictBbox(image_path):
     plt.axis('off')
     plt.show()
 
+# function to calculate the average time to make a prediction
+def getAvgTime(benchmark_times):
+    total_time = sum(benchmark_times)  # get sum
+    avg_time = total_time / len(benchmark_times)  # get average
+    return avg_time
+
+# Start python timer
+start_time = time.time()
+
+# Begin testing
 test_dir(test_image_dir)
+
+# End timer
+end_time = time.time()
+elapsed_time = end_time - start_time
+
+# Get final mAP
 final_map = map_metric.compute()
-print(f"Mean Average Precision (mAP): {final_map['map']}")
+
+# Only benchmark if true, benchmarking does extra runs through model
+if BENCHMARK == True:
+    print(f"Average benchmark time (per image): {getAvgTime(benchmark_times):.4f} seconds")
+print(f"Mean Average Precision (mAP): {final_map['map']:.4f}")
+print(f"Elapsed time: {elapsed_time:.4f} seconds")
