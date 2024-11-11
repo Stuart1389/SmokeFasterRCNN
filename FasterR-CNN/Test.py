@@ -9,6 +9,7 @@ from torchmetrics.detection.mean_ap import MeanAveragePrecision
 import matplotlib.pyplot as plt
 from torchvision.io import read_image
 from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
+import torch.utils.benchmark as benchmark
 
 # transform to convert image to tensor before going through model
 def get_transform():
@@ -78,10 +79,23 @@ def predictBbox(image_path):
     model.to(device) # put model on cpu or gpu
     # set model to evaluation mode
     model.eval()
+
+    x = eval_transform(image)
+    # convert RGBA -> RGB and move to device
+    x = x[:3, ...].to(device)
+
+    # start torch.utils.benchmark
+    # will run the below code a second time to measure performance
+    timer = benchmark.Timer(
+        stmt="model([x, ])",  #specify code to be benchmarked
+        globals={"x": x, "model": model}  #pass x and model to be used by benchmark
+    )
+
+    # record time taken
+    time_taken = timer.timeit(5)  # run code n times, gives average = time taken / n
+    print(f"Prediction time taken: {time_taken.mean:.4f} seconds")
+
     with torch.no_grad():
-        x = eval_transform(image)
-        # convert RGBA -> RGB and move to device
-        x = x[:3, ...].to(device)
         # Create predictions
         predictions = model([x, ])
         print(predictions)
