@@ -13,6 +13,14 @@ from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
 import torch.utils.benchmark as benchmark
 import time
 
+"""
+ TO DO!
+ Individual metrics, show how much each image contirbuted to mAP
+ more global test metrics, print total false positive, true positive, etc.
+ show ground truth bbox with predicted on matplotlib
+ add checkpointing
+"""
+draw_highest_only = True
 plot_image = False
 if(plot_image == False):
     matplotlib.use('Agg')
@@ -26,7 +34,7 @@ test_image_dir = r"N:\University subjects\Thesis\Python projects\SmokeFasterRCNN
 test_annot_dir = r"N:\University subjects\Thesis\Python projects\SmokeFasterRCNN\Dataset\Large data\Test\annotations\xmls"
 
 # Initialize mAP metric, intersection over union bbox
-map_metric = MeanAveragePrecision(iou_type='bbox')
+map_metric = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
 # create global array for benchmark times
 benchmark_times = []
 BENCHMARK = False # Whether to use torch.utils.benchmark
@@ -83,6 +91,7 @@ def test_dir(dir_path):
 
 # Function to predict smoke and calulcate mAP
 def predictBbox(image_path):
+    # !!! GETTING PREDICTIONS !!!
     image = read_image(image_path) # get image
     eval_transform = get_transform()
     model.to(device) # put model on cpu or gpu
@@ -114,7 +123,7 @@ def predictBbox(image_path):
         print(pred)
 
     # Define the confidence threshold, only bbox with score above val will be displayed
-    confidence_threshold = 0.5
+    confidence_threshold = 0
 
     # Normalize the image
     image = (255.0 * (image - image.min()) / (image.max() - image.min())).to(torch.uint8)
@@ -143,16 +152,35 @@ def predictBbox(image_path):
         "scores": torch.tensor(filtered_scores) if filtered_scores else torch.empty((0,)),
         "labels": torch.tensor([1] * len(filtered_boxes)) if filtered_boxes else torch.empty((0,), dtype=torch.long),
     }
-
     map_metric.update([predicted], [ground_truth])
+    # call function to display image with overlayed bboxes
+    display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth)
 
+def display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth):
+    #!!! DISPLAYING PREDICTIONS THROUGH MATPLOT PLIB !!!
+    filtered_boxes_tensor = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)
+    # Get prediction with highest score and draw only that if draw_only_highest is true
+    if filtered_scores and draw_highest_only:
+        max_score_idx = filtered_scores.index(max(filtered_scores)) # get index pos of highest score
+        highest_score_box = filtered_boxes_tensor[max_score_idx].unsqueeze(0)  # Add batch dimension
+        highest_score_label = [filtered_labels[max_score_idx]]  # get highest value using index pos
+
+        # Draw highest scoring bbox in red
+        output_image = draw_bounding_boxes(image, highest_score_box, highest_score_label, colors="red")
+    else:
+        # Draw all predicted bbox in red
+        output_image = draw_bounding_boxes(image, filtered_boxes_tensor, filtered_labels, colors="red")
 
     # Convert filtered boxes to a tensor
     filtered_boxes = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)
     print("output labels", filtered_labels)
 
-    # Draw bounding boxes over the image
-    output_image = draw_bounding_boxes(image, filtered_boxes, filtered_labels, colors="red")
+    # convert ground truth boxes to tensor
+    ground_truth_boxes = [torch.tensor(bbox) for bbox in ground_truth['boxes']]
+
+    # draw ground truth bbox over predicted bbox over image
+    output_image = draw_bounding_boxes(output_image, torch.stack(ground_truth_boxes),
+                                       ["Ground Truth"] * len(ground_truth_boxes), colors="blue")
     if (plot_image):
         time.sleep(2)
     plt.figure(figsize=(12, 12))

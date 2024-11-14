@@ -44,7 +44,7 @@ def main():
     print(torch.cuda.is_available())
 
     model.to(device) # Put model on gpu
-    EPOCHS = 6
+    EPOCHS = 30
 
     params = [p for p in model.parameters() if p.requires_grad] # get model parameters
     optimizer = torch.optim.SGD( # Set to static gradient descent
