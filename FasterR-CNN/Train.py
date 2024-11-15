@@ -8,7 +8,7 @@ def saveModel(model):
                      exist_ok=True)  # dont error if already exists
 
     # Setting name
-    MODEL_NAME = "smokeDetBaseLarge.pth"
+    MODEL_NAME = "smokeDetBaseLarge15.pth"
     MODEL_SAVE_PATH = MODEL_PATH / MODEL_NAME
 
     # Save the model state dict, smaller than saving entire model
@@ -44,7 +44,7 @@ def main():
     print(torch.cuda.is_available())
 
     model.to(device) # Put model on gpu
-    EPOCHS = 30
+    EPOCHS = 15
 
     params = [p for p in model.parameters() if p.requires_grad] # get model parameters
     optimizer = torch.optim.SGD( # Set to static gradient descent
@@ -73,7 +73,8 @@ def main():
     # Checks if we want to save the model state_dict
     print("Finished")
     print("Save model parameters?")
-    save_model_parameters = input()
+    #save_model_parameters = input()
+    save_model_parameters = "yes"
     if save_model_parameters == "yes":
         saveModel(model)
 

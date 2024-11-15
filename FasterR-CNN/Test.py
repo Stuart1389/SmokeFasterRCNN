@@ -4,6 +4,7 @@ import torch
 import xml.etree.ElementTree as ET
 from PIL import Image, ImageDraw
 from pathlib import Path
+from colabAdj import checkColab
 import os
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 import matplotlib
@@ -12,32 +13,38 @@ from torchvision.io import read_image
 from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
 import torch.utils.benchmark as benchmark
 import time
+print(checkColab())
 
 """
  TO DO!
  Individual metrics, show how much each image contirbuted to mAP
  more global test metrics, print total false positive, true positive, etc.
- show ground truth bbox with predicted on matplotlib
+ Display only matplotlib of false positive or false negative, etc
  add checkpointing
 """
-draw_highest_only = True
+base_dir = checkColab()
+# Define the confidence threshold, only bbox with score above val will be used
+confidence_threshold = 0.5
+# Draw only predicted bbox with highest scor
+draw_highest_only = False
+# plot images
 plot_image = False
-if(plot_image == False):
-    matplotlib.use('Agg')
+# Whether to use torch.utils.benchmark
+BENCHMARK = False
 
 # device agnostic code
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model = Model.getModel(True) # get model, true used to tell function we want to test
 
 # Test directories
-test_image_dir = r"N:\University subjects\Thesis\Python projects\SmokeFasterRCNN\Dataset\Large data\Test\images"
-test_annot_dir = r"N:\University subjects\Thesis\Python projects\SmokeFasterRCNN\Dataset\Large data\Test\annotations\xmls"
+test_image_dir = rf"{base_dir}\Dataset\Large data\Test\images"
+test_annot_dir = rf"{base_dir}\Dataset\Large data\Test\annotations\xmls"
 
 # Initialize mAP metric, intersection over union bbox
-map_metric = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
+map_metricA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])
+map_metricB = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
 # create global array for benchmark times
 benchmark_times = []
-BENCHMARK = False # Whether to use torch.utils.benchmark
 
 # transform to convert image to tensor before going through model
 def get_transform():
@@ -118,12 +125,9 @@ def predictBbox(image_path):
     with torch.no_grad():
         # Create predictions
         predictions = model([x, ])
-        print(predictions)
+        #print(predictions)
         pred = predictions[0]
-        print(pred)
-
-    # Define the confidence threshold, only bbox with score above val will be displayed
-    confidence_threshold = 0
+        #print(pred)
 
     # Normalize the image
     image = (255.0 * (image - image.min()) / (image.max() - image.min())).to(torch.uint8)
@@ -152,11 +156,14 @@ def predictBbox(image_path):
         "scores": torch.tensor(filtered_scores) if filtered_scores else torch.empty((0,)),
         "labels": torch.tensor([1] * len(filtered_boxes)) if filtered_boxes else torch.empty((0,), dtype=torch.long),
     }
-    map_metric.update([predicted], [ground_truth])
+    map_metricA.update([predicted], [ground_truth])
+    map_metricB.update([predicted], [ground_truth])
     # call function to display image with overlayed bboxes
     display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth)
 
 def display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth):
+    if (plot_image == False):
+        matplotlib.use('Agg')
     #!!! DISPLAYING PREDICTIONS THROUGH MATPLOT PLIB !!!
     filtered_boxes_tensor = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)
     # Get prediction with highest score and draw only that if draw_only_highest is true
@@ -206,10 +213,12 @@ end_time = time.time()
 elapsed_time = end_time - start_time
 
 # Get final mAP
-final_map = map_metric.compute()
+final_mapA = map_metricA.compute()
+final_mapB = map_metricB.compute()
 
 # Only benchmark if true, benchmarking does extra runs through model
 if BENCHMARK == True:
     print(f"Average benchmark time (per image): {getAvgTime(benchmark_times):.4f} seconds")
-print(f"Mean Average Precision (mAP): {final_map['map']:.4f}")
+print(f"Mean Average Precision @ 0.5 (mAP@0.5): {final_mapA['map']:.4f}")
+print(f"Mean Average Precision @ 0.3 (mAP@0.3): {final_mapB['map']:.4f}")
 print(f"Elapsed time: {elapsed_time:.4f} seconds")
