@@ -37,8 +37,8 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 model = Model.getModel(True) # get model, true used to tell function we want to test
 
 # Test directories
-test_image_dir = rf"{base_dir}\Dataset\Large data\Test\images"
-test_annot_dir = rf"{base_dir}\Dataset\Large data\Test\annotations\xmls"
+test_image_dir = f"{base_dir}/Dataset/Large data/Test/images"
+test_annot_dir = f"{base_dir}/Dataset/Large data/Test/annotations/xmls"
 
 # Initialize mAP metric, intersection over union bbox
 map_metricA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])

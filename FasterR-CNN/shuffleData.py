@@ -4,19 +4,20 @@ import random
 from colabAdj import checkColab
 
 base_dir = checkColab()
+
 # Main dir, keep dataset intact
-main_dir = rf"{base_dir}\Dataset\Large data\Main"
-main_annot = os.path.join(main_dir, "annotations/xmls")
+main_dir = os.path.join(base_dir, "Dataset", "Large data", "Main")
+main_annot = os.path.join(main_dir, "annotations", "xmls")
 main_image = os.path.join(main_dir, "images")
 
 # Train dir
-train_dir = rf"{base_dir}\Dataset\Large data\Train"
-train_annot = os.path.join(train_dir, "annotations/xmls")
+train_dir = os.path.join(base_dir, "Dataset", "Large data", "Train")
+train_annot = os.path.join(train_dir, "annotations", "xmls")
 train_image = os.path.join(train_dir, "images")
 
 # Test dir
-test_dir = rf"{base_dir}\Dataset\Large data\Test"
-test_annot = os.path.join(test_dir, "annotations/xmls")
+test_dir = os.path.join(base_dir, "Dataset", "Large data", "Test")
+test_annot = os.path.join(test_dir, "annotations", "xmls")
 test_image = os.path.join(test_dir, "images")
 
 # split ratio (e.g. 0.8 = 80% train/20% split)

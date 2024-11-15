@@ -51,7 +51,7 @@ def getModel(test=None, fine_tune=False):
         return model, in_features, model.roi_heads.box_predictor
     else:
         # If params are passed then we want to load state_dict, aka weights i've trained
-        saved_dir = Path(rf"{base_dir}\savedModels\smokeDetBaseLarge.pth")
+        saved_dir = Path(f"{base_dir}/FasterR-CNN/savedModels/smokeDetBaseLarge.pth")
         state_dict = torch.load(saved_dir)
         model.load_state_dict(state_dict)
         return model
@@ -72,7 +72,7 @@ def getDataloader():
     BATCH_SIZE = 2
 
     base_dir = checkColab()
-    dataset_dir = Path(rf"{base_dir}\Dataset\Large data")
+    dataset_dir = Path(f"{base_dir}/Dataset/Large data")
     train_test = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_t)
     test_test = Dataset.smokeDataset(str(dataset_dir) + "/Test", Dataset.transform_t)
 

@@ -9,8 +9,8 @@ base_dir = checkColab()
 print(torch.__version__)
 
 # Setting directories for images and accompanying annotations/xml
-image_path = Path(rf"{base_dir}\Dataset\Large data\Train\images")
-annotation_path = Path(rf"{base_dir}\Dataset\Large data\Train\annotations\xmls")
+image_path = Path(f"{base_dir}/Dataset/Large data/Train/images")
+annotation_path = Path(f"{base_dir}/Dataset/Large data/Train/annotations/xmls")
 
 def walk_through_dir(dir_path):
   """Walks through dir_path, returning its contents """

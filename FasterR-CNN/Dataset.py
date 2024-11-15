@@ -68,7 +68,7 @@ import cv2
 
 #base dir
 base_dir = checkColab()
-dataset_dir = Path(rf"{base_dir}\Dataset\Large data")
+dataset_dir = Path(f"{base_dir}/Dataset/Large data")
 
 
 BATCH_SIZE = 2 # using 6GB/8GB of vram, > = mega slow
