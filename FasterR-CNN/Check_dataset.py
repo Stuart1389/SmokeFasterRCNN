@@ -1,15 +1,16 @@
 import torch
 from PIL import Image, ImageDraw
 from pathlib import Path
+from colabAdj import checkColab
 import os
 
 ### DATASET: https://github.com/aiformankind/wildfire-smoke-dataset/blob/master/README.md
-
+base_dir = checkColab()
 print(torch.__version__)
 
 # Setting directories for images and accompanying annotations/xml
-image_path = Path(r"N:\University subjects\Thesis\Python projects\SmokeFasterRCNN\Dataset\Small data\Train\images")
-annotation_path = Path(r"N:\University subjects\Thesis\Python projects\SmokeFasterRCNN\Dataset\Small data\Train\annotations\xmls")
+image_path = Path(rf"{base_dir}\Dataset\Large data\Train\images")
+annotation_path = Path(rf"{base_dir}\Dataset\Large data\Train\annotations\xmls")
 
 def walk_through_dir(dir_path):
   """Walks through dir_path, returning its contents """

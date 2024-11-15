@@ -8,7 +8,7 @@ import random
 import xml.etree.ElementTree as ET
 from PIL import Image, ImageDraw
 import matplotlib.pyplot as plt
-
+from colabAdj import checkColab
 
 
 ### Transforms
@@ -67,7 +67,8 @@ import albumentations as A
 import cv2
 
 #base dir
-dataset_dir = Path(r"N:\University subjects\Thesis\Python projects\SmokeFasterRCNN\Dataset\Large data")
+base_dir = checkColab()
+dataset_dir = Path(rf"{base_dir}\Dataset\Large data")
 
 
 BATCH_SIZE = 2 # using 6GB/8GB of vram, > = mega slow

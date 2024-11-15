@@ -4,6 +4,7 @@ def getModel(test=None, fine_tune=False):
     import os
     import torch
     from pathlib import Path
+    from colabAdj import checkColab
     # Loading model
 
     """
@@ -13,7 +14,7 @@ def getModel(test=None, fine_tune=False):
     IoU measures overlap between 2 bounding boxes
      
     """
-
+    base_dir = checkColab()
     num_classes = 2  # Dataset has only bounding boxes with label smoke + background = 2
     # Transfer learning
     model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT")
@@ -50,7 +51,7 @@ def getModel(test=None, fine_tune=False):
         return model, in_features, model.roi_heads.box_predictor
     else:
         # If params are passed then we want to load state_dict, aka weights i've trained
-        saved_dir = Path(r"N:\University subjects\Thesis\Python projects\SmokeFasterRCNN\FasterR-CNN\savedModels\smokeDetBaseLarge.pth")
+        saved_dir = Path(rf"{base_dir}\savedModels\smokeDetBaseLarge.pth")
         state_dict = torch.load(saved_dir)
         model.load_state_dict(state_dict)
         return model
@@ -64,11 +65,14 @@ def getDataloader():
     import Dataset
     import os
     from pathlib import Path
+    from colabAdj import checkColab
     # from Dataset import smokeDataset, transform_t
 
     NUM_WORKERS = os.cpu_count()  # set to num cores available
     BATCH_SIZE = 2
-    dataset_dir = Path(r"N:\University subjects\Thesis\Python projects\SmokeFasterRCNN\Dataset\Large data")
+
+    base_dir = checkColab()
+    dataset_dir = Path(rf"{base_dir}\Dataset\Large data")
     train_test = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_t)
     test_test = Dataset.smokeDataset(str(dataset_dir) + "/Test", Dataset.transform_t)
 
