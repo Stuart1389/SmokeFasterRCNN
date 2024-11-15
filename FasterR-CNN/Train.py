@@ -21,11 +21,16 @@ def saveModel(model):
 def main():
     import sys
     import torch
+    import os
     import torchvision
     from pathlib import Path
     import Model
     import numpy as np
     import random
+    # Mark dir for google colab
+    current_dir = os.getcwd()
+    relative_path = os.path.join(current_dir, '..', 'Libr')
+    sys.path.append(relative_path)
     from engine import train_one_epoch, evaluate
     SEED = 1390
     torch.manual_seed(SEED) # manual seed for consistant results
@@ -44,7 +49,7 @@ def main():
     print(torch.cuda.is_available())
 
     model.to(device) # Put model on gpu
-    EPOCHS = 15
+    EPOCHS = 1
 
     params = [p for p in model.parameters() if p.requires_grad] # get model parameters
     optimizer = torch.optim.SGD( # Set to static gradient descent

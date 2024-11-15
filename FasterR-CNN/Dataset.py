@@ -71,7 +71,7 @@ base_dir = checkColab()
 dataset_dir = Path(f"{base_dir}/Dataset/Large data")
 
 
-BATCH_SIZE = 4 # using 6GB/8GB of vram, > = mega slow
+BATCH_SIZE = 8 # using 6GB/8GB of vram, > = mega slow
 NUM_WORKERS = os.cpu_count()
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
