@@ -72,7 +72,7 @@ def getDataloader():
     BATCH_SIZE = 2
 
     base_dir = checkColab()
-    dataset_dir = Path(f"{base_dir}/Dataset/Large data")
+    dataset_dir = Path(f"{base_dir}/Dataset/Small data")
     train_test = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_t)
     test_test = Dataset.smokeDataset(str(dataset_dir) + "/Test", Dataset.transform_t)
 
