@@ -2,6 +2,7 @@
 # Python virtual environments
 Dataset
 Colab Dataset
+savedPlots
 venv/
 env/
 __pycache__/

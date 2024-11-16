@@ -10,7 +10,7 @@ from coco_utils import get_coco_api_from_dataset
 
 
 def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, scaler=None):
-    epoch_loss = [] # For loss graph
+    train_loss = [] # For loss graph
     model.train()
     metric_logger = utils.MetricLogger(delimiter="  ")
     metric_logger.add_meter("lr", utils.SmoothedValue(window_size=1, fmt="{value:.6f}"))
@@ -57,10 +57,9 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, sc
 
         metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
-        epoch_loss.append(loss_value)
+        train_loss.append(loss_value)
 
-    return metric_logger, epoch_loss
-
+    return metric_logger, train_loss
 
 def _get_iou_types(model):
     model_without_ddp = model
@@ -72,6 +71,13 @@ def _get_iou_types(model):
     if isinstance(model_without_ddp, torchvision.models.detection.KeypointRCNN):
         iou_types.append("keypoints")
     return iou_types
+
+
+@torch.no_grad()  #
+def get_val_loss(model, data_loader, device):
+    model.eval()
+
+
 
 
 @torch.inference_mode()

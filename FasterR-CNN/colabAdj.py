@@ -1,5 +1,4 @@
 import os
-
 def checkColab():
     if "COLAB_GPU" in os.environ:
         base_dir = "/content/drive/My Drive/Colab Notebooks/Thesis"
