@@ -61,6 +61,27 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, sc
 
     return metric_logger, train_loss
 
+def print_loss(model, dataloader, device):
+    model.train()  # Ensure model is in training mode
+    total_loss = 0
+    for images, targets in dataloader:
+        # Move images to the device
+        images = [image.to(device) for image in images]
+
+        # Move only tensor values in targets to the device
+        targets = [
+            {k: (v.to(device) if isinstance(v, torch.Tensor) else v) for k, v in t.items()}
+            for t in targets
+        ]
+
+        # Compute loss
+        loss_dict = model(images, targets)
+        print(loss_dict)
+        loss = sum(loss for loss in loss_dict.values())
+        total_loss += loss.item()  # Accumulate loss for the entire dataset
+
+    print(f"TESTER Total Loss: {total_loss}")
+
 def _get_iou_types(model):
     model_without_ddp = model
     if isinstance(model, torch.nn.parallel.DistributedDataParallel):
@@ -100,7 +121,11 @@ def evaluate(model, data_loader, device):
         if torch.cuda.is_available():
             torch.cuda.synchronize()
         model_time = time.time()
-        outputs = model(images)
+        # validate
+        outputs, loss = model(images)
+        #print(loss)
+        #outputs = model(images)
+        #print(outputs)
 
         outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
         model_time = time.time() - model_time

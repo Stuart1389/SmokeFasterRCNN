@@ -5,7 +5,7 @@ def saveModel(model):
                      exist_ok=True)  # dont error if already exists
 
     # Setting name
-    MODEL_NAME = "smokeDetBaseLarge15.pth"
+    MODEL_NAME = "valTestB.pth"
     MODEL_SAVE_PATH = MODEL_PATH / MODEL_NAME
 
     # Save the model state dict, smaller than saving entire model
@@ -38,6 +38,8 @@ def train_loop(EPOCHS, model, optimizer, train_dataloader, test_dataloader, devi
         lr_scheduler.step()
         # evaluate on test dataset
         evaluate(model, test_dataloader, device=device)
+        #TEST TEMP
+        #print_loss(model, train_dataloader, device)
         # get loss vals for graph
         train_loss_vals.append(train_loss)
     if(plot_train_loss):
@@ -104,7 +106,7 @@ def main():
     print(torch.cuda.is_available())
     plot_train_loss = True
     model.to(device) # Put model on gpu
-    EPOCHS = 1
+    EPOCHS = 5
 
     params = [p for p in model.parameters() if p.requires_grad] # get model parameters
     optimizer = torch.optim.SGD( # Set to static gradient descent
@@ -154,7 +156,7 @@ if __name__ == '__main__':
     current_dir = os.getcwd()
     relative_path = os.path.join(current_dir, '..', 'Libr')
     sys.path.append(relative_path)
-    from engine import train_one_epoch, evaluate
+    from engine import train_one_epoch, evaluate, print_loss
     main()
 
 

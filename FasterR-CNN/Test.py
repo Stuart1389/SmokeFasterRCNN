@@ -31,14 +31,21 @@ draw_highest_only = False
 plot_image = False
 # Whether to use torch.utils.benchmark
 BENCHMARK = False
+# use small dataset
+small_data = False
 
 # device agnostic code
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model = Model.getModel(True) # get model, true used to tell function we want to test
 
-# Test directories
-test_image_dir = f"{base_dir}/Dataset/Large data/Test/images"
-test_annot_dir = f"{base_dir}/Dataset/Large data/Test/annotations/xmls"
+if (small_data):
+    # Test directories
+    test_image_dir = f"{base_dir}/Dataset/Small data/Test/images"
+    test_annot_dir = f"{base_dir}/Dataset/Small data/Test/annotations/xmls"
+else:
+    # Test directories
+    test_image_dir = f"{base_dir}/Dataset/Large data/Test/images"
+    test_annot_dir = f"{base_dir}/Dataset/Large data/Test/annotations/xmls"
 
 # Initialize mAP metric, intersection over union bbox
 map_metricA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])
@@ -106,6 +113,7 @@ def predictBbox(image_path):
     model.eval()
 
     x = eval_transform(image)
+    #print(x)
     # convert RGBA -> RGB and move to device
     x = x[:3, ...].to(device)
 
@@ -124,10 +132,14 @@ def predictBbox(image_path):
 
     with torch.no_grad():
         # Create predictions
-        predictions = model([x, ])
+        predictions, _ = model([x, ]) # val loss
+        #predictions = model([x, ])
+        #print(type(predictions))
+        #print(predictions)
         #print(predictions)
         pred = predictions[0]
         #print(pred)
+
 
     # Normalize the image
     image = (255.0 * (image - image.min()) / (image.max() - image.min())).to(torch.uint8)
