@@ -13,23 +13,7 @@ def saveModel(model):
     torch.save(obj=model.state_dict(),
                f=MODEL_SAVE_PATH)
 
-
-def savePlot(plot):
-    # Creating directory to save plot
-    PLOT_PATH = Path("savedPlots")
-    PLOT_PATH.mkdir(parents=True, exist_ok=True)  # Make parent dir if it doesn't exist
-
-    # Setting name using current date and time
-    CURRENTDATEANDTIME = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')  # Format as YYYY-MM-DD_HH-MM-SS
-    PLOT_SAVE_PATH = PLOT_PATH / f"loss_plot_{CURRENTDATEANDTIME}.png"
-
-    # Saving plot to path
-    print(f"Saving the plot to: {PLOT_SAVE_PATH}")
-    plot.savefig(PLOT_SAVE_PATH)
-    plt.close(plot)  # Close plot
-
-
-def train_loop(EPOCHS, model, optimizer, train_dataloader, test_dataloader, device, lr_scheduler, plot_train_loss):
+def train_loop(EPOCHS, model, optimizer, train_dataloader, validate_dataloader, device, lr_scheduler, plot_train_loss):
     train_loss_vals = []
     validate_loss_vals = []
     for epoch in range(EPOCHS):
@@ -38,7 +22,7 @@ def train_loop(EPOCHS, model, optimizer, train_dataloader, test_dataloader, devi
         # update the learning rate using scheduler
         lr_scheduler.step()
         # evaluate on test dataset
-        _, validate_loss_dict = evaluate(model, test_dataloader, device=device)
+        _, validate_loss_dict = evaluate(model, validate_dataloader, device=device)
         #TEST TEMP
         #print_loss(model, test_dataloader, device)
         # get loss vals for graphs
@@ -67,7 +51,7 @@ def main():
     # Device agnostic
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # Get model and dataloaders from Model.py
-    train_dataloader, test_dataloader = Model.getDataloader()
+    train_dataloader, validate_dataloader, test_dataloader = Model.getDataloader()
     model, in_features, model.roi_heads.box_predictor = Model.getModel(fine_tune=True)
     print(f"Model: {model}")
     print(device)
@@ -93,7 +77,7 @@ def main():
     )
 
     # Function trains model
-    train_loop(EPOCHS, model, optimizer, train_dataloader, test_dataloader, device, lr_scheduler, plot_train_loss)
+    train_loop(EPOCHS, model, optimizer, train_dataloader, validate_dataloader, device, lr_scheduler, plot_train_loss)
 
     # Checks if we want to save the model state_dict
     print("Finished")

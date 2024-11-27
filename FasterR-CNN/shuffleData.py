@@ -15,13 +15,20 @@ train_dir = os.path.join(base_dir, "Dataset", "Large data", "Train")
 train_annot = os.path.join(train_dir, "annotations", "xmls")
 train_image = os.path.join(train_dir, "images")
 
+# Validate dir
+val_dir = os.path.join(base_dir, "Dataset", "Large data", "Validate")
+val_annot = os.path.join(val_dir, "annotations", "xmls")
+val_image = os.path.join(val_dir, "images")
+
 # Test dir
 test_dir = os.path.join(base_dir, "Dataset", "Large data", "Test")
 test_annot = os.path.join(test_dir, "annotations", "xmls")
 test_image = os.path.join(test_dir, "images")
 
-# split ratio (e.g. 0.8 = 80% train/20% split)
-split_ratio = 0.8
+# split ratios (70/15/15)
+train_split = 0.7
+val_split = 0.15
+test_split = 0.15
 
 
 def clear_directory(directory):
@@ -42,6 +49,8 @@ def train_test_split():
     # Clear dirs
     clear_directory(train_image)
     clear_directory(train_annot)
+    clear_directory(val_image)
+    clear_directory(val_annot)
     clear_directory(test_image)
     clear_directory(test_annot)
 
@@ -56,23 +65,31 @@ def train_test_split():
     random.shuffle(dataset)
 
     #get split index
-    split_idx = int(len(dataset) * split_ratio)
+    #split_idx = int(len(dataset) * split_ratio)
+    total_size = len(dataset)
+    train_size = int(total_size * train_split)
+    val_size = int(total_size * val_split)
 
     #split into train and test
-    train_dataset = dataset[:split_idx]
-    test_dataset = dataset[split_idx:]
+    train_dataset = dataset[:train_size]
+    val_dataset = dataset[train_size:train_size + val_size]
+    test_dataset = dataset[train_size + val_size:]
 
     # make dirs if they dont exist
     os.makedirs(train_image, exist_ok=True)
     os.makedirs(train_annot, exist_ok=True)
+    os.makedirs(val_image, exist_ok=True)
+    os.makedirs(val_annot, exist_ok=True)
     os.makedirs(test_image, exist_ok=True)
     os.makedirs(test_annot, exist_ok=True)
 
     #copy files to dirs
     copy_files(train_dataset, train_image, train_annot)
+    copy_files(val_dataset, val_image, val_annot)
     copy_files(test_dataset, test_image, test_annot)
 
     print(f"Training set size: {len(train_dataset)}")
+    print(f"Validation set size: {len(val_dataset)}")
     print(f"Test set size: {len(test_dataset)}")
 
 train_test_split()

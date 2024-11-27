@@ -73,35 +73,44 @@ def getDataloader():
 
     base_dir = checkColab()
     dataset_dir = Path(f"{base_dir}/Dataset/" + setTrainValues("dataset"))
-    train_test = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_t)
-    test_test = Dataset.smokeDataset(str(dataset_dir) + "/Test", Dataset.transform_t)
+    train_dir = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_t)
+    val_dir = Dataset.smokeDataset(str(dataset_dir) + "/Validate", Dataset.transform_t)
+    test_dir = Dataset.smokeDataset(str(dataset_dir) + "/Test", Dataset.transform_t)
 
     train_dataloader = DataLoader(
-        dataset=train_test,
+        dataset=train_dir,
         batch_size=BATCH_SIZE,
         num_workers=NUM_WORKERS,  # Number of cpu cores
         collate_fn=utils.collate_fn, # Creates list of dictionaries, without this we error
-        shuffle=False # Temporary while testing manual seeds
+        shuffle=True
     )
 
-    test_dataloader = DataLoader(
-        dataset=test_test,
+    validate_dataloader = DataLoader(
+        dataset=val_dir,
         batch_size=BATCH_SIZE,
         num_workers=NUM_WORKERS,
         collate_fn=utils.collate_fn,
         shuffle=False
     )
 
-    print(f"Dataloader objects: {train_dataloader}, {test_dataloader}")
+    test_dataloader = DataLoader(
+        dataset=test_dir,
+        batch_size=BATCH_SIZE,
+        num_workers=NUM_WORKERS,
+        collate_fn=utils.collate_fn,
+        shuffle=False
+    )
+
+    print(f"Dataloader objects: {train_dataloader}, {validate_dataloader}, {test_dataloader}")
     # displays batch size, !!! is (1, 1) because using DATASET SMALLER THAN BATCHSIZE ATM!!
-    print(f"{len(train_dataloader)}, {len(test_dataloader)}")
-    print(len(train_test)), print(len(test_test))
-    return train_dataloader, test_dataloader
+    print(f"{len(train_dataloader)}, {len(validate_dataloader)}, {len(test_dataloader)}")
+    print(len(train_dir)),  print(len(val_dir)), print(len(test_dir)),
+    return train_dataloader, validate_dataloader, test_dataloader
 
 # This was to check if target was xstructured correctly, mainly cause no collate function
 # Will leave in
 def main():
-    train_dataloader, test_dataloader = getDataloader()
+    train_dataloader, validate_dataloader, test_dataloader = getDataloader()
     model, in_features, model.roi_heads.box_predictor = getModel(fine_tune=True)
     images, targets = next(iter(train_dataloader))
     print(targets)
