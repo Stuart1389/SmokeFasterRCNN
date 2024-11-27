@@ -26,6 +26,7 @@ def plot_all_loss(train_dict, validate_dict):
     plt.tight_layout()
     plt.show()
     savePlot(fig)
+    saveJSON(train_dict, validate_dict)
 
 def savePlot(plot):
     from pathlib import Path
@@ -34,7 +35,6 @@ def savePlot(plot):
     # Creating directory to save plot
     PLOT_PATH = Path("savedPlots")
     PLOT_PATH.mkdir(parents=True, exist_ok=True)  # Make parent dir if it doesn't exist
-
     # Setting name using current date and time
     CURRENTDATEANDTIME = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')  # Format as YYYY-MM-DD_HH-MM-SS
     PLOT_SAVE_PATH = PLOT_PATH / f"lossB_plot_{CURRENTDATEANDTIME}.png"
@@ -43,3 +43,25 @@ def savePlot(plot):
     print(f"Saving the plot to: {PLOT_SAVE_PATH}")
     plot.savefig(PLOT_SAVE_PATH)
     plt.close(plot)  # Close plot
+
+def saveJSON(train_dict, validate_dict):
+    import json
+    from pathlib import Path
+    from Get_Values import checkColab, setTrainValues
+    # combine train and validate
+    data = {
+        "train": train_dict,
+        "validate": validate_dict
+    }
+
+    # Creating directory to save json
+    JSON_PATH = Path("savedPlots")
+    JSON_PATH.mkdir(parents=True, exist_ok=True)  # Make parent dir if it doesn't exist
+
+    filename = setTrainValues("plotJSON_fname")
+    file_dir = JSON_PATH / (filename + ".json")
+    # save to json
+    with open(file_dir, 'w') as f:
+        json.dump(data, f, indent=4)
+
+

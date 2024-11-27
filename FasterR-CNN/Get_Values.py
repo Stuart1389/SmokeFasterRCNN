@@ -5,9 +5,10 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 2,
-        "EPOCHS": 3,
+        "EPOCHS": 2,
         "dataset": "Small data", # "Small data" OR "Large data"
-        "model_name": "setTrainTest" # name of saved model
+        "model_name": "setTrainTest", # name of saved model
+        "plotJSON_fname": "setTrainTest" # json filename
     }
     # return value corresponding with val_to_get
     return train_values.get(val_to_get, None)
