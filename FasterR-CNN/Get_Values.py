@@ -6,7 +6,7 @@ def setTrainValues(val_to_get):
     train_values = {
         "BATCH_SIZE": 4,
         "EPOCHS": 3,
-        "dataset": "Large Data", # "Small Data" OR "Large Data"
+        "dataset": "Large data", # "Small data" OR "Large data"
         "model_name": "setTrainTest" # name of saved model
     }
     # return value corresponding with val_to_get
