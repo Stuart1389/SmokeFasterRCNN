@@ -4,7 +4,7 @@ import torch
 import xml.etree.ElementTree as ET
 from PIL import Image, ImageDraw
 from pathlib import Path
-from colabAdj import checkColab
+from Get_Values import checkColab
 import os
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 import matplotlib

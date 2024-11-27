@@ -4,7 +4,7 @@ def getModel(test=None, fine_tune=False):
     import os
     import torch
     from pathlib import Path
-    from colabAdj import checkColab
+    from Get_Values import checkColab, setTestValues
     # Loading model
 
     """
@@ -51,7 +51,7 @@ def getModel(test=None, fine_tune=False):
         return model, in_features, model.roi_heads.box_predictor
     else:
         # If params are passed then we want to load state_dict, aka weights i've trained
-        saved_dir = Path(f"{base_dir}/FasterR-CNN/savedModels/valTestB.pth")
+        saved_dir = Path(f"{base_dir}/FasterR-CNN/savedModels/" + setTestValues("model_name") + ".pth")
         state_dict = torch.load(saved_dir)
         model.load_state_dict(state_dict)
         return model
@@ -65,14 +65,14 @@ def getDataloader():
     import Dataset
     import os
     from pathlib import Path
-    from colabAdj import checkColab
+    from Get_Values import checkColab, setTrainValues
     # from Dataset import smokeDataset, transform_t
 
     NUM_WORKERS = os.cpu_count()  # set to num cores available
-    BATCH_SIZE = 2
+    BATCH_SIZE = setTrainValues("BATCH_SIZE")
 
     base_dir = checkColab()
-    dataset_dir = Path(f"{base_dir}/Dataset/Large data")
+    dataset_dir = Path(f"{base_dir}/Dataset/" + setTrainValues("dataset"))
     train_test = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_t)
     test_test = Dataset.smokeDataset(str(dataset_dir) + "/Test", Dataset.transform_t)
 

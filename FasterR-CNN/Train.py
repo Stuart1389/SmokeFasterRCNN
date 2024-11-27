@@ -5,7 +5,7 @@ def saveModel(model):
                      exist_ok=True)  # dont error if already exists
 
     # Setting name
-    MODEL_NAME = "valTestB.pth"
+    MODEL_NAME = setTrainValues("model_name") + ".pth"
     MODEL_SAVE_PATH = MODEL_PATH / MODEL_NAME
 
     # Save the model state dict, smaller than saving entire model
@@ -31,55 +31,23 @@ def savePlot(plot):
 
 def train_loop(EPOCHS, model, optimizer, train_dataloader, test_dataloader, device, lr_scheduler, plot_train_loss):
     train_loss_vals = []
+    validate_loss_vals = []
     for epoch in range(EPOCHS):
         # train for one epoch, printing every 10 iterations
-        m, train_loss = train_one_epoch(model, optimizer, train_dataloader, device, epoch, print_freq=10)
+        _, train_loss, train_loss_dict  = train_one_epoch(model, optimizer, train_dataloader, device, epoch, print_freq=10)
         # update the learning rate using scheduler
         lr_scheduler.step()
         # evaluate on test dataset
-        evaluate(model, test_dataloader, device=device)
+        _, validate_loss_dict = evaluate(model, test_dataloader, device=device)
         #TEST TEMP
-        #print_loss(model, train_dataloader, device)
-        # get loss vals for graph
-        train_loss_vals.append(train_loss)
-    if(plot_train_loss):
-        plot_loss(train_loss_vals)
+        #print_loss(model, test_dataloader, device)
+        # get loss vals for graphs
+        train_loss_vals.append(train_loss_dict)
+        validate_loss_vals.append(validate_loss_dict)
+        print(train_loss_vals)
+        print(validate_loss_vals)
+    plot_all_loss(train_loss_vals, validate_loss_vals)
 
-
-def plot_loss(all_train_losses):
-    # Flatten list of losses and track which epoch each loss is from
-    all_losses = []
-    epoch_labels = []
-
-    for epoch, epoch_losses in enumerate(all_train_losses):
-        all_losses.extend(epoch_losses)  # Add loss for the current epoch
-        epoch_labels.extend([epoch + 1] * len(epoch_losses))  # Label each loss with its epoch number
-
-    # Plot the loss over all iterations
-    fig, ax = plt.subplots(figsize=(10, 5))
-    ax.plot(all_losses, label="Loss", color='blue')
-
-    # Annotate the plot with epoch numbers at the first iteration for each epoch
-    for epoch, epoch_losses in enumerate(all_train_losses):
-        first_loss_index = sum(
-            len(all_train_losses[i]) for i in range(epoch))  # Index of the first loss in the current epoch
-        # Add dot at the first loss of the epoch
-        ax.scatter(first_loss_index, epoch_losses[0], color='red', zorder=5)
-        # Add epoch number as annotation
-        ax.annotate(f'{epoch + 1}',
-                    (first_loss_index, epoch_losses[0]),
-                    textcoords="offset points",
-                    xytext=(0, 5), ha='center', fontsize=8, color='black')
-
-    ax.set_xlabel('Iterations')
-    ax.set_ylabel('Loss')
-    ax.set_title('Loss Over Time')
-    ax.legend()
-
-    # Save plot using savePlot function
-    savePlot(fig)
-
-    plt.show()
 
 def main():
     import sys
@@ -106,7 +74,7 @@ def main():
     print(torch.cuda.is_available())
     plot_train_loss = True
     model.to(device) # Put model on gpu
-    EPOCHS = 5
+    EPOCHS = setTrainValues("EPOCHS")
 
     params = [p for p in model.parameters() if p.requires_grad] # get model parameters
     optimizer = torch.optim.SGD( # Set to static gradient descent
@@ -156,7 +124,9 @@ if __name__ == '__main__':
     current_dir = os.getcwd()
     relative_path = os.path.join(current_dir, '..', 'Libr')
     sys.path.append(relative_path)
-    from engine import train_one_epoch, evaluate, print_loss
+    from Get_Values import checkColab, setTrainValues
+    from engine import train_one_epoch, evaluate
+    from Plot_Graphs import plot_all_loss
     main()
 
 

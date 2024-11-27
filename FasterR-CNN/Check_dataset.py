@@ -1,7 +1,7 @@
 import torch
 from PIL import Image, ImageDraw
 from pathlib import Path
-from colabAdj import checkColab
+from Get_Values import checkColab
 import os
 
 ### DATASET: https://github.com/aiformankind/wildfire-smoke-dataset/blob/master/README.md

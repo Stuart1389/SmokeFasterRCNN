@@ -8,7 +8,7 @@ import random
 import xml.etree.ElementTree as ET
 from PIL import Image, ImageDraw
 import matplotlib.pyplot as plt
-from colabAdj import checkColab
+from Get_Values import checkColab, setTrainValues
 
 
 ### Transforms
@@ -68,10 +68,10 @@ import cv2
 
 #base dir
 base_dir = checkColab()
-dataset_dir = Path(f"{base_dir}/Dataset/Large data")
+dataset_dir = Path(f"{base_dir}/Dataset/" + setTrainValues("dataset"))
 
 
-BATCH_SIZE = 8 # using 6GB/8GB of vram, > = mega slow
+BATCH_SIZE = setTrainValues("BATCH_SIZE") # using 6GB/8GB of vram, > = mega slow
 NUM_WORKERS = os.cpu_count()
 device = "cuda" if torch.cuda.is_available() else "cpu"
 

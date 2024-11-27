@@ -10,7 +10,16 @@ from coco_utils import get_coco_api_from_dataset
 
 
 def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, scaler=None):
-    train_loss = [] # For loss graph
+    train_loss = [] # loss graph iteration instead of epoch
+    # Init loss values
+    total_loss = 0
+    total_loss_classifier = 0
+    total_loss_box_reg = 0
+    total_loss_objectness = 0
+    total_loss_rpn_box_reg = 0
+    num_batches = len(data_loader)
+
+
     model.train()
     metric_logger = utils.MetricLogger(delimiter="  ")
     metric_logger.add_meter("lr", utils.SmoothedValue(window_size=1, fmt="{value:.6f}"))
@@ -28,7 +37,7 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, sc
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
         images = list(image.to(device) for image in images)
         targets = [{k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in t.items()} for t in targets]
-        with torch.cuda.amp.autocast(enabled=scaler is not None):
+        with torch.amp.autocast('cuda', enabled=scaler is not None):
             loss_dict = model(images, targets)
             losses = sum(loss for loss in loss_dict.values())
 
@@ -36,7 +45,13 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, sc
         loss_dict_reduced = utils.reduce_dict(loss_dict)
         losses_reduced = sum(loss for loss in loss_dict_reduced.values())
 
-        loss_value = losses_reduced.item()
+        loss_value = losses_reduced.item() # this batch
+        # gettting individual loss from dict
+        total_loss += losses_reduced.item() # epoch
+        total_loss_classifier += loss_dict_reduced['loss_classifier'].item()
+        total_loss_box_reg += loss_dict_reduced['loss_box_reg'].item()
+        total_loss_objectness += loss_dict_reduced['loss_objectness'].item()
+        total_loss_rpn_box_reg += loss_dict_reduced['loss_rpn_box_reg'].item()
 
         if not math.isfinite(loss_value):
             print(f"Loss is {loss_value}, stopping training")
@@ -59,28 +74,17 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, sc
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
         train_loss.append(loss_value)
 
-    return metric_logger, train_loss
+    # Getting average loss values and storing in dict
+    avg_loss_dict = {
+        "avg_total_loss": total_loss / num_batches,
+        "avg_loss_classifier": total_loss_classifier / num_batches,
+        "avg_loss_box_reg": total_loss_box_reg / num_batches,
+        "avg_loss_objectness": total_loss_objectness / num_batches,
+        "avg_loss_rpn_box_reg": total_loss_rpn_box_reg / num_batches
+    }
 
-def print_loss(model, dataloader, device):
-    model.train()  # Ensure model is in training mode
-    total_loss = 0
-    for images, targets in dataloader:
-        # Move images to the device
-        images = [image.to(device) for image in images]
+    return metric_logger, train_loss, avg_loss_dict
 
-        # Move only tensor values in targets to the device
-        targets = [
-            {k: (v.to(device) if isinstance(v, torch.Tensor) else v) for k, v in t.items()}
-            for t in targets
-        ]
-
-        # Compute loss
-        loss_dict = model(images, targets)
-        print(loss_dict)
-        loss = sum(loss for loss in loss_dict.values())
-        total_loss += loss.item()  # Accumulate loss for the entire dataset
-
-    print(f"TESTER Total Loss: {total_loss}")
 
 def _get_iou_types(model):
     model_without_ddp = model
@@ -94,40 +98,60 @@ def _get_iou_types(model):
     return iou_types
 
 
-@torch.no_grad()  #
-def get_val_loss(model, data_loader, device):
-    model.eval()
-
-
-
-
 @torch.inference_mode()
-def evaluate(model, data_loader, device):
-    n_threads = torch.get_num_threads()
-    # FIXME remove this and make paste_masks_in_image run on the GPU
-    torch.set_num_threads(1)
-    cpu_device = torch.device("cpu")
+def evaluate(model, data_loader, device, scaler=None):
     model.eval()
     metric_logger = utils.MetricLogger(delimiter="  ")
-    header = "Test:"
+    header = "Validation:"
 
     coco = get_coco_api_from_dataset(data_loader.dataset)
     iou_types = _get_iou_types(model)
     coco_evaluator = CocoEvaluator(coco, iou_types)
 
+    # Init loss values
+    total_loss = 0
+    total_loss_classifier = 0
+    total_loss_box_reg = 0
+    total_loss_objectness = 0
+    total_loss_rpn_box_reg = 0
+    num_batches = len(data_loader)
+
+
+
     for images, targets in metric_logger.log_every(data_loader, 100, header):
         images = list(img.to(device) for img in images)
+
+        targets = [ # targets to get validation loss
+            {k: (v.to(device) if isinstance(v, torch.Tensor) else v) for k, v in t.items()}
+            for t in targets
+        ]
 
         if torch.cuda.is_available():
             torch.cuda.synchronize()
         model_time = time.time()
         # validate
-        outputs, loss = model(images)
-        #print(loss)
+        with torch.amp.autocast('cuda', enabled=scaler is not None):
+            outputs, loss_dict = model(images, targets)
+            losses = sum(loss for loss in loss_dict.values())
+
+        # Getting all loss values below
+        # getting combined loss
+        loss_dict_reduced = utils.reduce_dict(loss_dict)
+        losses_reduced = sum(loss for loss in loss_dict_reduced.values())
+        total_loss += losses_reduced.item()
+        # gettting individual loss from dict
+        total_loss_classifier += loss_dict_reduced['loss_classifier'].item()
+        total_loss_box_reg += loss_dict_reduced['loss_box_reg'].item()
+        total_loss_objectness += loss_dict_reduced['loss_objectness'].item()
+        total_loss_rpn_box_reg += loss_dict_reduced['loss_rpn_box_reg'].item()
+
+        #print(loss_dict_reduced)
+        #print(loss_value)
+
         #outputs = model(images)
         #print(outputs)
 
-        outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
+        outputs = [{k: v.to(device) for k, v in t.items()} for t in outputs]
         model_time = time.time() - model_time
 
         res = {target["image_id"]: output for target, output in zip(targets, outputs)}
@@ -135,6 +159,15 @@ def evaluate(model, data_loader, device):
         coco_evaluator.update(res)
         evaluator_time = time.time() - evaluator_time
         metric_logger.update(model_time=model_time, evaluator_time=evaluator_time)
+
+    # Getting average loss values and storing in dict
+    avg_loss_dict = {
+        "avg_total_loss": total_loss / num_batches,
+        "avg_loss_classifier": total_loss_classifier / num_batches,
+        "avg_loss_box_reg": total_loss_box_reg / num_batches,
+        "avg_loss_objectness": total_loss_objectness / num_batches,
+        "avg_loss_rpn_box_reg": total_loss_rpn_box_reg / num_batches
+    }
 
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
@@ -144,5 +177,4 @@ def evaluate(model, data_loader, device):
     # accumulate predictions from all images
     coco_evaluator.accumulate()
     coco_evaluator.summarize()
-    torch.set_num_threads(n_threads)
-    return coco_evaluator
+    return coco_evaluator, avg_loss_dict
