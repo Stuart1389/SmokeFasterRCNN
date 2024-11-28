@@ -10,7 +10,7 @@ from coco_utils import get_coco_api_from_dataset
 
 
 def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, scaler=None):
-    train_loss = [] # loss graph iteration instead of epoch
+    iteration_loss_list = [] # loss graph iteration instead of epoch
     # Init loss values
     total_loss = 0
     total_loss_classifier = 0
@@ -46,7 +46,16 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, sc
         losses_reduced = sum(loss for loss in loss_dict_reduced.values())
 
         loss_value = losses_reduced.item() # this batch
-        # gettting individual loss from dict
+        # Getting loss values for iterations
+        iteration_loss_list.append({
+            'total_loss': loss_value,
+            'loss_classifier': loss_dict_reduced['loss_classifier'].item(),
+            'loss_box_reg': loss_dict_reduced['loss_box_reg'].item(),
+            'loss_objectness': loss_dict_reduced['loss_objectness'].item(),
+            'loss_rpn_box_reg': loss_dict_reduced['loss_rpn_box_reg'].item()
+        })
+
+        # gettting individual loss from dict for average epoch graphs
         total_loss += losses_reduced.item() # epoch
         total_loss_classifier += loss_dict_reduced['loss_classifier'].item()
         total_loss_box_reg += loss_dict_reduced['loss_box_reg'].item()
@@ -72,7 +81,7 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, sc
 
         metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
-        train_loss.append(loss_value)
+        #train_loss.append(loss_value)
 
     # Getting average loss values and storing in dict
     avg_loss_dict = {
@@ -83,7 +92,7 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, sc
         "avg_loss_rpn_box_reg": total_loss_rpn_box_reg / num_batches
     }
 
-    return metric_logger, train_loss, avg_loss_dict
+    return metric_logger, iteration_loss_list, avg_loss_dict
 
 
 def _get_iou_types(model):
@@ -109,6 +118,7 @@ def evaluate(model, data_loader, device, scaler=None):
     coco_evaluator = CocoEvaluator(coco, iou_types)
 
     # Init loss values
+    iteration_loss_list = []  # loss graph iteration instead of epoch
     total_loss = 0
     total_loss_classifier = 0
     total_loss_box_reg = 0
@@ -138,8 +148,19 @@ def evaluate(model, data_loader, device, scaler=None):
         # getting combined loss
         loss_dict_reduced = utils.reduce_dict(loss_dict)
         losses_reduced = sum(loss for loss in loss_dict_reduced.values())
+
+        # Getting loss values for iterations
+        iteration_loss_list.append({
+            'total_loss': losses_reduced.item(),
+            'loss_classifier': loss_dict_reduced['loss_classifier'].item(),
+            'loss_box_reg': loss_dict_reduced['loss_box_reg'].item(),
+            'loss_objectness': loss_dict_reduced['loss_objectness'].item(),
+            'loss_rpn_box_reg': loss_dict_reduced['loss_rpn_box_reg'].item()
+        })
+        print("it loss:", iteration_loss_list)
+
+        # gettting individual loss from dict for average epoch graphs
         total_loss += losses_reduced.item()
-        # gettting individual loss from dict
         total_loss_classifier += loss_dict_reduced['loss_classifier'].item()
         total_loss_box_reg += loss_dict_reduced['loss_box_reg'].item()
         total_loss_objectness += loss_dict_reduced['loss_objectness'].item()
@@ -177,4 +198,4 @@ def evaluate(model, data_loader, device, scaler=None):
     # accumulate predictions from all images
     coco_evaluator.accumulate()
     coco_evaluator.summarize()
-    return coco_evaluator, avg_loss_dict
+    return coco_evaluator, iteration_loss_list, avg_loss_dict

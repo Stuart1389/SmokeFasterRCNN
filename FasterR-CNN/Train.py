@@ -15,22 +15,29 @@ def saveModel(model):
 
 def train_loop(EPOCHS, model, optimizer, train_dataloader, validate_dataloader, device, lr_scheduler, plot_train_loss):
     train_loss_vals = []
+    train_loss_it_vals = [] # for iterations instead of epoch
     validate_loss_vals = []
+    validate_loss_it_vals = [] # for iterations instead of epoch
     for epoch in range(EPOCHS):
         # train for one epoch, printing every 10 iterations
-        _, train_loss, train_loss_dict  = train_one_epoch(model, optimizer, train_dataloader, device, epoch, print_freq=10)
+        _, train_loss_it_dict, train_loss_dict  = train_one_epoch(model, optimizer, train_dataloader, device, epoch, print_freq=10)
         # update the learning rate using scheduler
         lr_scheduler.step()
         # evaluate on test dataset
-        _, validate_loss_dict = evaluate(model, validate_dataloader, device=device)
+        _, validate_loss_it_dict, validate_loss_dict = evaluate(model, validate_dataloader, device=device)
         #TEST TEMP
         #print_loss(model, test_dataloader, device)
-        # get loss vals for graphs
+        # get average loss vals for graphs
         train_loss_vals.append(train_loss_dict)
         validate_loss_vals.append(validate_loss_dict)
+        # get iteration loss values for graph
+        train_loss_it_vals.append(train_loss_it_dict)
+        validate_loss_it_vals.append(validate_loss_it_dict)
+        print(train_loss_it_vals)
         print(train_loss_vals)
         print(validate_loss_vals)
-    plot_all_loss(train_loss_vals, validate_loss_vals)
+        print(validate_loss_it_vals)
+    plot_all_loss(train_loss_vals, validate_loss_vals, train_loss_it_vals, validate_loss_it_vals)
 
 
 def main():
