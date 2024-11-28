@@ -64,7 +64,7 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, sc
 
         if not math.isfinite(loss_value):
             print(f"Loss is {loss_value}, stopping training")
-            print(loss_dict_reduced)
+            #print(loss_dict_reduced)
             sys.exit(1)
 
         optimizer.zero_grad()
@@ -157,7 +157,7 @@ def evaluate(model, data_loader, device, scaler=None):
             'loss_objectness': loss_dict_reduced['loss_objectness'].item(),
             'loss_rpn_box_reg': loss_dict_reduced['loss_rpn_box_reg'].item()
         })
-        print("it loss:", iteration_loss_list)
+        #print("it loss:", iteration_loss_list)
 
         # gettting individual loss from dict for average epoch graphs
         total_loss += losses_reduced.item()

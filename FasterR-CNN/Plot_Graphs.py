@@ -30,7 +30,7 @@ def plot_all_loss(train_dict, validate_dict, train_loss_it_vals, validate_loss_i
 
     # Plot iter-level losses (2nd row)
     for i, loss_it_types in enumerate(loss_it_types):
-        print(train_loss_it_vals)
+        #print(train_loss_it_vals)
         train_it_losses = [d[loss_it_types] for sublist in train_loss_it_vals for d in sublist]
 
         # Plot on the respective axis
@@ -44,7 +44,7 @@ def plot_all_loss(train_dict, validate_dict, train_loss_it_vals, validate_loss_i
     # Plot iter-level losses (2nd row)
     loss_it_types = validate_loss_it_vals[0][0].keys()
     for i, loss_it_types in enumerate(loss_it_types):
-        print(validate_loss_it_vals)
+        #print(validate_loss_it_vals)
         validate_it_losses = [d[loss_it_types] for sublist in validate_loss_it_vals for d in sublist]
 
         # Plot on the respective axis

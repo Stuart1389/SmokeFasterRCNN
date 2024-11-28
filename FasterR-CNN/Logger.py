@@ -1,0 +1,18 @@
+import sys
+import time
+from pathlib import Path
+
+# DualLogger class to write to both the console and the file
+class Logger:
+    def __init__(self, file_path):
+        self.console = sys.__stdout__  # Original standard output (console)
+        self.file = open(file_path, 'w')  # Log file to write to
+
+    def write(self, message):
+        self.console.write(message)  # Write to the console
+        self.file.write(message)  # Write to the log file
+
+    def flush(self):
+        # Ensures output is flushed to both console and file
+        self.console.flush()
+        self.file.flush()

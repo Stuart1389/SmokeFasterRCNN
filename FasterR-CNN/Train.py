@@ -14,6 +14,16 @@ def saveModel(model):
                f=MODEL_SAVE_PATH)
 
 def train_loop(EPOCHS, model, optimizer, train_dataloader, validate_dataloader, device, lr_scheduler, plot_train_loss):
+    # Log file
+    MODEL_PATH = Path("savedModels")
+    MODEL_PATH.mkdir(parents=True,  # make parent dir if doesnt exist
+                     exist_ok=True)  # dont error if already exists
+
+    log_filename = MODEL_PATH / (setTrainValues("model_name") + ".txt")
+    print(time.strftime("%Y-%m-%d_%H-%M-%S"))
+    sys.stdout = Logger(log_filename)
+    # Log file end
+
     train_loss_vals = []
     train_loss_it_vals = [] # for iterations instead of epoch
     validate_loss_vals = []
@@ -33,11 +43,16 @@ def train_loop(EPOCHS, model, optimizer, train_dataloader, validate_dataloader, 
         # get iteration loss values for graph
         train_loss_it_vals.append(train_loss_it_dict)
         validate_loss_it_vals.append(validate_loss_it_dict)
-        print(train_loss_it_vals)
-        print(train_loss_vals)
-        print(validate_loss_vals)
-        print(validate_loss_it_vals)
+        #print(train_loss_it_vals)
+        #print(train_loss_vals)
+        #print(validate_loss_vals)
+        #print(validate_loss_it_vals)
     plot_all_loss(train_loss_vals, validate_loss_vals, train_loss_it_vals, validate_loss_it_vals)
+    # Monitor highest VRAM usage (for debugging resource usage)
+    print("Highest VRAM used: {:.2f} MB".format(torch.cuda.max_memory_allocated() / 1024 / 1024))
+    torch.cuda.reset_peak_memory_stats()
+    sys.stdout.file.close()
+    sys.stdout = sys.__stdout__
 
 
 def main():
@@ -111,6 +126,8 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import os
     import sys
+    import logging
+    import time
     # Mark dir for google colab
     current_dir = os.getcwd()
     relative_path = os.path.join(current_dir, '..', 'Libr')
@@ -118,6 +135,7 @@ if __name__ == '__main__':
     from Get_Values import checkColab, setTrainValues
     from engine import train_one_epoch, evaluate
     from Plot_Graphs import plot_all_loss
+    from Logger import Logger
     main()
 
 
