@@ -4,11 +4,11 @@ import os
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 8,
-        "EPOCHS": 20,
+        "BATCH_SIZE": 2,
+        "EPOCHS": 3,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "setTrainTest", # name of saved model
-        "plotJSON_fname": "setTrainTest" # json filename
+        "model_name": "what", # name of saved model
+        "plotJSON_fname": "what" # json filename
     }
     # return value corresponding with val_to_get
     return train_values.get(val_to_get, None)
@@ -16,8 +16,8 @@ def setTrainValues(val_to_get):
 def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
-        "dataset": "Small data", # "Small data" OR "Large data"
-        "model_name": "valTestB" # name of model to test
+        "dataset": "Large data", # "Small data" OR "Large data"
+        "model_name": "what" # name of model to test
     }
 
     # return value corresponding with val_to_get

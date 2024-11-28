@@ -38,6 +38,7 @@ from albumentations.pytorch import ToTensorV2
 
 # pascal_voc is format (xmin, ymin, xmax, ymax) we're using for bounding box coords, alternatives inc yolo, coco, etc
 transform_t = A.Compose([
+
     #A.PadIfNeeded(min_height=320, min_width=240, border_mode=cv2.BORDER_CONSTANT), # prevents shape mismatch from image being cut off
     #A.PadIfNeeded(min_height=320, min_width=240), # doesnt work currently, need to fix
     #A.RandomCrop(width= round(320), height= round(240)), # needs padding or wil lthrow error

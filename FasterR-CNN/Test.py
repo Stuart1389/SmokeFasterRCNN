@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from torchvision.io import read_image
 from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
 import torch.utils.benchmark as benchmark
+from torchvision.ops import box_iou
 import time
 print(checkColab())
 
@@ -25,7 +26,7 @@ print(checkColab())
 base_dir = checkColab()
 # Define the confidence threshold, only bbox with score above val will be used
 confidence_threshold = 0.5
-# Draw only predicted bbox with highest scor
+# Draw only predicted bbox with highest score
 draw_highest_only = False
 # plot images
 plot_image = False
@@ -33,6 +34,9 @@ plot_image = False
 BENCHMARK = False
 # use small dataset
 small_data = False
+ap_value = 0.5 # percentage of overlap necessary to count a bbox prediction as true positive
+# Show images which have 0 true positive predictions
+draw_no_true_positive_only = False
 
 # device agnostic code
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -48,6 +52,10 @@ map_metricA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])
 map_metricB = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
 # create global array for benchmark times
 benchmark_times = []
+# Creating counters for precision/recall
+total_tp = 0
+total_fp = 0
+total_fn = 0
 
 # transform to convert image to tensor before going through model
 def get_transform():
@@ -101,6 +109,7 @@ def test_dir(dir_path):
 
 # Function to predict smoke and calulcate mAP
 def predictBbox(image_path):
+    global total_tp, total_fp, total_fn # this makes me feel sick
     # !!! GETTING PREDICTIONS !!!
     image = read_image(image_path) # get image
     eval_transform = get_transform()
@@ -158,21 +167,95 @@ def predictBbox(image_path):
     annotation_path = os.path.join(test_annot_dir, f"{image_id}.xml")
     ground_truth = parse_xml(annotation_path)
 
+    # get image size
+    image_size = predictions[0].get("image_size", [image.shape[1], image.shape[2]])
+
     # format predictions for mAP calculation
     predicted = {
         "boxes": torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.float),
         "scores": torch.tensor(filtered_scores) if filtered_scores else torch.empty((0,)),
         "labels": torch.tensor([1] * len(filtered_boxes)) if filtered_boxes else torch.empty((0,), dtype=torch.long),
     }
+    # getting tp, tn, fp, fn
+    metrics = getImageVal(
+        image_path=image_path,
+        pred_score=predicted["scores"].to("cpu"), # cpu or cry
+        pred_box=predicted["boxes"].to("cpu"),
+        ground_truth=ground_truth,
+        confidence_threshold=confidence_threshold,
+        image_size = image_size,
+        ap_value = ap_value
+    )
+    # Accumulate TP, FP, FN counts for the total
+    total_tp += metrics["TP"]
+    total_fp += metrics["FP"]
+    total_fn += metrics["FN"]
+    print(f"{metrics}")
+
+
+
+    # mAP update
     map_metricA.update([predicted], [ground_truth])
     map_metricB.update([predicted], [ground_truth])
-    # call function to display image with overlayed bboxes
-    display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth)
+    if(draw_no_true_positive_only):
+        if(metrics["TP"] == 0):
+            # call function to display image with overlayed bboxes
+            display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth)
+    else:
+        # call function to display image with overlayed bboxes
+        display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth)
+
+
+def getImageVal(image_path, pred_score, pred_box, ground_truth, confidence_threshold, image_size, ap_value):
+    # Filter predictions by confidence score
+    filtered_boxes = []
+    filtered_scores = []
+    for score, box in zip(pred_score, pred_box):
+        if score >= confidence_threshold:
+            filtered_boxes.append(box)
+            filtered_scores.append(score)
+
+    # Initialize counters
+    tp_count, fp_count, fn_count, tn_count = 0, 0, 0, 0
+
+    # Extract ground truth boxes
+    ground_truth_boxes = ground_truth['boxes']
+    predicted_boxes = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.float)
+
+    # Calculate TP, FP, FN
+    if len(predicted_boxes) > 0 and len(ground_truth_boxes) > 0:
+        iou_matrix = box_iou(predicted_boxes, ground_truth_boxes)
+        matched_gts = set()
+
+        for i, pred_box in enumerate(predicted_boxes):
+            max_iou, max_idx = iou_matrix[i].max(0)
+            if max_iou >= ap_value:
+                tp_count += 1
+                matched_gts.add(max_idx.item())
+            else:
+                fp_count += 1
+
+        # Ground truth boxes not matched are FN
+        fn_count = len(ground_truth_boxes) - len(matched_gts)
+    else:
+        fp_count = len(predicted_boxes)
+        fn_count = len(ground_truth_boxes)
+
+    # Return a dictionary with results
+    return {
+        "image": image_path,
+        "TP": tp_count,
+        "FP": fp_count,
+        "FN": fn_count
+    }
+
+
+
 
 def display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth):
     if (plot_image == False):
         matplotlib.use('Agg')
-    #!!! DISPLAYING PREDICTIONS THROUGH MATPLOT PLIB !!!
+    #!!! DISPLAYING PREDICTIONS THROUGH MATPLOT LIB !!!
     filtered_boxes_tensor = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)
     # Get prediction with highest score and draw only that if draw_only_highest is true
     if filtered_scores and draw_highest_only:
@@ -203,12 +286,19 @@ def display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, 
     plt.axis('off')
     plt.show()
 
-
 # function to calculate the average time to make a prediction
 def getAvgTime(benchmark_times):
     total_time = sum(benchmark_times)  # get sum
     avg_time = total_time / len(benchmark_times)  # get average
     return avg_time
+
+# function to get precission and recall
+def calculate_total_precision_recall():
+    total_precision = total_tp / (total_tp + total_fp) if (total_tp + total_fp) > 0 else 0
+    total_recall = total_tp / (total_tp + total_fn) if (total_tp + total_fn) > 0 else 0
+
+    return total_precision, total_recall
+
 
 # Start python timer
 start_time = time.time()
@@ -224,7 +314,12 @@ elapsed_time = end_time - start_time
 final_mapA = map_metricA.compute()
 final_mapB = map_metricB.compute()
 
-# Only benchmark if true, benchmarking does extra runs through model
+# get precission and recall
+total_precision, total_recall = calculate_total_precision_recall()
+print(f"Total Precision: {total_precision:.4f}")
+print(f"Total Recall: {total_recall:.4f}")
+
+# Only benchmark if true, benchmarking does extra run through model for each pred
 if BENCHMARK == True:
     print(f"Average benchmark time (per image): {getAvgTime(benchmark_times):.4f} seconds")
 print(f"Mean Average Precision @ 0.5 (mAP@0.5): {final_mapA['map']:.4f}")
