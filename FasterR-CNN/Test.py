@@ -4,7 +4,7 @@ import torch
 import xml.etree.ElementTree as ET
 from PIL import Image, ImageDraw
 from pathlib import Path
-from Get_Values import checkColab
+from Get_Values import checkColab, setTestValues
 import os
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 import matplotlib
@@ -38,14 +38,10 @@ small_data = False
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model = Model.getModel(True) # get model, true used to tell function we want to test
 
-if (small_data):
-    # Test directories
-    test_image_dir = f"{base_dir}/Dataset/Small data/Test/images"
-    test_annot_dir = f"{base_dir}/Dataset/Small data/Test/annotations/xmls"
-else:
-    # Test directories
-    test_image_dir = f"{base_dir}/Dataset/Large data/Test/images"
-    test_annot_dir = f"{base_dir}/Dataset/Large data/Test/annotations/xmls"
+# Test directories
+test_image_dir = Path(f"{base_dir}/Dataset/") / setTestValues("dataset") / "Test/images"
+test_annot_dir = Path(f"{base_dir}/Dataset/") / setTestValues("dataset") / "Test/annotations/xmls"
+
 
 # Initialize mAP metric, intersection over union bbox
 map_metricA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])
@@ -195,7 +191,7 @@ def display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, 
     print("output labels", filtered_labels)
 
     # convert ground truth boxes to tensor
-    ground_truth_boxes = [torch.tensor(bbox) for bbox in ground_truth['boxes']]
+    ground_truth_boxes = [bbox.clone().detach() for bbox in ground_truth['boxes']]
 
     # draw ground truth bbox over predicted bbox over image
     output_image = draw_bounding_boxes(output_image, torch.stack(ground_truth_boxes),

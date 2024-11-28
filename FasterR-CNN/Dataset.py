@@ -41,7 +41,7 @@ transform_t = A.Compose([
     #A.PadIfNeeded(min_height=320, min_width=240, border_mode=cv2.BORDER_CONSTANT), # prevents shape mismatch from image being cut off
     #A.PadIfNeeded(min_height=320, min_width=240), # doesnt work currently, need to fix
     #A.RandomCrop(width= round(320), height= round(240)), # needs padding or wil lthrow error
-    A.HorizontalFlip(p=0.5),
+    #A.HorizontalFlip(p=0.5),
     #A.RandomBrightnessContrast(p=0.2),
     ToTensorV2()
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))

@@ -52,7 +52,7 @@ def getModel(test=None, fine_tune=False):
     else:
         # If params are passed then we want to load state_dict, aka weights i've trained
         saved_dir = Path(f"{base_dir}/FasterR-CNN/savedModels/" + setTestValues("model_name") + ".pth")
-        state_dict = torch.load(saved_dir)
+        state_dict = torch.load(saved_dir, weights_only=True)
         model.load_state_dict(state_dict)
         return model
 
