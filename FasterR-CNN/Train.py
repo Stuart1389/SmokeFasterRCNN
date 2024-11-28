@@ -24,6 +24,11 @@ def train_loop(EPOCHS, model, optimizer, train_dataloader, validate_dataloader, 
     sys.stdout = Logger(log_filename)
     # Log file end
 
+    # Early stopping
+    best_val_loss = float('inf')  # first value make mega
+    epochs_no_improve = 0  # number of peochs with no improvement
+    patience = setTrainValues("PATIENCE") # stop if no improvement in value epochs
+
     train_loss_vals = []
     train_loss_it_vals = [] # for iterations instead of epoch
     validate_loss_vals = []
@@ -35,6 +40,7 @@ def train_loop(EPOCHS, model, optimizer, train_dataloader, validate_dataloader, 
         lr_scheduler.step()
         # evaluate on test dataset
         _, validate_loss_it_dict, validate_loss_dict = evaluate(model, validate_dataloader, device=device)
+        #print("val loss dict",validate_loss_dict)
         #TEST TEMP
         #print_loss(model, test_dataloader, device)
         # get average loss vals for graphs
@@ -47,6 +53,28 @@ def train_loop(EPOCHS, model, optimizer, train_dataloader, validate_dataloader, 
         #print(train_loss_vals)
         #print(validate_loss_vals)
         #print(validate_loss_it_vals)
+
+        # Early stopping
+        current_train_loss = train_loss_dict["avg_total_loss"]
+        print(f"Current average training loss: {current_train_loss:.4f}")
+
+        current_val_loss = validate_loss_dict["avg_total_loss"]
+        print(f"Current average validation loss: {current_val_loss:.4f}")
+
+        if current_val_loss < best_val_loss:
+            best_val_loss = current_val_loss
+            epochs_no_improve = 0  # Reset counter since we have an improvement
+            print(f"Validation loss improved to {best_val_loss:.4f}, saving model...")
+            #saveModel(model)  # Save the model if it improves
+        else:
+            epochs_no_improve += 1
+            print(f"No improvement in validation loss for {epochs_no_improve} epochs.")
+
+        if epochs_no_improve >= patience:
+            print("Early stopping due to no improvement.")
+            break  # Stop training if no improvement for 'patience' epochs
+
+
     plot_all_loss(train_loss_vals, validate_loss_vals, train_loss_it_vals, validate_loss_it_vals)
     # Monitor highest VRAM usage (for debugging resource usage)
     print("Highest VRAM used: {:.2f} MB".format(torch.cuda.max_memory_allocated() / 1024 / 1024))
