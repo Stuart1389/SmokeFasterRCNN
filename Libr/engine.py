@@ -128,7 +128,7 @@ def evaluate(model, data_loader, device, scaler=None):
 
 
 
-    for images, targets in metric_logger.log_every(data_loader, 100, header):
+    for images, targets in metric_logger.log_every(data_loader, 10, header):
         images = list(img.to(device) for img in images)
 
         targets = [ # targets to get validation loss

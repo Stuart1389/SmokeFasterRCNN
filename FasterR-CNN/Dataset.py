@@ -266,7 +266,7 @@ if __name__ == '__main__':
     #print(testB)
     #print(testC)
 
-    # Made this because i didnt add collate fn so kept getting error because not list of dictionaries
+    # Made this because i didnt add collate fn so kept getting error because not list of dictionaries, was tryna debug
     def check_for_strings_in_target(target):
         for key, value in target.items():
             if isinstance(value, list):
