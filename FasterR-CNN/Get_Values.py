@@ -4,12 +4,12 @@ import os
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 2,
+        "BATCH_SIZE": 16,
         "EPOCHS": 30,
-        "PATIENCE": 3,
-        "dataset": "Small data", # "Small data" OR "Large data"
-        "model_name": "earlStop", # name of saved model
-        "plotJSON_fname": "earlStop" # json filename
+        "PATIENCE": 5,
+        "dataset": "Large data", # "Small data" OR "Large data"
+        "model_name": "baseTest", # name of saved model
+        "plotJSON_fname": "baseTest" # json filename
     }
     # return value corresponding with val_to_get
     return train_values.get(val_to_get, None)

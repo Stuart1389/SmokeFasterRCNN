@@ -65,7 +65,7 @@ def train_loop(EPOCHS, model, optimizer, train_dataloader, validate_dataloader, 
             best_val_loss = current_val_loss
             epochs_no_improve = 0  # Reset counter since we have an improvement
             print(f"Validation loss improved to {best_val_loss:.4f}, saving model...")
-            #saveModel(model)  # Save the model if it improves
+            saveModel(model)  # Save the model if it improves
         else:
             epochs_no_improve += 1
             print(f"No improvement in validation loss for {epochs_no_improve} epochs.")
@@ -131,11 +131,14 @@ def main():
 
     # Checks if we want to save the model state_dict
     print("Finished")
+    """
     print("Save model parameters?")
     #save_model_parameters = input()
+ 
     save_model_parameters = "yes"
     if save_model_parameters == "yes":
         saveModel(model)
+        """
 
     # IoU - Measures overlap between 2 bounding boxes
     # Precission - Measures how many positive predictions were correct | high = few false positives
