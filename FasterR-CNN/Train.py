@@ -113,7 +113,7 @@ def main():
     params = [p for p in model.parameters() if p.requires_grad] # get model parameters
     optimizer = torch.optim.SGD( # Set to static gradient descent
         params,
-        lr=0.005, # Learning rate
+        lr=0.001, # Learning rate
         momentum=0.9, # speeds up optimization, to decrease time to convergence
         weight_decay=0.0005 # tries to prevent larger weights, leads to less overfitting
     )
