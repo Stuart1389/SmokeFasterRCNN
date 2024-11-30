@@ -15,7 +15,9 @@ from torchvision.ops import box_iou
 from tabulate import tabulate
 import time
 from SmokeModel import SmokeModel
-print(checkColab())
+import torch
+from torchvision.transforms import v2 as T
+
 
 base_dir = checkColab()
 # Define the confidence threshold, only bbox with score above val will be used
@@ -66,8 +68,6 @@ total_fn = {"small": 0, "medium": 0, "large": 0, "global": 0}
 
 # transform to convert image to tensor before going through model
 def get_transform():
-    import torch
-    from torchvision.transforms import v2 as T
     transforms = []
     transforms.append(T.ToDtype(torch.float, scale=True))
     transforms.append(T.ToPureTensor())
@@ -270,28 +270,28 @@ def getImageVal(image_path, pred_score, pred_box, ground_truth, confidence_thres
             max_iou, max_idx = iou_matrix[i].max(0)
             if max_iou >= ap_value:
                 tp_count['global'] += 1
-                if gt_size != 'none':  # Update size-specific counter if not 'none'
+                if gt_size != 'none':  # Update size counter if not none
                     tp_count[gt_size] += 1
                 matched_gts.add(max_idx.item())
             else:
                 fp_count['global'] += 1
-                if gt_size != 'none':  # Update size-specific counter if not 'none'
+                if gt_size != 'none':  # Update size counter if not none'
                     fp_count[gt_size] += 1
 
         # Ground truth boxes not matched are FN
         fn_count['global'] = len(ground_truth_boxes) - len(matched_gts)
-        if gt_size != 'none':  # Update size-specific counter if not 'none'
+        if gt_size != 'none':  # Update size counter if not none
             fn_count[gt_size] = len(ground_truth_boxes) - len(matched_gts)
     else:
         # No predictions
         fp_count['global'] = len(predicted_boxes)
-        if gt_size != 'none':  # Update size-specific counter if not 'none'
+        if gt_size != 'none':  # Update size counter if not none
             fp_count[gt_size] = len(predicted_boxes)
         fn_count['global'] = len(ground_truth_boxes)
-        if gt_size != 'none':  # Update size-specific counter if not 'none'
+        if gt_size != 'none':  # Update size counter if not none
             fn_count[gt_size] = len(ground_truth_boxes)
 
-    # Return a dictionary with results
+    # Return dictionary with results
     return {
         "image": image_path,
         "TP": tp_count,
@@ -368,35 +368,35 @@ def calculate_total_precision_recall():
 def get_ground_truth_size(test_image_dir, test_annot_dir):
     all_areas = []
 
-    # Step 1: Iterate through the files in the test image directory
+    # Iterate through files in test image dir
     for root, dirs, files in os.walk(test_image_dir):
         for file_name in files:
-            if file_name.endswith(".jpeg"):  # Adjust for image types
+            if file_name.endswith(".jpeg"): # delete this later
                 # Get the corresponding XML annotation file
                 get_annotation = os.path.join(test_annot_dir, file_name.replace(".jpeg", ".xml"))
 
                 # Parse XML to get areas (ground truth)
                 ground_truth_area = parse_xml(get_annotation, True)
 
-                # Append the area to the list for later processing
+                # Append the area to the list for later
                 if ground_truth_area:
-                    all_areas.append(ground_truth_area[0])  # Assuming there's only one area per image
+                    all_areas.append(ground_truth_area[0]) # append ground truth
 
-    # Step 2: Sort the areas in ascending order
+    # sort areas in asc order
     sorted_areas = sorted(all_areas)
 
-    # Step 3: Compute boundaries for small, medium, and large sizes
+    # get boundaries for small, medium, and large sizes
     total_images = len(sorted_areas)
     small_limit = total_images // 3
     medium_limit = 2 * total_images // 3
 
-    # Step 4: Create a dictionary for categorizing images by size
+    # Create dictionary for categorizing images by size
     categorized_images_dict = {}
 
     for root, dirs, files in os.walk(test_image_dir):
         for file_name in files:
-            if file_name.endswith(".jpeg"):  # Adjust for image types
-                # Get the corresponding XML annotation file
+            if file_name.endswith(".jpeg"):
+                # Get corresponding XML annotation file
                 get_annotation = os.path.join(test_annot_dir, file_name.replace(".jpeg", ".xml"))
 
                 # Parse XML to get areas (ground truth)
@@ -415,10 +415,10 @@ def get_ground_truth_size(test_image_dir, test_annot_dir):
                 else:
                     size_category = "none"
 
-                # Store the size category in the dictionary
+                # Store the size category in dictionary
                 categorized_images_dict[file_name] = size_category
 
-    # Step 5: Count the occurrences of each category
+    # Count occurrences of each size
     size_counts = {"small": 0, "medium": 0, "large": 0, "none": 0}
     for size in categorized_images_dict.values():
         if size in size_counts:
