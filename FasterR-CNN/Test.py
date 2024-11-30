@@ -24,7 +24,7 @@ draw_highest_only = False
 # plot images
 plot_image = False
 # Whether to use torch.utils.benchmark
-BENCHMARK = True
+BENCHMARK = False
 # use small dataset
 small_data = False
 ap_value = 0.5 # percentage of overlap necessary to count a bbox prediction as true positive
@@ -46,6 +46,16 @@ test_annot_dir = Path(f"{base_dir}/Dataset/") / setTestValues("dataset") / "Test
 # Initialize mAP metric, intersection over union bbox
 map_metricA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])
 map_metricB = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
+
+map_metricSmallA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])
+map_metricSmallB = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
+
+map_metricMediumA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])
+map_metricMediumB = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
+
+map_metricLargeA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])
+map_metricLargeB = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
+
 # create global array for benchmark times
 benchmark_times = []
 # Creating counters for precision/recall
@@ -64,13 +74,14 @@ def get_transform():
 
 # Need ground truths to calculate mAP
 # Function parse xml for ground truths (copied from Dataset class)
-def parse_xml(annotation_path):
+def parse_xml(annotation_path, get_area=False):
     # Parsing XML file for each image to find bounding boxes
     tree = ET.parse(annotation_path)
     root = tree.getroot()
 
     # Extract bounding boxes
     boxes = []
+    areas = []
     for obj in root.findall("object"):
         xml_box = obj.find("bndbox")
         xmin = float(xml_box.find("xmin").text)
@@ -78,6 +89,9 @@ def parse_xml(annotation_path):
         xmax = float(xml_box.find("xmax").text)
         ymax = float(xml_box.find("ymax").text)
         boxes.append([xmin, ymin, xmax, ymax])
+        area = (xmax - xmin) * (ymax - ymin)
+        if(get_area):
+            areas.append(area)
 
     # Extract labels
     labels = []
@@ -92,7 +106,13 @@ def parse_xml(annotation_path):
         "labels": torch.tensor(labels, dtype=torch.int64),
     }
 
-    return ground_truth
+    if get_area:
+        if len(areas) == 1:
+            return areas
+        elif len(areas) > 1 or len(areas) == 0:
+            return 0
+    else:
+        return ground_truth
 
 def test_dir(dir_path):
   """Walks through dir_path, for each file call predictBbox and pass file path """
@@ -101,10 +121,10 @@ def test_dir(dir_path):
     for filename in filenames:
         image_path = os.path.join(dir_path, filename)
         print(image_path)
-        predictBbox(image_path)
+        predictBbox(image_path, filename)
 
 # Function to predict smoke and calulcate mAP
-def predictBbox(image_path):
+def predictBbox(image_path, filename):
     global total_tp, total_fp, total_fn # this makes me feel sick
     # !!! GETTING PREDICTIONS !!!
     image = read_image(image_path) # get image
@@ -172,6 +192,11 @@ def predictBbox(image_path):
         "scores": torch.tensor(filtered_scores) if filtered_scores else torch.empty((0,)),
         "labels": torch.tensor([1] * len(filtered_boxes)) if filtered_boxes else torch.empty((0,), dtype=torch.long),
     }
+
+    print(filename)
+    gt_size = image_gt_size.get(filename)
+    print(gt_size)
+
     # getting tp, tn, fp, fn
     metrics = getImageVal(
         image_path=image_path,
@@ -180,7 +205,8 @@ def predictBbox(image_path):
         ground_truth=ground_truth,
         confidence_threshold=confidence_threshold,
         image_size = image_size,
-        ap_value = ap_value
+        ap_value = ap_value,
+        gt_size = gt_size
     )
     # Accumulate TP, FP, FN counts for the total
     total_tp += metrics["TP"]
@@ -188,11 +214,24 @@ def predictBbox(image_path):
     total_fn += metrics["FN"]
     print(f"{metrics}")
 
+    if gt_size == "small":
+        map_metricSmallA.update([predicted], [ground_truth])
+        map_metricSmallB.update([predicted], [ground_truth])
+    elif gt_size == "medium":
+        map_metricMediumA.update([predicted], [ground_truth])
+        map_metricMediumB.update([predicted], [ground_truth])
+    elif gt_size == "large":
+        map_metricLargeA.update([predicted], [ground_truth])
+        map_metricLargeB.update([predicted], [ground_truth])
 
 
     # mAP update
     map_metricA.update([predicted], [ground_truth])
     map_metricB.update([predicted], [ground_truth])
+
+
+
+
     if(draw_no_true_positive_only):
         if(metrics["TP"] == 0):
             # call function to display image with overlayed bboxes
@@ -202,7 +241,7 @@ def predictBbox(image_path):
         display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth)
 
 
-def getImageVal(image_path, pred_score, pred_box, ground_truth, confidence_threshold, image_size, ap_value):
+def getImageVal(image_path, pred_score, pred_box, ground_truth, confidence_threshold, image_size, ap_value, gt_size):
     # Filter predictions by confidence score
     filtered_boxes = []
     filtered_scores = []
@@ -296,6 +335,78 @@ def calculate_total_precision_recall():
     return total_precision, total_recall
 
 
+def get_ground_truth_size(test_image_dir, test_annot_dir):
+    all_areas = []
+
+    # Step 1: Iterate through the files in the test image directory
+    for root, dirs, files in os.walk(test_image_dir):
+        for file_name in files:
+            if file_name.endswith(".jpeg"):  # Adjust for image types
+                # Get the corresponding XML annotation file
+                get_annotation = os.path.join(test_annot_dir, file_name.replace(".jpeg", ".xml"))
+
+                # Parse XML to get areas (ground truth)
+                ground_truth_area = parse_xml(get_annotation, True)
+
+                # Append the area to the list for later processing
+                if ground_truth_area:
+                    all_areas.append(ground_truth_area[0])  # Assuming there's only one area per image
+
+    # Step 2: Sort the areas in ascending order
+    sorted_areas = sorted(all_areas)
+
+    # Step 3: Compute boundaries for small, medium, and large sizes
+    total_images = len(sorted_areas)
+    small_limit = total_images // 3
+    medium_limit = 2 * total_images // 3
+
+    # Step 4: Create a dictionary for categorizing images by size
+    categorized_images_dict = {}
+
+    for root, dirs, files in os.walk(test_image_dir):
+        for file_name in files:
+            if file_name.endswith(".jpeg"):  # Adjust for image types
+                # Get the corresponding XML annotation file
+                get_annotation = os.path.join(test_annot_dir, file_name.replace(".jpeg", ".xml"))
+
+                # Parse XML to get areas (ground truth)
+                ground_truth_area = parse_xml(get_annotation, True)
+
+                if ground_truth_area:
+                    area = ground_truth_area[0]
+                    if area == 0:
+                        size_category = "none"
+                    elif area <= sorted_areas[small_limit - 1]:
+                        size_category = "small"
+                    elif area <= sorted_areas[medium_limit - 1]:
+                        size_category = "medium"
+                    else:
+                        size_category = "large"
+                else:
+                    size_category = "none"
+
+                # Store the size category in the dictionary
+                categorized_images_dict[file_name] = size_category
+
+    # Step 5: Count the occurrences of each category
+    size_counts = {"small": 0, "medium": 0, "large": 0, "none": 0}
+    for size in categorized_images_dict.values():
+        if size in size_counts:
+            size_counts[size] += 1
+
+    # Print the counts
+    print(f"Small: {size_counts['small']}")
+    print(f"Medium: {size_counts['medium']}")
+    print(f"Large: {size_counts['large']}")
+    print(f"None: {size_counts['none']}")
+
+    return categorized_images_dict
+
+
+
+image_gt_size = get_ground_truth_size(test_image_dir, test_annot_dir)
+print(image_gt_size)
+
 # Start python timer
 start_time = time.time()
 
@@ -318,6 +429,18 @@ print(f"Global Recall: {total_recall:.4f}")
 # Only benchmark if true, benchmarking does extra run through model for each pred
 if BENCHMARK == True:
     print(f"Global Average benchmark Time (per image): {getAvgTime(benchmark_times):.4f} seconds")
+
+# Printing mAP values
 print(f"Global Mean Average Precision @ 0.5 (mAP@0.5): {final_mapA['map']:.4f}")
 print(f"Global Mean Average Precision @ 0.3 (mAP@0.3): {final_mapB['map']:.4f}")
+
+print(f"Small Size mAP @ 0.5 (mAP@0.5): {map_metricSmallA.compute()['map']:.4f}")
+print(f"Small Size mAP @ 0.3 (mAP@0.3): {map_metricSmallB.compute()['map']:.4f}")
+
+print(f"Medium Size mAP @ 0.5 (mAP@0.5): {map_metricMediumA.compute()['map']:.4f}")
+print(f"Medium Size mAP @ 0.3 (mAP@0.3): {map_metricMediumB.compute()['map']:.4f}")
+
+print(f"Large Size mAP @ 0.5 (mAP@0.5): {map_metricLargeA.compute()['map']:.4f}")
+print(f"Large Size mAP @ 0.3 (mAP@0.3): {map_metricLargeB.compute()['map']:.4f}")
+
 print(f"Global time: {elapsed_time:.4f} seconds")
