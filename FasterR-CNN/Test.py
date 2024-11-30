@@ -445,7 +445,7 @@ test_dir(test_image_dir)
 
 # End timer
 end_time = time.time()
-elapsed_time = end_time - start_time
+elapsed_time = round(end_time - start_time, 2)
 
 # Get final mAP
 map_metricSmallA.sync()
@@ -474,7 +474,9 @@ final_mapB = map_metricB.compute()
 # get precission and recall
 precision_recall = calculate_total_precision_recall()
 
-# Define ANSI color codes
+# Nice output
+
+# colour codes
 COLOR_SMALL = "\033[94m"  # Blue
 COLOR_MEDIUM = "\033[92m"  # Green
 COLOR_LARGE = "\033[93m"  # Yellow
@@ -482,49 +484,84 @@ COLOR_GLOBAL = "\033[91m"  # Red
 RESET = "\033[0m"  # Reset to default color
 BOLD = "\033[1m"  # Bold text
 
-# Benchmark Timing
+# Benchmark time or none if disabled
 if BENCHMARK:
-    benchmark_data = [[f"{BOLD}Global Average Benchmark Time (per image){RESET}", f"{getAvgTime(benchmark_times):.4f} seconds"]]
-    print(f"\n{BOLD}Benchmark Timing:{RESET}")
-    print(tabulate(benchmark_data, headers=[f"{BOLD}Metric{RESET}", f"{BOLD}Value{RESET}"], tablefmt="fancy_grid"))
+    avg_benchmark = str(round(getAvgTime(benchmark_times), 2) + " seconds")
+else:
+    avg_benchmark = "N/A"
 
+# total time and vram
+elapsed_time_data = [[f"{BOLD}Global Time{RESET}", f"{elapsed_time:} seconds"]]
 
-# Elapsed Time and vram
-elapsed_time_data = [[f"{BOLD}Global Time{RESET}", f"{elapsed_time:.4f} seconds"]]
-
-max_vram = torch.cuda.max_memory_allocated() / 1024 / 1024
+max_vram = round(torch.cuda.max_memory_allocated() / 1024 / 1024, 2)
 torch.cuda.reset_peak_memory_stats()  # reset
 
 elapsed_time_data = [
-    [f"{BOLD}Global Time{RESET}", f"{elapsed_time:.4f} seconds"],
-    [f"{BOLD}Max VRAM{RESET}", f"{max_vram:.2f} MB"]
+    [f"{BOLD}Global Time{RESET}", f"{elapsed_time:} seconds"],
+    [f"{BOLD}Max VRAM{RESET}", f"{max_vram:.2f} MB"],
+    [f"{BOLD}Benchmark Time (per image){RESET}", f"{avg_benchmark}"]
 ]
 
-print(f"\n{BOLD}Elapsed Time and VRAM Usage:{RESET}")
+print(f"\n{BOLD}Time and VRAM:{RESET}")
 print(tabulate(elapsed_time_data, headers=[f"{BOLD}Metric{RESET}", f"{BOLD}Value{RESET}"], tablefmt="fancy_grid"))
 
-# Precision and Recall Data
-precision_recall_data = [
-    [f"{COLOR_SMALL}Small{RESET}", f"{precision_recall['small']['precision']:.4f}", f"{precision_recall['small']['recall']:.4f}"],
-    [f"{COLOR_MEDIUM}Medium{RESET}", f"{precision_recall['medium']['precision']:.4f}", f"{precision_recall['medium']['recall']:.4f}"],
-    [f"{COLOR_LARGE}Large{RESET}", f"{precision_recall['large']['precision']:.4f}", f"{precision_recall['large']['recall']:.4f}"],
-    [f"{COLOR_GLOBAL}Global{RESET}", f"{precision_recall['global']['precision']:.4f}", f"{precision_recall['global']['recall']:.4f}"],
+
+# nice table
+combined_data = [
+    [f"{BOLD}Precision{RESET}",
+     f"{precision_recall['global']['precision'] * 100:.2f}%",
+     f"{precision_recall['small']['precision'] * 100:.2f}%",
+     f"{precision_recall['medium']['precision'] * 100:.2f}%",
+     f"{precision_recall['large']['precision'] * 100:.2f}%"
+     ],
+
+    [f"{BOLD}Recall{RESET}",
+     f"{precision_recall['global']['recall'] * 100:.2f}%",
+     f"{precision_recall['small']['recall'] * 100:.2f}%",
+     f"{precision_recall['medium']['recall'] * 100:.2f}%",
+     f"{precision_recall['large']['recall'] * 100:.2f}%"
+     ],
+
+    [f"{BOLD}mAP @ 0.5{RESET}",
+     f"{final_mapA['map'] * 100:.2f}%",
+     f"{final_mapSmallA['map'] * 100:.2f}%",
+     f"{final_mapMediumA['map'] * 100:.2f}%",
+     f"{final_mapLargeA['map'] * 100:.2f}%"
+     ],
+
+    [f"{BOLD}mAP @ 0.3{RESET}",
+    f"{final_mapB['map'] * 100:.2f}%",
+     f"{final_mapSmallB['map'] * 100:.2f}%",
+     f"{final_mapMediumB['map'] * 100:.2f}%",
+     f"{final_mapLargeB['map'] * 100:.2f}%"
+     ]
 ]
 
-print(f"{BOLD}Precision and Recall:{RESET}")
-print(tabulate(precision_recall_data, headers=[f"{BOLD}Size{RESET}", f"{BOLD}Precision{RESET}", f"{BOLD}Recall{RESET}"], tablefmt="fancy_grid"))
+# print table
+print(f"{BOLD}Precision, Recall, and mAP Values:{RESET}")
+print(tabulate(combined_data,
+               headers=[f"{BOLD}Metric{RESET}", f"{COLOR_GLOBAL}Global{RESET}", f"{COLOR_SMALL}Small{RESET}", f"{COLOR_MEDIUM}Medium{RESET}",
+                        f"{COLOR_LARGE}Large{RESET}"], tablefmt="fancy_grid"))
 
-# mAP Values
-map_data = [
-    [f"{COLOR_SMALL}Small mAP @ 0.5{RESET}", f"{final_mapSmallA['map']:.4f}"],
-    [f"{COLOR_SMALL}Small mAP @ 0.3{RESET}", f"{final_mapSmallB['map']:.4f}"],
-    [f"{COLOR_MEDIUM}Medium mAP @ 0.5{RESET}", f"{final_mapMediumA['map']:.4f}"],
-    [f"{COLOR_MEDIUM}Medium mAP @ 0.3{RESET}", f"{final_mapMediumB['map']:.4f}"],
-    [f"{COLOR_LARGE}Large mAP @ 0.5{RESET}", f"{final_mapLargeA['map']:.4f}"],
-    [f"{COLOR_LARGE}Large mAP @ 0.3{RESET}", f"{final_mapLargeB['map']:.4f}"],
-    [f"{COLOR_GLOBAL}Global mAP @ 0.5{RESET}", f"{final_mapA['map']:.4f}"],
-    [f"{COLOR_GLOBAL}Global mAP @ 0.3{RESET}", f"{final_mapB['map']:.4f}"],
+# Ugly output for copy and paste
+print("\nUngly output for excel sheet copy/paste")
+output_data = [
+    [
+        f"\"Precision: {precision_recall['global']['precision']*100:.2f}%\nRecall: {precision_recall['global']['recall']*100:.2f}%\nmAP @0.5: {final_mapA['map']*100:.2f}%\nmAP @0.3: {final_mapB['map']*100:.2f}%\"",
+        f"\"Precision: {precision_recall['small']['precision']*100:.2f}%\nRecall: {precision_recall['small']['recall']*100:.2f}%\nmAP @0.5: {final_mapSmallA['map']*100:.2f}%\nmAP @0.3: {final_mapSmallB['map']*100:.2f}%\"",
+        f"\"Precision: {precision_recall['medium']['precision']*100:.2f}%\nRecall: {precision_recall['medium']['recall']*100:.2f}%\nmAP @0.5: {final_mapMediumA['map']*100:.2f}%\nmAP @0.3: {final_mapMediumB['map']*100:.2f}%\"",
+        f"\"Precision: {precision_recall['large']['precision']*100:.2f}%\nRecall: {precision_recall['large']['recall']*100:.2f}%\nmAP @0.5: {final_mapLargeA['map']*100:.2f}%\nmAP @0.3: {final_mapLargeB['map']*100:.2f}%\"",
+        f"\"{max_vram}\"",
+        f"\"{elapsed_time}\"",
+        f"\"{avg_benchmark}\""
+    ]
 ]
 
-print(f"\n{BOLD}mAP Values:{RESET}")
-print(tabulate(map_data, headers=[f"{BOLD}Metric{RESET}", f"{BOLD}Value{RESET}"], tablefmt="fancy_grid"))
+# headers
+headers = ["Global", "Small", "Medium", "Large", "Max size in vram (MB)", "Total time (seconds)", "Benchmark (seconds)"]
+
+# all this was tryna get excel to paste properly
+output = "\t".join(headers) + "\n"
+for row in output_data:
+    output += "\t".join(row) + "\n"
+print(output.strip())
