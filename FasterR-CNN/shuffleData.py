@@ -30,22 +30,21 @@ train_split = 0.7
 val_split = 0.15
 test_split = 0.15
 
-
+# function deletes files from dir
 def clear_directory(directory):
-    """Clear files from destination"""
     if os.path.exists(directory):
         for file in os.listdir(directory):
             file_path = os.path.join(directory, file)
             os.remove(file_path)
 
+# function copies files to dir
 def copy_files(file_pairs, dest_image_dir, dest_annot_dir):
-    """copy files and annotations to destination"""
     for image_file, annot_file in file_pairs:
         shutil.copy(image_file, dest_image_dir)
         shutil.copy(annot_file, dest_annot_dir)
 
+# creating train/validate/test splits
 def train_test_split():
-    """Crate train test split"""
     # Clear dirs
     clear_directory(train_image)
     clear_directory(train_annot)

@@ -1,15 +1,15 @@
 import os
-
+# use this file to quickly change values
 
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 2,
-        "EPOCHS": 30,
+        "EPOCHS": 2,
         "PATIENCE": 4,
-        "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "baseTestLocal", # name of saved model
-        "plotJSON_fname": "baseTestLocal" # json filename
+        "dataset": "Small data", # "Small data" OR "Large data"
+        "model_name": "testCondensedB", # name of saved model
+        "plotJSON_fname": "testCondensedB" # json filename
     }
     # return value corresponding with val_to_get
     return train_values.get(val_to_get, None)
@@ -18,7 +18,7 @@ def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "baseTestLocal" # name of model to test
+        "model_name": "testCondensedB" # name of model to test
     }
 
     # return value corresponding with val_to_get
