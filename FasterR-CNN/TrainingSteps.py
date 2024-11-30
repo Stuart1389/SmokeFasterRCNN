@@ -1,3 +1,4 @@
+import os
 current_dir = os.getcwd()
 # add libr as source
 relative_path = os.path.join(current_dir, '..', 'Libr')
@@ -10,7 +11,6 @@ import matplotlib.pyplot as plt
 import torch
 import torchvision.models.detection.mask_rcnn
 import utils
-import os
 from coco_eval import CocoEvaluator
 from coco_utils import get_coco_api_from_dataset
 
