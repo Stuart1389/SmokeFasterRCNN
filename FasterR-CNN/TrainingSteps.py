@@ -1,11 +1,11 @@
 import os
+import sys
 current_dir = os.getcwd()
 # add libr as source
 relative_path = os.path.join(current_dir, '..', 'Libr')
 sys.path.append(relative_path)
 
 import math
-import sys
 import time
 import matplotlib.pyplot as plt
 import torch
