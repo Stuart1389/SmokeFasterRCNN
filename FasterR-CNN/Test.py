@@ -16,13 +16,6 @@ import time
 from SmokeModel import SmokeModel
 print(checkColab())
 
-"""
- TO DO!
- Individual metrics, show how much each image contirbuted to mAP
- more global test metrics, print total false positive, true positive, etc.
- Display only matplotlib of false positive or false negative, etc
- add checkpointing
-"""
 base_dir = checkColab()
 # Define the confidence threshold, only bbox with score above val will be used
 confidence_threshold = 0.5
