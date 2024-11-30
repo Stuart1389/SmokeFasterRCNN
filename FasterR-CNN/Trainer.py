@@ -133,7 +133,7 @@ class Trainer:
                 print(f"No improvement in validation loss for {self.epochs_no_improve} epochs. Current best loss is {self.best_val_loss:.4f}")
             # stop if loss doesnt improve
             if self.epochs_no_improve >= self.patience:
-                print(f"Early stopping due to no improvement. Best val loss: {self.best_val_loss} Train loss: {self.best_train_loss:.4f}")
+                print(f"Early stopping due to no improvement. Best val loss: {self.best_val_loss:.4f} Train loss: {self.best_train_loss:.4f}")
                 break
 
         # Plotting the mega graphs using lists of loss dicts from training
