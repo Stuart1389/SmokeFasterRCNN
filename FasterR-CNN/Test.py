@@ -12,6 +12,7 @@ from torchvision.io import read_image
 from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
 import torch.utils.benchmark as benchmark
 from torchvision.ops import box_iou
+from tabulate import tabulate
 import time
 from SmokeModel import SmokeModel
 print(checkColab())
@@ -447,31 +448,83 @@ end_time = time.time()
 elapsed_time = end_time - start_time
 
 # Get final mAP
-final_mapA = map_metricA.compute()
-final_mapB = map_metricB.compute()
+map_metricSmallA.sync()
+final_mapSmallA = map_metricSmallA.compute()
 
+map_metricSmallB.sync()
+final_mapSmallB = map_metricSmallB.compute()
+
+map_metricMediumA.sync()
+final_mapMediumA = map_metricMediumA.compute()
+
+map_metricMediumB.sync()
+final_mapMediumB = map_metricMediumB.compute()
+
+map_metricLargeA.sync()
+final_mapLargeA = map_metricLargeA.compute()
+
+map_metricLargeB.sync()
+final_mapLargeB = map_metricLargeB.compute()
+
+map_metricA.sync()
+final_mapA = map_metricA.compute()
+
+map_metricB.sync()
+final_mapB = map_metricB.compute()
 # get precission and recall
 precision_recall = calculate_total_precision_recall()
-print(f"Small Size Precision: {precision_recall['small']['precision']:.4f}, Recall: {precision_recall['small']['recall']:.4f}")
-print(f"Medium Size Precision: {precision_recall['medium']['precision']:.4f}, Recall: {precision_recall['medium']['recall']:.4f}")
-print(f"Large Size Precision: {precision_recall['large']['precision']:.4f}, Recall: {precision_recall['large']['recall']:.4f}")
-print(f"Global Precision: {precision_recall['global']['precision']:.4f}, Recall: {precision_recall['global']['recall']:.4f}")
 
-# Only benchmark if true, benchmarking does extra run through model for each pred
-if BENCHMARK == True:
-    print(f"Global Average benchmark Time (per image): {getAvgTime(benchmark_times):.4f} seconds")
+# Define ANSI color codes
+COLOR_SMALL = "\033[94m"  # Blue
+COLOR_MEDIUM = "\033[92m"  # Green
+COLOR_LARGE = "\033[93m"  # Yellow
+COLOR_GLOBAL = "\033[91m"  # Red
+RESET = "\033[0m"  # Reset to default color
+BOLD = "\033[1m"  # Bold text
 
-# Printing mAP values
-print(f"Global Mean Average Precision @ 0.5 (mAP@0.5): {final_mapA['map']:.4f}")
-print(f"Global Mean Average Precision @ 0.3 (mAP@0.3): {final_mapB['map']:.4f}")
+# Benchmark Timing
+if BENCHMARK:
+    benchmark_data = [[f"{BOLD}Global Average Benchmark Time (per image){RESET}", f"{getAvgTime(benchmark_times):.4f} seconds"]]
+    print(f"\n{BOLD}Benchmark Timing:{RESET}")
+    print(tabulate(benchmark_data, headers=[f"{BOLD}Metric{RESET}", f"{BOLD}Value{RESET}"], tablefmt="fancy_grid"))
 
-print(f"Small Size mAP @ 0.5 (mAP@0.5): {map_metricSmallA.compute()['map']:.4f}")
-print(f"Small Size mAP @ 0.3 (mAP@0.3): {map_metricSmallB.compute()['map']:.4f}")
 
-print(f"Medium Size mAP @ 0.5 (mAP@0.5): {map_metricMediumA.compute()['map']:.4f}")
-print(f"Medium Size mAP @ 0.3 (mAP@0.3): {map_metricMediumB.compute()['map']:.4f}")
+# Elapsed Time and vram
+elapsed_time_data = [[f"{BOLD}Global Time{RESET}", f"{elapsed_time:.4f} seconds"]]
 
-print(f"Large Size mAP @ 0.5 (mAP@0.5): {map_metricLargeA.compute()['map']:.4f}")
-print(f"Large Size mAP @ 0.3 (mAP@0.3): {map_metricLargeB.compute()['map']:.4f}")
+max_vram = torch.cuda.max_memory_allocated() / 1024 / 1024
+torch.cuda.reset_peak_memory_stats()  # reset
 
-print(f"Global time: {elapsed_time:.4f} seconds")
+elapsed_time_data = [
+    [f"{BOLD}Global Time{RESET}", f"{elapsed_time:.4f} seconds"],
+    [f"{BOLD}Max VRAM{RESET}", f"{max_vram:.2f} MB"]
+]
+
+print(f"\n{BOLD}Elapsed Time and VRAM Usage:{RESET}")
+print(tabulate(elapsed_time_data, headers=[f"{BOLD}Metric{RESET}", f"{BOLD}Value{RESET}"], tablefmt="fancy_grid"))
+
+# Precision and Recall Data
+precision_recall_data = [
+    [f"{COLOR_SMALL}Small{RESET}", f"{precision_recall['small']['precision']:.4f}", f"{precision_recall['small']['recall']:.4f}"],
+    [f"{COLOR_MEDIUM}Medium{RESET}", f"{precision_recall['medium']['precision']:.4f}", f"{precision_recall['medium']['recall']:.4f}"],
+    [f"{COLOR_LARGE}Large{RESET}", f"{precision_recall['large']['precision']:.4f}", f"{precision_recall['large']['recall']:.4f}"],
+    [f"{COLOR_GLOBAL}Global{RESET}", f"{precision_recall['global']['precision']:.4f}", f"{precision_recall['global']['recall']:.4f}"],
+]
+
+print(f"{BOLD}Precision and Recall:{RESET}")
+print(tabulate(precision_recall_data, headers=[f"{BOLD}Size{RESET}", f"{BOLD}Precision{RESET}", f"{BOLD}Recall{RESET}"], tablefmt="fancy_grid"))
+
+# mAP Values
+map_data = [
+    [f"{COLOR_SMALL}Small mAP @ 0.5{RESET}", f"{final_mapSmallA['map']:.4f}"],
+    [f"{COLOR_SMALL}Small mAP @ 0.3{RESET}", f"{final_mapSmallB['map']:.4f}"],
+    [f"{COLOR_MEDIUM}Medium mAP @ 0.5{RESET}", f"{final_mapMediumA['map']:.4f}"],
+    [f"{COLOR_MEDIUM}Medium mAP @ 0.3{RESET}", f"{final_mapMediumB['map']:.4f}"],
+    [f"{COLOR_LARGE}Large mAP @ 0.5{RESET}", f"{final_mapLargeA['map']:.4f}"],
+    [f"{COLOR_LARGE}Large mAP @ 0.3{RESET}", f"{final_mapLargeB['map']:.4f}"],
+    [f"{COLOR_GLOBAL}Global mAP @ 0.5{RESET}", f"{final_mapA['map']:.4f}"],
+    [f"{COLOR_GLOBAL}Global mAP @ 0.3{RESET}", f"{final_mapB['map']:.4f}"],
+]
+
+print(f"\n{BOLD}mAP Values:{RESET}")
+print(tabulate(map_data, headers=[f"{BOLD}Metric{RESET}", f"{BOLD}Value{RESET}"], tablefmt="fancy_grid"))
