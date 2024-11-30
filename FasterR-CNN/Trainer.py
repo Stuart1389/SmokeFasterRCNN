@@ -15,6 +15,12 @@ from Get_Values import checkColab, setTrainValues
 from SmokeModel import SmokeModel
 from datetime import timedelta
 
+current_dir = os.getcwd()
+# add libr as source
+relative_path = os.path.join(current_dir, '..', 'Libr')
+sys.path.append(relative_path)
+
+
 class Trainer:
     # Constructor
     def __init__(self, model, train_dataloader, validate_dataloader, device, plot_train_loss=True):
