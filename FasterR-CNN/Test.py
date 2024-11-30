@@ -59,9 +59,9 @@ map_metricLargeB = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
 # create global array for benchmark times
 benchmark_times = []
 # Creating counters for precision/recall
-total_tp = 0
-total_fp = 0
-total_fn = 0
+total_tp = {"small": 0, "medium": 0, "large": 0, "global": 0}
+total_fp = {"small": 0, "medium": 0, "large": 0, "global": 0}
+total_fn = {"small": 0, "medium": 0, "large": 0, "global": 0}
 
 # transform to convert image to tensor before going through model
 def get_transform():
@@ -209,10 +209,11 @@ def predictBbox(image_path, filename):
         gt_size = gt_size
     )
     # Accumulate TP, FP, FN counts for the total
-    total_tp += metrics["TP"]
-    total_fp += metrics["FP"]
-    total_fn += metrics["FN"]
     print(f"{metrics}")
+    for size in ["small", "medium", "large", "global"]:
+        total_tp[size] += metrics["TP"][size]
+        total_fp[size] += metrics["FP"][size]
+        total_fn[size] += metrics["FN"][size]
 
     if gt_size == "small":
         map_metricSmallA.update([predicted], [ground_truth])
@@ -251,7 +252,9 @@ def getImageVal(image_path, pred_score, pred_box, ground_truth, confidence_thres
             filtered_scores.append(score)
 
     # Initialize counters
-    tp_count, fp_count, fn_count, tn_count = 0, 0, 0, 0
+    tp_count = {'small': 0, 'medium': 0, 'large': 0, 'global': 0}
+    fp_count = {'small': 0, 'medium': 0, 'large': 0, 'global': 0}
+    fn_count = {'small': 0, 'medium': 0, 'large': 0, 'global': 0}
 
     # Extract ground truth boxes
     ground_truth_boxes = ground_truth['boxes']
@@ -265,16 +268,27 @@ def getImageVal(image_path, pred_score, pred_box, ground_truth, confidence_thres
         for i, pred_box in enumerate(predicted_boxes):
             max_iou, max_idx = iou_matrix[i].max(0)
             if max_iou >= ap_value:
-                tp_count += 1
+                tp_count['global'] += 1
+                if gt_size != 'none':  # Update size-specific counter if not 'none'
+                    tp_count[gt_size] += 1
                 matched_gts.add(max_idx.item())
             else:
-                fp_count += 1
+                fp_count['global'] += 1
+                if gt_size != 'none':  # Update size-specific counter if not 'none'
+                    fp_count[gt_size] += 1
 
         # Ground truth boxes not matched are FN
-        fn_count = len(ground_truth_boxes) - len(matched_gts)
+        fn_count['global'] = len(ground_truth_boxes) - len(matched_gts)
+        if gt_size != 'none':  # Update size-specific counter if not 'none'
+            fn_count[gt_size] = len(ground_truth_boxes) - len(matched_gts)
     else:
-        fp_count = len(predicted_boxes)
-        fn_count = len(ground_truth_boxes)
+        # No predictions
+        fp_count['global'] = len(predicted_boxes)
+        if gt_size != 'none':  # Update size-specific counter if not 'none'
+            fp_count[gt_size] = len(predicted_boxes)
+        fn_count['global'] = len(ground_truth_boxes)
+        if gt_size != 'none':  # Update size-specific counter if not 'none'
+            fn_count[gt_size] = len(ground_truth_boxes)
 
     # Return a dictionary with results
     return {
@@ -329,11 +343,26 @@ def getAvgTime(benchmark_times):
 
 # function to get precission and recall
 def calculate_total_precision_recall():
-    total_precision = total_tp / (total_tp + total_fp) if (total_tp + total_fp) > 0 else 0
-    total_recall = total_tp / (total_tp + total_fn) if (total_tp + total_fn) > 0 else 0
+    # Precision and Recall for each size category
+    precision_recall = {
+        "small": {},
+        "medium": {},
+        "large": {},
+        "global": {}
+    }
 
-    return total_precision, total_recall
+    for size in ["small", "medium", "large", "global"]:
+        tp = total_tp.get(size, 0)
+        fp = total_fp.get(size, 0)
+        fn = total_fn.get(size, 0)
 
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+
+        precision_recall[size]["precision"] = precision
+        precision_recall[size]["recall"] = recall
+
+    return precision_recall
 
 def get_ground_truth_size(test_image_dir, test_annot_dir):
     all_areas = []
@@ -422,9 +451,11 @@ final_mapA = map_metricA.compute()
 final_mapB = map_metricB.compute()
 
 # get precission and recall
-total_precision, total_recall = calculate_total_precision_recall()
-print(f"Global Precision: {total_precision:.4f}")
-print(f"Global Recall: {total_recall:.4f}")
+precision_recall = calculate_total_precision_recall()
+print(f"Small Size Precision: {precision_recall['small']['precision']:.4f}, Recall: {precision_recall['small']['recall']:.4f}")
+print(f"Medium Size Precision: {precision_recall['medium']['precision']:.4f}, Recall: {precision_recall['medium']['recall']:.4f}")
+print(f"Large Size Precision: {precision_recall['large']['precision']:.4f}, Recall: {precision_recall['large']['recall']:.4f}")
+print(f"Global Precision: {precision_recall['global']['precision']:.4f}, Recall: {precision_recall['global']['recall']:.4f}")
 
 # Only benchmark if true, benchmarking does extra run through model for each pred
 if BENCHMARK == True:
