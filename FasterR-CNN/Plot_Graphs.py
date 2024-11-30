@@ -70,7 +70,8 @@ def savePlot(plot):
     PLOT_PATH.mkdir(parents=True, exist_ok=True)  # Make parent dir if it doesn't exist
     # Setting name using current date and time
     CURRENTDATEANDTIME = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')  # Format as YYYY-MM-DD_HH-MM-SS
-    PLOT_SAVE_PATH = PLOT_PATH / f"lossB_plot_{CURRENTDATEANDTIME}.png"
+    filename = setTrainValues("plotJSON_fname")
+    PLOT_SAVE_PATH = PLOT_PATH / (filename + f"{CURRENTDATEANDTIME}.png") # just name it same as json who cares
 
     # Saving plot to path
     print(f"Saving the plot to: {PLOT_SAVE_PATH}")

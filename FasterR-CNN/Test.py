@@ -1,5 +1,4 @@
 ### Testing model predictions
-import Model
 import torch
 import xml.etree.ElementTree as ET
 from PIL import Image, ImageDraw
@@ -14,6 +13,7 @@ from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
 import torch.utils.benchmark as benchmark
 from torchvision.ops import box_iou
 import time
+from SmokeModel import SmokeModel
 print(checkColab())
 
 """
@@ -31,7 +31,7 @@ draw_highest_only = False
 # plot images
 plot_image = False
 # Whether to use torch.utils.benchmark
-BENCHMARK = False
+BENCHMARK = True
 # use small dataset
 small_data = False
 ap_value = 0.5 # percentage of overlap necessary to count a bbox prediction as true positive
@@ -40,7 +40,10 @@ draw_no_true_positive_only = False
 
 # device agnostic code
 device = "cuda" if torch.cuda.is_available() else "cpu"
-model = Model.getModel(True) # get model, true used to tell function we want to test
+
+smoke_model = SmokeModel() # create instance of smoke model class
+
+model = smoke_model.get_model(True) # get model, true used to tell function we are testing
 
 # Test directories
 test_image_dir = Path(f"{base_dir}/Dataset/") / setTestValues("dataset") / "Test/images"
@@ -316,12 +319,12 @@ final_mapB = map_metricB.compute()
 
 # get precission and recall
 total_precision, total_recall = calculate_total_precision_recall()
-print(f"Total Precision: {total_precision:.4f}")
-print(f"Total Recall: {total_recall:.4f}")
+print(f"Global Precision: {total_precision:.4f}")
+print(f"Global Recall: {total_recall:.4f}")
 
 # Only benchmark if true, benchmarking does extra run through model for each pred
 if BENCHMARK == True:
-    print(f"Average benchmark time (per image): {getAvgTime(benchmark_times):.4f} seconds")
-print(f"Mean Average Precision @ 0.5 (mAP@0.5): {final_mapA['map']:.4f}")
-print(f"Mean Average Precision @ 0.3 (mAP@0.3): {final_mapB['map']:.4f}")
-print(f"Elapsed time: {elapsed_time:.4f} seconds")
+    print(f"Global Average benchmark Time (per image): {getAvgTime(benchmark_times):.4f} seconds")
+print(f"Global Mean Average Precision @ 0.5 (mAP@0.5): {final_mapA['map']:.4f}")
+print(f"Global Mean Average Precision @ 0.3 (mAP@0.3): {final_mapB['map']:.4f}")
+print(f"Global time: {elapsed_time:.4f} seconds")
