@@ -5,9 +5,14 @@ import matplotlib.pyplot as plt
 import torch
 import torchvision.models.detection.mask_rcnn
 import utils
+import os
 from coco_eval import CocoEvaluator
 from coco_utils import get_coco_api_from_dataset
 
+current_dir = os.getcwd()
+# add libr as source
+relative_path = os.path.join(current_dir, '..', 'Libr')
+sys.path.append(relative_path)
 
 def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, scaler=None):
     iteration_loss_list = [] # loss graph iteration instead of epoch
