@@ -24,17 +24,18 @@ class Tester:
 
         # Initialising instanced variables
         self.base_dir = checkColab()
+        # scores over this will be counted towards mAP/precission/recall and will be displayed if plot
         self.confidence_threshold = 0.5
-        self.draw_highest_only = False
-        self.plot_image = False
-        self.benchmark = False
-        self.ap_value = 0.5
-        self.draw_no_true_positive_only = False
+        self.draw_highest_only = False # only draw bbox with highest score on plot
+        self.plot_image = False # plot images
+        self.benchmark = False # measure how long it takes to make average prediction
+        self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
+        self.draw_no_true_positive_only = False # only plot images with no true positives
 
-        # device
+        # device agnostic code
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        # Initialize model
+        # initialise model
         smoke_model = SmokeModel()
         self.model = smoke_model.get_model(True)
 
@@ -258,7 +259,7 @@ class Tester:
 
     # !!GETTING GROUND TRUTH AND MAP VALUES AND PRECISION/RECALL
     # initialising mAP metrics
-    def initialise_metrics(self):
+    def initialise_metrics(self): # could chnage this but meh
         self.map_metricA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])
         self.map_metricB = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
         self.map_metricSmallA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])
