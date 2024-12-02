@@ -1,22 +1,22 @@
 ### Testing model predictions
-import torch
-import xml.etree.ElementTree as ET
-from PIL import Image, ImageDraw
-from pathlib import Path
-from Get_Values import checkColab, setTestValues
 import os
-from torchmetrics.detection.mean_ap import MeanAveragePrecision
+import time
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
 import matplotlib
 import matplotlib.pyplot as plt
-from torchvision.io import read_image
-from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
-import torch.utils.benchmark as benchmark
-from torchvision.ops import box_iou
-from tabulate import tabulate
-import time
-from SmokeModel import SmokeModel
 import torch
+import torch.utils.benchmark as benchmark
+import concurrent.futures
+from Get_Values import checkColab, setTestValues
+from SmokeModel import SmokeModel
+from tabulate import tabulate
+from torchmetrics.detection.mean_ap import MeanAveragePrecision
+from torchvision.ops import box_iou
 from torchvision.transforms import v2 as T
+from torchvision.utils import draw_bounding_boxes
+
 
 class Tester:
     #Constructor
@@ -73,7 +73,7 @@ class Tester:
         self.start_time = time.time()
         # Walks through dir_path, for each file call predictBbox and pass file path
         for batch, (image_tensor, filename) in enumerate(test_dataloader):
-            self.predictBbox(image_tensor, filename)
+            self.get_predictions(image_tensor, filename)
         self.get_results()
 
     # Transform images for model
@@ -84,46 +84,58 @@ class Tester:
         return T.Compose(transforms)
 
     # function to calculate the average time to make a prediction
-    def getAvgTime(self, benchmark_times):
+    def get_avg_time(self, benchmark_times):
         total_time = sum(benchmark_times)  # get sum
         avg_time = total_time / len(benchmark_times)  # get average
         return avg_time
 
     # !!GETTING PREDICTION!!
-    def predictBbox(self, image_tensor, filename):
-        global total_tp, total_fp, total_fn  # this makes me feel sick
+    def get_predictions(self, image_tensor, filename):
         # getting predictions
         self.model.to(self.device)  # put model on cpu or gpu
         # set model to evaluation mode
         self.model.eval()
-        #print("image:", image, "image_tensor", image_tensor, "filename", filename)
-        filename = filename[0] # tuples
-        x = image_tensor[0].to(self.device)
-        print("x.shape before", x.shape)
-        # print(x)
-        # 3 colour channels and move to device (pretty sure it already is)
-        #print(type(x))
-        print("x.shape after", x.shape)
+        # print("image:", image, "image_tensor", image_tensor, "filename", filename)
+        filenames = list(files for files in filename)
+        image_tensors = list(tensor.to(self.device) for tensor in image_tensor)
 
-        if self.benchmark == True:
-            # start torch.utils.benchmark
-            # will run the below code a second time to measure performance
-            timer = benchmark.Timer(
-                stmt="model([x, ])",  # specify code to be benchmarked
-                globals={"x": x, "model": self.model}  # pass x and model to be used by benchmark
-            )
-
-            # record time taken
-            time_taken = timer.timeit(5)  # run code n times, gives average = time taken / n
-            print(f"Prediction time taken: {time_taken.mean:.4f} seconds")
-            self.benchmark_times.append(time_taken.mean)
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
 
         with torch.no_grad():
-            # Create predictions
-            predictions, _ = self.model([x, ])  # val loss
-            pred = predictions[0]
+            # benchmarking
+            if self.benchmark == True:
+                # start torch.utils.benchmark
+                # will run the below code a second time to measure performance
+                timer = benchmark.Timer(
+                    stmt="model(image_tensors)",  # specify code to be benchmarked
+                    globals={"image_tensors": image_tensors, "model": self.model}  # pass x and model to be used by benchmark
+                )
 
+                # record time taken
+                time_taken = timer.timeit(3) # run code n times, gives average = time taken / n
+                time_taken_ind = time_taken.mean / setTestValues("BATCH_SIZE")
+                print(f"Prediction time taken: {time_taken_ind:.4f} seconds")
+                self.benchmark_times.append(time_taken_ind)
+
+            outputs, _ = self.model(image_tensors)
+            temp_index = 1
+            # parallel processing after getting model predictions, might aswell
+            futures = []
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                for image_tensor, prediction, filename in zip(image_tensor, outputs, filenames):
+                    print(f"{temp_index}! - pred:", prediction, filename)
+                    temp_index += 1
+                    futures.append(executor.submit(self.process_predictions, image_tensor, prediction, filename))
+                    #self.process_predictions(image_tensor, prediction, filename)
+            print("outputs", outputs)
+            concurrent.futures.wait(futures)
+
+    def process_predictions(self, image_tensor, predictions, filename):
+        global total_tp, total_fp, total_fn
+        pred = predictions
         # Normalize the image
+        x = image_tensor
         image = (255.0 * (x - x.min()) / (x.max() - x.min())).to(torch.uint8)
         # Filter predictions based on confidence score
         filtered_labels = []
@@ -143,9 +155,6 @@ class Tester:
         annotation_path = os.path.join(self.test_annot_dir, f"{image_id}.xml")
         ground_truth = self.parse_xml(annotation_path)
 
-        # get image size
-        image_size = predictions[0].get("image_size", [image.shape[1], image.shape[2]])
-
         # format predictions for mAP calculation
         predicted = {
             "boxes": torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.float),
@@ -155,17 +164,16 @@ class Tester:
         }
 
         # getting ground truth size (small, medium, large)
+        # filename stored with format in dict, might change dict later
         gt_size = self.image_gt_size.get(filename + ".jpeg")
         print(gt_size)
 
         # getting tp, tn, fp, fn for each image
-        metrics = self.getImageVal(
-            image_path=filename,
+        metrics = self.get_image_val(
             pred_score=predicted["scores"].to("cpu"),  # cpu or cry
             pred_box=predicted["boxes"].to("cpu"),
             ground_truth=ground_truth,
             confidence_threshold=self.confidence_threshold,
-            image_size=image_size,
             ap_value=self.ap_value,
             gt_size=gt_size
         )
@@ -188,20 +196,20 @@ class Tester:
             self.map_metricLargeB.update([predicted], [ground_truth])
 
         # mAP update
-        self.map_metricA.update([predicted], [ground_truth])
-        self.map_metricB.update([predicted], [ground_truth])
+        self.map_metricGlobalA.update([predicted], [ground_truth])
+        self.map_metricGlobalB.update([predicted], [ground_truth])
 
         if (self.draw_no_true_positive_only):
             if (metrics["TP"] == 0):
                 # call function to display image with overlayed bboxes
-                self.display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth)
+                self.display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics)
         else:
             # call function to display image with overlayed bboxes
-            self.display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth)
+            self.display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics)
 
     # function for each image gets the number of true positive, false positive, etc
-    def getImageVal(self, image_path, pred_score, pred_box, ground_truth, confidence_threshold, image_size, ap_value,
-                    gt_size):
+    def get_image_val(self, pred_score, pred_box, ground_truth, confidence_threshold, ap_value,
+                      gt_size):
         # Filter predictions by confidence score
         filtered_boxes = []
         filtered_scores = []
@@ -233,7 +241,7 @@ class Tester:
                     matched_gts.add(max_idx.item())
                 else:
                     fp_count['global'] += 1
-                    if gt_size != 'none':  # Update size counter if not none'
+                    if gt_size != 'none':  # Update size counter if not none
                         fp_count[gt_size] += 1
 
             # Ground truth boxes not matched are FN
@@ -251,7 +259,6 @@ class Tester:
 
         # Return dictionary with results
         return {
-            "image": image_path,
             "TP": tp_count,
             "FP": fp_count,
             "FN": fn_count
@@ -260,16 +267,18 @@ class Tester:
 
 
     # !!GETTING GROUND TRUTH AND MAP VALUES AND PRECISION/RECALL
-    # initialising mAP metrics
-    def initialise_metrics(self): # could chnage this but meh
-        self.map_metricA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])
-        self.map_metricB = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
+    # function initialising mAP metrics
+    def initialise_metrics(self):
+        # kind of ugly but changing this would just make things way more complicated for no gain
+        self.map_metricGlobalA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])
+        self.map_metricGlobalB = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
         self.map_metricSmallA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])
         self.map_metricSmallB = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
         self.map_metricMediumA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])
         self.map_metricMediumB = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
         self.map_metricLargeA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])
         self.map_metricLargeB = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
+        self.map_metricLocal = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
 
     # Need ground truths to calculate mAP
     # Function parse xml for ground truths (copied from Dataset class)
@@ -347,10 +356,10 @@ class Tester:
         categorized_images_dict = {}
 
         for root, dirs, files in os.walk(test_image_dir):
-            for file_name in files:
-                if file_name.endswith(".jpeg"): # dont really need but whatever
+            for filename in files:
+                if filename.endswith(".jpeg"): # dont really need but whatever
                     # Get corresponding XML annotation file
-                    get_annotation = os.path.join(test_annot_dir, file_name.replace(".jpeg", ".xml")) # image and annot have same names
+                    get_annotation = os.path.join(test_annot_dir, filename.replace(".jpeg", ".xml")) # image and annot have same names
 
                     # Parse XML to get areas (ground truth)
                     ground_truth_area = self.parse_xml(get_annotation, True)
@@ -370,7 +379,7 @@ class Tester:
                         size_category = "none"
 
                     # Store the size category in dictionary
-                    categorized_images_dict[file_name] = size_category
+                    categorized_images_dict[filename] = size_category
 
         # Count occurrences of each size
         size_counts = {"small": 0, "medium": 0, "large": 0, "none": 0}
@@ -411,7 +420,7 @@ class Tester:
 
 
     # !!VISUALISATIONS!!
-    def display_prediction(self, filtered_labels, filtered_boxes, filtered_scores, image, ground_truth):
+    def display_prediction(self, filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics):
         if (self.plot_image == False):
             matplotlib.use('Agg')
         # !!! DISPLAYING PREDICTIONS THROUGH MATPLOT LIB !!!
@@ -438,6 +447,8 @@ class Tester:
         # draw ground truth bbox over predicted bbox over image
         output_image = draw_bounding_boxes(output_image, torch.stack(ground_truth_boxes),
                                            ["Ground Truth"] * len(ground_truth_boxes), colors="blue")
+
+        # registry increased ide.rest.api.request.per.minute to 100
         if (self.plot_image):
             time.sleep(2)
         plt.figure(figsize=(12, 12))
@@ -448,7 +459,7 @@ class Tester:
     # starting chain to display results
     def get_results(self):
         if self.benchmark:
-            avg_benchmark = str(round(self.getAvgTime(self.benchmark_times), 2)) + " seconds"
+            avg_benchmark = str(round(self.get_avg_time(self.benchmark_times), 2)) + " seconds"
         else:
             avg_benchmark = "N/A"
 
@@ -469,10 +480,10 @@ class Tester:
         self.final_mapLargeA = self.map_metricLargeA.compute()
         self.map_metricLargeB.sync()
         self.final_mapLargeB = self.map_metricLargeB.compute()
-        self.map_metricA.sync()
-        self.final_mapA = self.map_metricA.compute()
-        self.map_metricB.sync()
-        self.final_mapB = self.map_metricB.compute()
+        self.map_metricGlobalA.sync()
+        self.final_mapA = self.map_metricGlobalA.compute()
+        self.map_metricGlobalB.sync()
+        self.final_mapB = self.map_metricGlobalB.compute()
         # get precission and recall
         precision_recall = self.calculate_total_precision_recall()
         # get max vram

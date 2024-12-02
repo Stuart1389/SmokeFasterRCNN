@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from torchvision.transforms import transforms
 from Get_Values import checkColab, setTrainValues
 from torch.utils.data import Dataset
+from multiprocessing import Pool
 
 
 ### !!IMAGE TRANSFORMATIONS!!
@@ -47,6 +48,9 @@ class smokeDataset(torch.utils.data.Dataset):
     self.annotations = list(Path(str(main_dir) + "/annotations/xmls").glob("*.xml")) # set to list of all xml files
     self.transform = transform
     self.testing = testing
+
+
+
     # Constructor END
 
   def parse_xml(self, annotation_path, testing = False):
@@ -144,8 +148,8 @@ class smokeDataset(torch.utils.data.Dataset):
     if (self.transform and self.testing):
         transformed = self.transform(image=image)
         image_tensor = transformed['image']
-        print(image.dtype)
-        print(image.shape)
+        #print(image.dtype)
+        #print(image.shape)
         return image_tensor, filename
 
 

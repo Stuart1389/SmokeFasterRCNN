@@ -42,13 +42,15 @@ class SmokeModel:
 
         return self.model, in_features, self.model.roi_heads.box_predictor
 
-    # function to get train, validate and test dataloaders
+    # functions to get train, validate and test dataloaders
     def get_dataloader(self):
         num_workers = os.cpu_count() # threads available
         batch_size = setTrainValues("BATCH_SIZE")
         test_batch_size = setTestValues("BATCH_SIZE")
         dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTrainValues("dataset"))
         test_dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTestValues("dataset"))
+
+        # splitting up dataloaders to only get them as needed
 
         # Load datasets
         train_dir = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_train_validate)
@@ -63,6 +65,7 @@ class SmokeModel:
             collate_fn=collate_fn,
             shuffle=True # only shuffle while training
         )
+
         self.validate_dataloader = DataLoader(
             dataset=val_dir,
             batch_size=batch_size,
@@ -70,6 +73,7 @@ class SmokeModel:
             collate_fn=collate_fn,
             shuffle=False
         )
+
         self.test_dataloader = DataLoader(
             dataset=test_dir,
             batch_size=test_batch_size,
