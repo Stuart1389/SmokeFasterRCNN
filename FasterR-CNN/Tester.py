@@ -133,16 +133,15 @@ class Tester:
 
     def process_predictions(self, image_tensor, predictions, filename):
         global total_tp, total_fp, total_fn
-        pred = predictions
         # Normalize the image
-        x = image_tensor
-        image = (255.0 * (x - x.min()) / (x.max() - x.min())).to(torch.uint8)
+        #x = image_tensor
+        image = (255.0 * (image_tensor - image_tensor.min()) / (image_tensor.max() - image_tensor.min())).to(torch.uint8)
         # Filter predictions based on confidence score
         filtered_labels = []
         filtered_boxes = []
         filtered_scores = []
         # Get prediction score, class and bbox if above threshold
-        for label, score, box in zip(pred["labels"], pred["scores"], pred["boxes"]):
+        for label, score, box in zip(predictions["labels"], predictions["scores"], predictions["boxes"]):
             if score >= self.confidence_threshold:
                 filtered_labels.append(f"Smoke: {score:.3f}")
                 filtered_boxes.append(box.long())
