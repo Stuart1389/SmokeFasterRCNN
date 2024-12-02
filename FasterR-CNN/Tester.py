@@ -39,6 +39,9 @@ class Tester:
         smoke_model = SmokeModel()
         self.model = smoke_model.get_model(True)
 
+        # get test dataloader
+        _, _, self.test_dataloader = smoke_model.get_dataloader()
+
         # Paths
         self.test_image_dir = Path(f"{self.base_dir}/Dataset/") / setTestValues("dataset") / "Test/images"
         self.test_annot_dir = Path(f"{self.base_dir}/Dataset/") / setTestValues("dataset") / "Test/annotations/xmls"
@@ -59,21 +62,18 @@ class Tester:
 
         # dictionary containing ground truth sizes
         self.image_gt_size = self.get_ground_truth_size(self.test_image_dir, self.test_annot_dir)
+        #print(self.image_gt_size)
 
 
     # !!START TESTING CHAIN!!
     # function starts testing images
     def test_dir(self):
+        test_dataloader = self.test_dataloader # change to dataloader
         # Start timer
         self.start_time = time.time()
         # Walks through dir_path, for each file call predictBbox and pass file path
-        for dirpath, dirnames, filenames in os.walk(self.test_image_dir):
-            print(f"There are {len(dirnames)} directories and {len(filenames)} images in '{self.test_image_dir}'.")
-            # every image
-            for filename in filenames:
-                image_path = os.path.join(self.test_image_dir, filename)
-                print(image_path)
-                self.predictBbox(image_path, filename)
+        for batch, (image_tensor, filename) in enumerate(test_dataloader):
+            self.predictBbox(image_tensor, filename)
         self.get_results()
 
     # Transform images for model
@@ -90,19 +90,20 @@ class Tester:
         return avg_time
 
     # !!GETTING PREDICTION!!
-    def predictBbox(self, image_path, filename):
+    def predictBbox(self, image_tensor, filename):
         global total_tp, total_fp, total_fn  # this makes me feel sick
         # getting predictions
-        image = read_image(image_path)  # get image
-        eval_transform = self.get_transform()
         self.model.to(self.device)  # put model on cpu or gpu
         # set model to evaluation mode
         self.model.eval()
-
-        x = eval_transform(image)
+        #print("image:", image, "image_tensor", image_tensor, "filename", filename)
+        filename = filename[0] # tuples
+        x = image_tensor[0].to(self.device)
+        print("x.shape before", x.shape)
         # print(x)
-        # convert RGBA -> RGB and move to device
-        x = x[:3, ...].to(self.device)
+        # 3 colour channels and move to device (pretty sure it already is)
+        #print(type(x))
+        print("x.shape after", x.shape)
 
         if self.benchmark == True:
             # start torch.utils.benchmark
@@ -123,9 +124,7 @@ class Tester:
             pred = predictions[0]
 
         # Normalize the image
-        image = (255.0 * (image - image.min()) / (image.max() - image.min())).to(torch.uint8)
-        image = image[:3, ...]
-
+        image = (255.0 * (x - x.min()) / (x.max() - x.min())).to(torch.uint8)
         # Filter predictions based on confidence score
         filtered_labels = []
         filtered_boxes = []
@@ -138,7 +137,9 @@ class Tester:
                 filtered_scores.append(score)
 
         # annotation path for ground truth using test_annot_dir
-        image_id = os.path.splitext(os.path.basename(image_path))[0]
+        # CHANGE image ID to filename
+        image_id = filename # temp
+        print(image_id)
         annotation_path = os.path.join(self.test_annot_dir, f"{image_id}.xml")
         ground_truth = self.parse_xml(annotation_path)
 
@@ -154,11 +155,12 @@ class Tester:
         }
 
         # getting ground truth size (small, medium, large)
-        gt_size = self.image_gt_size.get(filename)
+        gt_size = self.image_gt_size.get(filename + ".jpeg")
+        print(gt_size)
 
         # getting tp, tn, fp, fn for each image
         metrics = self.getImageVal(
-            image_path=image_path,
+            image_path=filename,
             pred_score=predicted["scores"].to("cpu"),  # cpu or cry
             pred_box=predicted["boxes"].to("cpu"),
             ground_truth=ground_truth,

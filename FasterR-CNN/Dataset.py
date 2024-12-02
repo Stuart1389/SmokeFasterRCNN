@@ -17,7 +17,8 @@ from torch.utils.data import Dataset
 ### !!IMAGE TRANSFORMATIONS!!
 # Albumentations library, can do transforms for image and bbox as one
 # pascal_voc is format (xmin, ymin, xmax, ymax) we're using for bounding box coords
-transform_t = A.Compose([
+transform_train_validate = A.Compose([
+    #A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
     #A.PadIfNeeded(min_height=320, min_width=240, border_mode=cv2.BORDER_CONSTANT), # prevents shape mismatch from image being cut off
     #A.PadIfNeeded(min_height=320, min_width=240), # doesnt work currently, need to fix
     #A.RandomCrop(width= round(320), height= round(240)), # needs padding or will throw error
@@ -25,6 +26,11 @@ transform_t = A.Compose([
     #A.RandomBrightnessContrast(p=0.2),
     ToTensorV2()
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))
+
+transform_testing = A.Compose([
+    #A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
+    ToTensorV2()
+])
 
 
 # !!CREATING DATASET!!
@@ -34,26 +40,23 @@ dataset_dir = Path(f"{base_dir}/Dataset/" + setTrainValues("dataset"))
 
 class smokeDataset(torch.utils.data.Dataset):
   # Constructor, setting instanced variables
-  def __init__(self,
-               main_dir: str,
-               transform=None,
-               tensor_transform=None):
+  def __init__(self, main_dir: str, transform=None, testing = False):
 
     self.main_dir = main_dir
     self.images = list(Path(str(main_dir) + "/images/").glob("*.jpeg")) # set to list of all images
     self.annotations = list(Path(str(main_dir) + "/annotations/xmls").glob("*.xml")) # set to list of all xml files
     self.transform = transform
-    self.tensor_transform = tensor_transform # !!This doesnt exist atm
-
+    self.testing = testing
     # Constructor END
 
-  def parse_xml(self, annotation_path):
+  def parse_xml(self, annotation_path, testing = False):
           # Parsing xml files for each image to find bbox
           tree = ET.parse(annotation_path)
           root = tree.getroot()
 
           # getting bounding boxes from xml file
           boxes = []
+          areas = []
           for obj in root.findall("object"):
               xml_box = obj.find("bndbox")
               xmin = float(xml_box.find("xmin").text)
@@ -78,8 +81,7 @@ class smokeDataset(torch.utils.data.Dataset):
           #print(f"Boxes: {boxes}")
           #print(f"labels: {label}")
           #print(f"Labels: {labels}, Labels_int {labels_int}")
-          return boxes, labels, labels_int#, torch.tensor(labels) # Return so we can use with __getitem__
-          # Parsing END
+          return boxes, labels, labels_int
 
 
   def __len__(self):
@@ -89,6 +91,7 @@ class smokeDataset(torch.utils.data.Dataset):
   def __getitem__(self, idx):
     # Return items from dataset
     img_path = self.images[idx] # return image at index
+    filename = img_path.stem # get filename
     annotation_path = self.annotations[idx] # return annotation at index
     #image = Image.open(img_path)
     #albumentations wants numpy
@@ -106,37 +109,45 @@ class smokeDataset(torch.utils.data.Dataset):
     #boxes, labels = self.parse_xml(annotation_path)
     #boxes = self.parse_xml(annotation_path)
 
-    # Leaving this here for augmentations later
-    if self.transform:
-            """
-            # Created seperate labels list cause kept getting empty when i printed label and bbox
-            because bbox was out of bounds because crop made image smaller,
-            might change back to single list with label at end later lol
-            """
-            # Going through albumentations transform functions
-            transformed = self.transform(image=image, bboxes=boxes, class_labels=labels, class_id=labels_int)
-            transformed_image = transformed['image']
-            transformed_bboxes = transformed['bboxes']
-            transformed_class_labels = transformed['class_labels']
-            transformed_class_id = transformed['class_id']
-            transformed_bboxes = torch.tensor(transformed_bboxes, dtype=torch.float32)
-            transformed_class_id = torch.tensor(transformed_class_id, dtype=torch.int64)
-            """
-            Faster RCNN expects image, target to be returned
-            Target should be a dictionary containing bounding box and label
-            boxes, labels, image_id, area, iscrowd
-            """
+    # this is transformations for training and validation
+    if (self.transform and not self.testing):
+        """
+        # Created seperate labels list cause kept getting empty when i printed label and bbox
+        because bbox was out of bounds because crop made image smaller,
+        might change back to single list with label at end later lol
+        """
+        # Going through albumentations transform functions
+        transformed = self.transform(image=image, bboxes=boxes, class_labels=labels, class_id=labels_int)
+        transformed_image = transformed['image']
+        transformed_bboxes = transformed['bboxes']
+        transformed_class_labels = transformed['class_labels']
+        transformed_class_id = transformed['class_id']
+        transformed_bboxes = torch.tensor(transformed_bboxes, dtype=torch.float32)
+        transformed_class_id = torch.tensor(transformed_class_id, dtype=torch.int64)
+        """
+        Faster RCNN expects image, target to be returned
+        Target should be a dictionary containing bounding box and label
+        boxes, labels, image_id, area, iscrowd
+        """
 
-            image = transformed_image
-            image_id = idx
-            area = (transformed_bboxes[:, 3] - transformed_bboxes[:, 1]) * (transformed_bboxes[:, 2] - transformed_bboxes[:, 0])
-            target = {}
-            target["boxes"] = transformed_bboxes
-            target["labels"] = transformed_class_id
-            target["image_id"] = image_id
-            target["area"] = area
-            target["iscrowd"] = torch.zeros((transformed_bboxes.shape[0],), dtype=torch.int64)
-    return image, target
+        image = transformed_image
+        image_id = idx
+        area = (transformed_bboxes[:, 3] - transformed_bboxes[:, 1]) * (transformed_bboxes[:, 2] - transformed_bboxes[:, 0])
+        target = {}
+        target["boxes"] = transformed_bboxes
+        target["labels"] = transformed_class_id
+        target["image_id"] = image_id
+        target["area"] = area
+        target["iscrowd"] = torch.zeros((transformed_bboxes.shape[0],), dtype=torch.int64)
+        return image, target
+
+    if (self.transform and self.testing):
+        transformed = self.transform(image=image)
+        image_tensor = transformed['image']
+        print(image.dtype)
+        print(image.shape)
+        return image_tensor, filename
+
 
 
 # !!VISUALIZATION!!
@@ -145,7 +156,7 @@ class smokeDataset(torch.utils.data.Dataset):
 
 # Only want to execute these if im running this .py script specifically, prevents it from running when using other scripts
 if __name__ == '__main__':
-    train_test = smokeDataset(str(dataset_dir) + "/Train", transform_t) # create instance of dataset
+    train_test = smokeDataset(str(dataset_dir) + "/Train", transform_train_validate) # create instance of dataset
     image, target = train_test.__getitem__(1)
     bbox = target["boxes"]
     label = target["labels"]
@@ -164,7 +175,7 @@ if __name__ == '__main__':
                 print(f"No strings found in {key}: {value}")
     """
 
-    #image, target = smokeDataset(str(dataset_dir) + "/Train", transform_t)[0]
+    #image, target = smokeDataset(str(dataset_dir) + "/Train", transform_train_validate)[0]
     #check_for_strings_in_target(target)
     ### End check for strings, reduntant
 
@@ -229,7 +240,7 @@ if __name__ == '__main__':
 
 
     # Test the test dataset too
-    test_test = smokeDataset(str(dataset_dir) + "/Test", transform_t) # create instance of dataset
+    test_test = smokeDataset(str(dataset_dir) + "/Test", transform_train_validate) # create instance of dataset
     #image, bbox, label = test_test.__getitem__(1) # get image and annotation at index 1
     image, target = test_test.__getitem__(1) # get image and annotation at index 1
     bbox = target["boxes"]

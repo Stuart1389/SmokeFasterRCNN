@@ -46,12 +46,14 @@ class SmokeModel:
     def get_dataloader(self):
         num_workers = os.cpu_count() # threads available
         batch_size = setTrainValues("BATCH_SIZE")
+        test_batch_size = setTestValues("BATCH_SIZE")
         dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTrainValues("dataset"))
+        test_dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTestValues("dataset"))
 
         # Load datasets
-        train_dir = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_t)
-        val_dir = Dataset.smokeDataset(str(dataset_dir) + "/Validate", Dataset.transform_t)
-        test_dir = Dataset.smokeDataset(str(dataset_dir) + "/Test", Dataset.transform_t)
+        train_dir = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_train_validate)
+        val_dir = Dataset.smokeDataset(str(dataset_dir) + "/Validate", Dataset.transform_train_validate)
+        test_dir = Dataset.smokeDataset(str(test_dataset_dir) + "/Test", Dataset.transform_testing, True)
 
         # Create dataloaders to iterate over dataset (batching)
         self.train_dataloader = DataLoader(
@@ -70,7 +72,7 @@ class SmokeModel:
         )
         self.test_dataloader = DataLoader(
             dataset=test_dir,
-            batch_size=batch_size,
+            batch_size=test_batch_size,
             num_workers=num_workers,
             collate_fn=collate_fn,
             shuffle=False
