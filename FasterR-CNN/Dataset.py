@@ -23,8 +23,12 @@ transform_train_validate = A.Compose([
     #A.PadIfNeeded(min_height=320, min_width=240, border_mode=cv2.BORDER_CONSTANT), # prevents shape mismatch from image being cut off
     #A.PadIfNeeded(min_height=320, min_width=240), # doesnt work currently, need to fix
     #A.RandomCrop(width= round(320), height= round(240)), # needs padding or will throw error
-    #A.HorizontalFlip(p=0.5),
-    #A.RandomBrightnessContrast(p=0.2),
+    A.BBoxSafeRandomCrop(erosion_rate=0.2, p=1.0),
+    A.GaussNoise(var_limit=(0.05, 0.01), p=1),
+    A.HorizontalFlip(p=1),
+    A.RandomBrightnessContrast(p=1),
+    A.RandomScale(scale_limit=0.2, p=1),
+    A.SafeRotate(limit=5, p=1.0, border_mode=cv2.BORDER_CONSTANT),
     ToTensorV2()
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))
 
@@ -143,6 +147,7 @@ class smokeDataset(torch.utils.data.Dataset):
         target["image_id"] = image_id
         target["area"] = area
         target["iscrowd"] = torch.zeros((transformed_bboxes.shape[0],), dtype=torch.int64)
+        print(image, target)
         return image, target
 
     if (self.transform and self.testing):
@@ -184,22 +189,23 @@ if __name__ == '__main__':
     ### End check for strings, reduntant
 
     ### Looking at image using dataset
-    BOX_COLOR = (255, 0, 0) # red
+    BOX_COLOR = (0, 0, 255) # red
     TEXT_COLOR = (255, 255, 255) # white
 
     # Function to display bbox over image
     def visualize_bbox_pascal_voc(img, bbox, class_name, color=BOX_COLOR, thickness=2):
+        bbox_text = "Ground truth"
        # drawing bbox over image
         x_min, y_min, x_max, y_max = bbox
         x_min, x_max, y_min, y_max = int(x_min), int(x_max), int(y_min), int(y_max)
 
         cv2.rectangle(img, (x_min, y_min), (x_max, y_max), color=color, thickness=thickness)
 
-        ((text_width, text_height), _) = cv2.getTextSize(class_name, cv2.FONT_HERSHEY_SIMPLEX, 0.35, 1)
+        ((text_width, text_height), _) = cv2.getTextSize(bbox_text, cv2.FONT_HERSHEY_SIMPLEX, 0.35, 1)
         cv2.rectangle(img, (x_min, y_min - int(1.3 * text_height)), (x_min + text_width, y_min), BOX_COLOR, -1)
         cv2.putText(
             img,
-            text=class_name,
+            text=bbox_text, # can change this to class_name if you have multiple classes
             org=(x_min, y_min - int(0.3 * text_height)),
             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
             fontScale=0.35,

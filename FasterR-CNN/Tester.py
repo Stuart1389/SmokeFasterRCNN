@@ -90,6 +90,7 @@ class Tester:
         return avg_time
 
     # !!GETTING PREDICTION!!
+    @torch.inference_mode()
     def get_predictions(self, image_tensor, filename):
         # getting predictions
         self.model.to(self.device)  # put model on cpu or gpu

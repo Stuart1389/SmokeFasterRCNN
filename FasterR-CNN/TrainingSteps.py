@@ -14,7 +14,7 @@ import utils
 from coco_eval import CocoEvaluator
 from coco_utils import get_coco_api_from_dataset
 
-def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, scaler=None):
+def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=None):
     iteration_loss_list = [] # loss graph iteration instead of epoch
     # Init loss values
     total_loss = 0
@@ -100,7 +100,7 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, sc
     return metric_logger, iteration_loss_list, avg_loss_dict
 
 
-def _get_iou_types(model):
+def get_iou_type(model):
     model_without_ddp = model
     if isinstance(model, torch.nn.parallel.DistributedDataParallel):
         model_without_ddp = model.module
@@ -113,13 +113,13 @@ def _get_iou_types(model):
 
 
 @torch.inference_mode()
-def evaluate(model, data_loader, device, scaler=None):
+def validate_step(model, data_loader, device, scaler=None):
     model.eval()
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = "Validation:"
 
     coco = get_coco_api_from_dataset(data_loader.dataset)
-    iou_types = _get_iou_types(model)
+    iou_types = get_iou_type(model)
     coco_evaluator = CocoEvaluator(coco, iou_types)
 
     # Init loss values

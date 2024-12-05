@@ -8,7 +8,7 @@ import random
 import matplotlib.pyplot as plt
 from pathlib import Path
 from datetime import datetime
-from TrainingSteps import train_one_epoch, evaluate
+from TrainingSteps import train_step, validate_step
 from Plot_Graphs import plot_all_loss
 from Logger import Logger
 from Get_Values import checkColab, setTrainValues
@@ -92,13 +92,13 @@ class Trainer:
         # !!TRAINING LOOP START!!
         for epoch in range(self.epochs):
             # TRAINING STEP
-            _, train_loss_it_dict, train_loss_dict = train_one_epoch(
+            _, train_loss_it_dict, train_loss_dict = train_step(
                 self.model, self.optimizer, self.train_dataloader, self.device, epoch, print_freq=10
             )
             self.lr_scheduler.step()
 
             # VALIDATION STEP
-            _, validate_loss_it_dict, validate_loss_dict = evaluate(
+            _, validate_loss_it_dict, validate_loss_dict = validate_step(
                 self.model, self.validate_dataloader, device=self.device
             )
 
