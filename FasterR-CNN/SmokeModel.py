@@ -61,7 +61,7 @@ class SmokeModel:
         self.train_dataloader = DataLoader(
             dataset=train_dir, # dataset to use
             batch_size=batch_size,
-            num_workers=num_workers, # set to all available threads
+            num_workers=1, # set to all available threads
             collate_fn=collate_fn,
             shuffle=True # only shuffle while training
         )
