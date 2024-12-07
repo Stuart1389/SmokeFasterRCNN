@@ -12,6 +12,7 @@ from Get_Values import checkColab, setTrainValues, setTestValues
 # i hate this function so much the amount of hours ive spent on this little rascal
 # you put this in class and it pretends it's cool but it secretly breaks everything
 def collate_fn(batch):
+    batch = [item for item in batch if item is not None]
     return tuple(zip(*batch))
 
 class SmokeModel:

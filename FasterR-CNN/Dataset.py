@@ -24,12 +24,12 @@ transform_train = A.Compose([
     #A.PadIfNeeded(min_height=320, min_width=240, border_mode=cv2.BORDER_CONSTANT), # prevents shape mismatch from image being cut off
     #A.PadIfNeeded(min_height=640, min_width=480), # doesnt work currently, need to fix
     #A.RandomCrop(width= round(320), height= round(240)), # needs padding or will throw error
-    A.BBoxSafeRandomCrop(erosion_rate=0.2, p=0.5),
-    A.GaussNoise(var_limit=(0.05, 0.01), p=0.3),
-    A.HorizontalFlip(p=0.5),
-    A.RandomBrightnessContrast(p=0.4),
-    A.RandomScale(scale_limit=0.2, p=0.5),
-    A.SafeRotate(limit=5, p=0.5, border_mode=cv2.BORDER_CONSTANT),
+    A.BBoxSafeRandomCrop(erosion_rate=0.2, p=1),
+    A.GaussNoise(var_limit=(0.05, 0.01), p=1),
+    A.HorizontalFlip(p=1),
+    A.RandomBrightnessContrast(p=1),
+    A.RandomScale(scale_limit=0.2, p=1),
+    A.SafeRotate(limit=5, p=1, border_mode=cv2.BORDER_CONSTANT),
     ToTensorV2()
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))
 
@@ -151,7 +151,7 @@ class smokeDataset(torch.utils.data.Dataset):
         # if there are no bboxes and we calculate area then it will throw error
         # check if bboxes exist, if they do then calculate area otherwise just set it to nothing
         if(transformed_bboxes.numel() == 0):
-            raise IndexError("No boox, skipping")
+            return None
 
         area = (transformed_bboxes[:, 3] - transformed_bboxes[:, 1]) * (transformed_bboxes[:, 2] - transformed_bboxes[:, 0])
 
