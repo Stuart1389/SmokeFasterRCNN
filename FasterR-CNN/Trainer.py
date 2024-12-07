@@ -11,7 +11,7 @@ from datetime import datetime
 from TrainingSteps import train_step, validate_step
 from Plot_Graphs import plot_all_loss
 from Logger import Logger
-from Get_Values import checkColab, setTrainValues
+from Get_Values import checkColab, setTrainValues, setGlobalValues
 from SmokeModel import SmokeModel
 from datetime import timedelta
 
@@ -23,7 +23,7 @@ sys.path.append(relative_path)
 
 class Trainer:
     # Constructor
-    def __init__(self, model, train_dataloader, validate_dataloader, device, plot_train_loss=True):
+    def __init__(self, model, train_dataloader, validate_dataloader, device, plot_train_loss=True, checkpoint = None):
         # initialising variables
         self.model = model
         self.train_dataloader = train_dataloader
@@ -32,6 +32,7 @@ class Trainer:
         self.epochs = setTrainValues("EPOCHS") # number of epochs to train on
         self.patience = setTrainValues("PATIENCE") # num of epochs to do with no imrpovement
         self.plot_train_loss = plot_train_loss
+        self.checkpoint = checkpoint # used to train a model from a checkpoint
         self.best_val_loss = float('inf')  # first value make mega
         # this isnt storing the best value, but the train loss value when validation loss was best
         self.best_train_loss = float('inf')  # first value make mega
@@ -163,6 +164,7 @@ def main():
     torch.backends.cudnn.deterministic = True
 
     # Setting variables for instance
+    #device = setGlobalValues("device")
     device = "cuda" if torch.cuda.is_available() else "cpu" # device agnostic
     # Create instance of SmokeModel class
     smoke_model = SmokeModel()

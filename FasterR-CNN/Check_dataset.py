@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from Get_Values import checkColab
 
 # !!Checking bounding box and dataset!!
-# This was the first thing i made just to check out dataset, don't really need anymore
+# checking dataset before implementing torch dataset
 
 ### DATASET: https://github.com/aiformankind/wildfire-smoke-dataset/blob/master/README.md
 base_dir = checkColab()

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch.utils.benchmark as benchmark
 import concurrent.futures
-from Get_Values import checkColab, setTestValues
+from Get_Values import checkColab, setTestValues, setGlobalValues
 from SmokeModel import SmokeModel
 from tabulate import tabulate
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
@@ -33,7 +33,7 @@ class Tester:
         self.draw_no_true_positive_only = False # only plot images with no true positives
 
         # device agnostic code
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = setGlobalValues("device")
 
         # initialise model
         smoke_model = SmokeModel()

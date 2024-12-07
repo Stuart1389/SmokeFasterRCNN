@@ -13,6 +13,7 @@ from torchvision.transforms import transforms
 from Get_Values import checkColab, setTrainValues
 from torch.utils.data import Dataset
 from multiprocessing import Pool
+import time
 
 
 ### !!IMAGE TRANSFORMATIONS!!
@@ -23,12 +24,12 @@ transform_train_validate = A.Compose([
     #A.PadIfNeeded(min_height=320, min_width=240, border_mode=cv2.BORDER_CONSTANT), # prevents shape mismatch from image being cut off
     #A.PadIfNeeded(min_height=320, min_width=240), # doesnt work currently, need to fix
     #A.RandomCrop(width= round(320), height= round(240)), # needs padding or will throw error
-    A.BBoxSafeRandomCrop(erosion_rate=0.2, p=1.0),
-    A.GaussNoise(var_limit=(0.05, 0.01), p=1),
-    A.HorizontalFlip(p=1),
-    A.RandomBrightnessContrast(p=1),
-    A.RandomScale(scale_limit=0.2, p=1),
-    A.SafeRotate(limit=5, p=1.0, border_mode=cv2.BORDER_CONSTANT),
+    A.BBoxSafeRandomCrop(erosion_rate=0.2, p=0.5),
+    A.GaussNoise(var_limit=(0.05, 0.01), p=0.3),
+    A.HorizontalFlip(p=0.5),
+    A.RandomBrightnessContrast(p=0.4),
+    A.RandomScale(scale_limit=0.2, p=0.5),
+    A.SafeRotate(limit=5, p=0.5, border_mode=cv2.BORDER_CONSTANT),
     ToTensorV2()
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))
 
@@ -50,6 +51,7 @@ class smokeDataset(torch.utils.data.Dataset):
     self.main_dir = main_dir
     self.images = list(Path(str(main_dir) + "/images/").glob("*.jpeg")) # set to list of all images
     self.annotations = list(Path(str(main_dir) + "/annotations/xmls").glob("*.xml")) # set to list of all xml files
+    #self.loaded_images = [np.array(Image.open(img_path)) for img_path in self.images]
     self.transform = transform
     self.testing = testing
 
@@ -104,6 +106,7 @@ class smokeDataset(torch.utils.data.Dataset):
     #image = Image.open(img_path)
     #albumentations wants numpy
     image = np.array(Image.open(img_path))
+    #image = self.loaded_images[idx]
     #Convert to float32 for model
     # normalize the image to [0, 1] if it is not already in float format, prevents image from being completely white
     if image.dtype == np.uint8:
@@ -147,7 +150,7 @@ class smokeDataset(torch.utils.data.Dataset):
         target["image_id"] = image_id
         target["area"] = area
         target["iscrowd"] = torch.zeros((transformed_bboxes.shape[0],), dtype=torch.int64)
-        print(image, target)
+        #print(image, target)
         return image, target
 
     if (self.transform and self.testing):
@@ -166,7 +169,11 @@ class smokeDataset(torch.utils.data.Dataset):
 # Only want to execute these if im running this .py script specifically, prevents it from running when using other scripts
 if __name__ == '__main__':
     train_test = smokeDataset(str(dataset_dir) + "/Train", transform_train_validate) # create instance of dataset
+    start_time = time.time()
     image, target = train_test.__getitem__(1)
+    end_time = time.time()
+    elapsed_time = (end_time - start_time)
+    print(f"Elapsed time: {elapsed_time:.2f}")
     bbox = target["boxes"]
     label = target["labels"]
 
@@ -223,11 +230,10 @@ if __name__ == '__main__':
         # Check if bboxes exists (e.g. if zoomed in), prevents index out of bounds error
         # Prevents index out of bounds error from below if no bbox
         #if bboxes:
-        #Convert to if bboxes to work witn tensors
+        #Convert to if bboxes to work with tensors
 
         if bboxes.nelement() > 0:
           # If there's only one bounding box, convert it to a list
-          # Will always happen in this dataset but keeping incase i want to use dif one with multiple
           if isinstance(bboxes[0], (int, float)):  # Check if it's a single bbox
               bboxes = [bboxes]
               labels = [labels]
