@@ -19,7 +19,7 @@ import time
 ### !!IMAGE TRANSFORMATIONS!!
 # Albumentations library, can do transforms for image and bbox as one
 # pascal_voc is format (xmin, ymin, xmax, ymax) we're using for bounding box coords
-transform_train_validate = A.Compose([
+transform_train = A.Compose([
     #A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
     #A.PadIfNeeded(min_height=320, min_width=240, border_mode=cv2.BORDER_CONSTANT), # prevents shape mismatch from image being cut off
     #A.PadIfNeeded(min_height=320, min_width=240), # doesnt work currently, need to fix
@@ -33,7 +33,7 @@ transform_train_validate = A.Compose([
     ToTensorV2()
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))
 
-transform_testing = A.Compose([
+transform_test_validate = A.Compose([
     #A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
     ToTensorV2()
 ])
@@ -143,7 +143,13 @@ class smokeDataset(torch.utils.data.Dataset):
 
         image = transformed_image
         image_id = idx
-        area = (transformed_bboxes[:, 3] - transformed_bboxes[:, 1]) * (transformed_bboxes[:, 2] - transformed_bboxes[:, 0])
+        print(transformed_bboxes)
+        # if there are no bboxes and we calculate area then it will throw error
+        # check if bboxes exist, if they do then calculate area otherwise just set it to nothing
+        area = None
+        if(transformed_bboxes.numel() != 0):
+            area = (transformed_bboxes[:, 3] - transformed_bboxes[:, 1]) * (transformed_bboxes[:, 2] - transformed_bboxes[:, 0])
+
         target = {}
         target["boxes"] = transformed_bboxes
         target["labels"] = transformed_class_id
@@ -168,7 +174,7 @@ class smokeDataset(torch.utils.data.Dataset):
 
 # Only want to execute these if im running this .py script specifically, prevents it from running when using other scripts
 if __name__ == '__main__':
-    train_test = smokeDataset(str(dataset_dir) + "/Train", transform_train_validate) # create instance of dataset
+    train_test = smokeDataset(str(dataset_dir) + "/Train", transform_train) # create instance of dataset
     start_time = time.time()
     image, target = train_test.__getitem__(1)
     end_time = time.time()
@@ -191,7 +197,7 @@ if __name__ == '__main__':
                 print(f"No strings found in {key}: {value}")
     """
 
-    #image, target = smokeDataset(str(dataset_dir) + "/Train", transform_train_validate)[0]
+    #image, target = smokeDataset(str(dataset_dir) + "/Train", transform_train)[0]
     #check_for_strings_in_target(target)
     ### End check for strings, reduntant
 
@@ -256,7 +262,7 @@ if __name__ == '__main__':
 
 
     # Test the test dataset too
-    test_test = smokeDataset(str(dataset_dir) + "/Test", transform_train_validate) # create instance of dataset
+    test_test = smokeDataset(str(dataset_dir) + "/Test", transform_train) # create instance of dataset
     #image, bbox, label = test_test.__getitem__(1) # get image and annotation at index 1
     image, target = test_test.__getitem__(1) # get image and annotation at index 1
     bbox = target["boxes"]

@@ -9,8 +9,8 @@ def setTrainValues(val_to_get):
         "EPOCHS": 25,
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "augmentationL4", # name of saved model
-        "plotJSON_fname": "augmentationL4" # json filename
+        "model_name": "augmentationL4_1", # name of saved model
+        "plotJSON_fname": "augmentationL4_1" # json filename
     }
     # return value corresponding with val_to_get
     return train_values.get(val_to_get, None)
