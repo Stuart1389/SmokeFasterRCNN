@@ -5,7 +5,7 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 6,
+        "BATCH_SIZE": 2,
         "EPOCHS": 25,
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"

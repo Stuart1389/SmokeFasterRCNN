@@ -54,8 +54,8 @@ class SmokeModel:
 
         # Load datasets
         train_dir = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_train)
-        val_dir = Dataset.smokeDataset(str(dataset_dir) + "/Validate", Dataset.transform_test_validate)
-        test_dir = Dataset.smokeDataset(str(test_dataset_dir) + "/Test", Dataset.transform_test_validate, True)
+        val_dir = Dataset.smokeDataset(str(dataset_dir) + "/Validate", Dataset.transform_validate)
+        test_dir = Dataset.smokeDataset(str(test_dataset_dir) + "/Test", Dataset.transform_test, True)
 
         # Create dataloaders to iterate over dataset (batching)
         self.train_dataloader = DataLoader(
@@ -91,6 +91,10 @@ class SmokeModel:
         for test_runs in range(test_runs):
             # Iterate through entire dataloader
             for batch_idx, (images, targets) in enumerate(self.train_dataloader):
+                print(f"Batch {batch_idx}:")
+            for batch_idx, (images, targets) in enumerate(self.validate_dataloader):
+                print(f"Batch {batch_idx}:")
+            for batch_idx, (images, targets) in enumerate(self.test_dataloader):
                 print(f"Batch {batch_idx}:")
 
     # checking model and dataloaders

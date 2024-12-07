@@ -24,7 +24,7 @@ transform_train = A.Compose([
     #A.PadIfNeeded(min_height=320, min_width=240, border_mode=cv2.BORDER_CONSTANT), # prevents shape mismatch from image being cut off
     #A.PadIfNeeded(min_height=640, min_width=480), # doesnt work currently, need to fix
     #A.RandomCrop(width= round(320), height= round(240)), # needs padding or will throw error
-    #A.BBoxSafeRandomCrop(erosion_rate=0.2, p=0.5),
+    A.BBoxSafeRandomCrop(erosion_rate=0.2, p=0.5),
     A.GaussNoise(var_limit=(0.05, 0.01), p=0.3),
     A.HorizontalFlip(p=0.5),
     A.RandomBrightnessContrast(p=0.4),
@@ -33,7 +33,11 @@ transform_train = A.Compose([
     ToTensorV2()
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))
 
-transform_test_validate = A.Compose([
+transform_validate = A.Compose([
+    ToTensorV2()
+], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))
+
+transform_test = A.Compose([
     #A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
     ToTensorV2()
 ])
