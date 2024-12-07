@@ -150,9 +150,10 @@ class smokeDataset(torch.utils.data.Dataset):
         #print(transformed_bboxes)
         # if there are no bboxes and we calculate area then it will throw error
         # check if bboxes exist, if they do then calculate area otherwise just set it to nothing
-        area = None
-        if(transformed_bboxes.numel() != 0):
-            area = (transformed_bboxes[:, 3] - transformed_bboxes[:, 1]) * (transformed_bboxes[:, 2] - transformed_bboxes[:, 0])
+        if(transformed_bboxes.numel() == 0):
+            raise IndexError("No boox, skipping")
+
+        area = (transformed_bboxes[:, 3] - transformed_bboxes[:, 1]) * (transformed_bboxes[:, 2] - transformed_bboxes[:, 0])
 
         target = {}
         target["boxes"] = transformed_bboxes
