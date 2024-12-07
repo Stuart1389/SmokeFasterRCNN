@@ -143,7 +143,7 @@ class smokeDataset(torch.utils.data.Dataset):
 
         image = transformed_image
         image_id = idx
-        print(transformed_bboxes)
+        #print(transformed_bboxes)
         # if there are no bboxes and we calculate area then it will throw error
         # check if bboxes exist, if they do then calculate area otherwise just set it to nothing
         area = None
