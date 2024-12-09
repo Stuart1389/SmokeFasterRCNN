@@ -6,14 +6,25 @@ from torch.utils.data import DataLoader
 from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision.transforms import functional as F
 import Dataset
+import time
 from Get_Values import checkColab, setTrainValues, setTestValues
+from torch.profiler import profile, record_function, ProfilerActivity
 
 # altering data to format that model expects at input or cry
 # i hate this function so much the amount of hours ive spent on this little rascal
 # you put this in class and it pretends it's cool but it secretly breaks everything
+"""
+def collate_fn(batch):
+    batch = [item for item in batch if item is not None]
+    inputs, targets = zip(*batch)
+    inputs = torch.stack(inputs)
+    return inputs, list(targets)
+"""
+
 def collate_fn(batch):
     batch = [item for item in batch if item is not None]
     return tuple(zip(*batch))
+
 
 class SmokeModel:
     # constructor
@@ -25,6 +36,7 @@ class SmokeModel:
         self.train_dataloader = None
         self.validate_dataloader = None
         self.test_dataloader = None
+        self.debug_dataloader = None
 
     def get_model(self, testing=None):
         # load faster-rcnn
@@ -51,8 +63,6 @@ class SmokeModel:
         dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTrainValues("dataset"))
         test_dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTestValues("dataset"))
 
-        # splitting up dataloaders to only get them as needed
-
         # Load datasets
         train_dir = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_train)
         val_dir = Dataset.smokeDataset(str(dataset_dir) + "/Validate", Dataset.transform_validate)
@@ -62,8 +72,9 @@ class SmokeModel:
         self.train_dataloader = DataLoader(
             dataset=train_dir, # dataset to use
             batch_size=batch_size,
-            num_workers=1, # set to all available threads
+            num_workers=num_workers, # set to all available threads
             collate_fn=collate_fn,
+            pin_memory=True, # speeds up transfer of data between cpu and gpu/puts data in page locked memory
             shuffle=True # only shuffle while training
         )
 
@@ -72,18 +83,42 @@ class SmokeModel:
             batch_size=batch_size,
             num_workers=num_workers,
             collate_fn=collate_fn,
+            pin_memory=True,
             shuffle=False
         )
 
         self.test_dataloader = DataLoader(
             dataset=test_dir,
-            batch_size=test_batch_size,
+            batch_size=batch_size,
             num_workers=num_workers,
             collate_fn=collate_fn,
-            shuffle=False
+            pin_memory=True,
+            shuffle=True
         )
 
         return self.train_dataloader, self.validate_dataloader, self.test_dataloader
+
+    def get_debug_dataloader(self):
+        num_workers = os.cpu_count() # threads available
+        batch_size = setTrainValues("BATCH_SIZE")
+        test_batch_size = setTestValues("BATCH_SIZE")
+        dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTrainValues("dataset"))
+        test_dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTestValues("dataset"))
+
+        # Load datasets
+        train_dir = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_train)
+        self.debug_dataloader = DataLoader(
+            dataset=train_dir,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            collate_fn=collate_fn,
+            pin_memory=False,
+            shuffle=True
+        )
+
+        return self.debug_dataloader
+
+
 
     #!!FINISHED!!
 
@@ -98,11 +133,14 @@ class SmokeModel:
             for batch_idx, (images, targets) in enumerate(self.test_dataloader):
                 print(f"Batch {batch_idx}:")
 
+
     # checking model and dataloaders
     def main(self):
+        device = "cuda" if torch.cuda.is_available() else "cpu"  # device agnostic
         self.get_dataloader()
         self.get_model()
-        self.check_dataloader()
+        #self.check_dataloader()
+
 
 
 # only run if this script is being run (not being called from other)

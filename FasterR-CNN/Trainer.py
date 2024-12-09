@@ -134,7 +134,7 @@ class Trainer:
                 print(f"No improvement in validation loss for {self.epochs_no_improve} epochs. Current best loss is {self.best_val_loss:.4f}")
             # stop if loss doesnt improve
             if self.epochs_no_improve >= self.patience:
-                print(f"Early stopping due to no improvement. Best val loss: {self.best_val_loss:.4f} Train loss: {self.best_train_loss:.4f}")
+                print(f"Early stopping due to no improvement. Best val loss: {self.best_val_loss:.4f} Best train loss: {self.best_train_loss:.4f}")
                 break
 
         # Plotting the mega graphs using lists of loss dicts from training
@@ -153,6 +153,7 @@ class Trainer:
         print(f"Average time per epoch: {str(timedelta(seconds=avg_time_per_epoch)).split('.')[0]}")
         print(f"Model trained on {self.epochs_trained} epochs.")
         print("Finished")
+        print(f"Best val loss: {self.best_val_loss:.4f} Best train loss: {self.best_train_loss:.4f}")
 
 def main():
     # reproducibility
@@ -179,7 +180,7 @@ def main():
     model, in_features, model.roi_heads.box_predictor = Model.getModel()
     """
 
-    model.to(device) # put model on gpu (or cpu :( )
+    model.to(device, non_blocking=True) # put model on gpu (or cpu :( )
 
     # create instance of class
     trainer = Trainer(model, train_dataloader, validate_dataloader, device)
