@@ -6,7 +6,8 @@ from pathlib import Path
 class Logger:
     def __init__(self, file_path):
         self.console = sys.__stdout__  # console output
-        self.file = open(file_path, 'w')  # log file
+        # log file, utf-8 to correctly log fancy_grid in txt file
+        self.file = open(file_path, 'w', encoding="utf-8")
 
     def write(self, message):
         self.console.write(message)  # Write to console

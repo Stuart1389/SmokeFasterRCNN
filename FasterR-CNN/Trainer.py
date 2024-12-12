@@ -14,6 +14,7 @@ from Logger import Logger
 from Get_Values import checkColab, setTrainValues, setGlobalValues
 from SmokeModel import SmokeModel
 from datetime import timedelta
+from tabulate import tabulate
 
 current_dir = os.getcwd()
 # add libr as source
@@ -39,21 +40,28 @@ class Trainer:
         self.epochs_no_improve = 0 # number of epochs with no improvement
         self.epochs_trained = 0 # number of epochs trained (tells us epochs trained for early stopping)
 
+        # getting hyperparameters
+        self.learning_rate = setTrainValues("learning_rate")
+        self.momentum = setTrainValues("momentum")
+        self.weight_decay = setTrainValues("weight_decay")
+        self.step_size = setTrainValues("step_size")
+        self.gamma = setTrainValues("gamma")
+
         # initialise optimizer and scheduler
         self.params = [p for p in model.parameters() if p.requires_grad] # get model parameters
         self.optimizer = torch.optim.SGD( # Set to static gradient descent
             self.params,
-            lr=0.001, # Learning rate
-            momentum=0.9, # speeds up optimization, decrease time to convergence
-            weight_decay=0.0005 # tries to prevent larger weights, to prevent overfitting
+            lr=self.learning_rate, # Learning rate
+            momentum=self.momentum, # speeds up optimization, decrease time to convergence
+            weight_decay=self.weight_decay # tries to prevent larger weights, to prevent overfitting
         )
 
         # Scheduler starts at higher learning rate and slows down during training
         # Trying to get to convergence quicker without overshooting
         self.lr_scheduler = torch.optim.lr_scheduler.StepLR(
             self.optimizer, # SGD
-            step_size=3, # Reduces learning rate every 3 epochs
-            gamma=0.1 # learning rate becomes 10% of previous 0.5 -> 0.05
+            step_size=self.step_size, # Reduces learning rate every 3 epochs
+            gamma=self.gamma # learning rate becomes 10% of previous 0.5 -> 0.05
         )
 
 
@@ -137,23 +145,91 @@ class Trainer:
                 print(f"Early stopping due to no improvement. Best val loss: {self.best_val_loss:.4f} Best train loss: {self.best_train_loss:.4f}")
                 break
 
+        # GETTING METRICS
         # Plotting the mega graphs using lists of loss dicts from training
         plot_all_loss(train_loss_vals, validate_loss_vals, train_loss_it_vals, validate_loss_it_vals)
-        # Display highest vram usage in gpu during training
-        print("Highest VRAM used: {:.2f} MB".format(torch.cuda.max_memory_allocated() / 1024 / 1024))
+        # Get highest vram usage in gpu during training
+        cur_highest_vram = torch.cuda.max_memory_allocated() / 1024 / 1024
         torch.cuda.reset_peak_memory_stats() # reset
-        # stop writing to log and go back to only outputting to console
-        sys.stdout.file.close()
-        sys.stdout = sys.__stdout__
         # calculate total time taken to train
         end_time = time.time()
         total_training_time = end_time - start_time
         avg_time_per_epoch = total_training_time / self.epochs_trained
+        # Display results
+        self.display_results(cur_highest_vram, total_training_time,
+                              avg_time_per_epoch, self.epochs_trained,
+                              self.best_val_loss, self.best_train_loss)
+        # stop writing to log and go back to only outputting to console
+        sys.stdout.file.close()
+        sys.stdout = sys.__stdout__
+
+    # function displays metrics collected from training loop
+    def display_results(self, cur_highest_vram, total_training_time,
+                        avg_time_per_epoch, epochs_trained,
+                        best_val_loss, best_train_loss):
+        """
+        print("Highest VRAM used: {:.2f} MB".format(cur_highest_vram))
         print(f"Total training time: {str(timedelta(seconds=total_training_time)).split('.')[0]}")
         print(f"Average time per epoch: {str(timedelta(seconds=avg_time_per_epoch)).split('.')[0]}")
         print(f"Model trained on {self.epochs_trained} epochs.")
-        print("Finished")
         print(f"Best val loss: {self.best_val_loss:.4f} Best train loss: {self.best_train_loss:.4f}")
+        print("Finished")
+        """
+
+        # Getting values used during training
+        model_name = setTrainValues("model_name")
+        gpu = self.get_GPU_name(model_name)
+        batch_size = setTrainValues("BATCH_SIZE")
+
+        # Data for table
+        data = [
+            ["Model Name", f"{model_name}"],
+            ["GPU", f"{gpu}"],
+            ["Batch Size", f"{batch_size}"],
+            ["Epochs Set", f"{self.epochs}"],
+            ["Patience", f"{self.patience}"],
+            ["Epochs Trained", f"{epochs_trained}"],
+            ["----- Training metrics -----"],
+            ["Best Validation Loss", f"{best_val_loss:.4f}"],
+            ["Best Training Loss", f"{best_train_loss:.4f}"],
+            ["Total Training Time", str(timedelta(seconds=total_training_time)).split(".")[0]],
+            ["Average Time per Epoch", str(timedelta(seconds=avg_time_per_epoch)).split(".")[0]],
+            ["Highest VRAM Used", f"{cur_highest_vram:.2f} MB"],
+        ]
+
+        # Displaying table
+        print(tabulate(data, headers=["Metric", "Value"], tablefmt="fancy_grid"))
+
+        # Ugly output for copy and paste into excel
+        print("\n Ugly output:\n")
+        # Get each metric from the table above and print, check if row is empty because of row break
+        for row in data:
+            if len(row) > 1:  # Check if the row has at least two elements
+                print(row[1], end="\t")
+
+        print(f'"lr={self.learning_rate}, momentum={self.momentum}, '
+              f'weight_decay={self.weight_decay}, step_size={self.step_size}, '
+              f'gamma={self.gamma}"')
+
+        # getting hyperparameters
+        self.learning_rate
+        self.momentum
+        self.weight_decay
+        self.step_size
+        self.gamma
+    # Function gets the gpu name from model name so it can be copied into a testing sheet
+    def get_GPU_name(self, model_name):
+        # list of gpus
+        GPU_dict = {"2080" : "RTX 2080",
+                           "100" : "A100",
+                           "l4" : "L4",
+                           "t4" : "T4"}
+
+        model_name_lower = model_name.lower()
+        for key in GPU_dict:
+            if key in model_name_lower:
+                return GPU_dict[key]
+        return "N/a"  # no gpu in name
 
 def main():
     # reproducibility
