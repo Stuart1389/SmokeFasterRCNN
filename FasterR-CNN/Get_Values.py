@@ -8,7 +8,7 @@ def setTrainValues(val_to_get):
         "BATCH_SIZE": 8,
         "EPOCHS": 6,
         "PATIENCE": 6,
-        "dataset": "Small data", # "Small data" OR "Large data"
+        "dataset": "Large data", # "Small data" OR "Large data"
         "model_name": "pin_test_L4", # name of saved model
         "plotJSON_fname": "pin_test_L4", # json filename
 
