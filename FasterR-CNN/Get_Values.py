@@ -5,12 +5,12 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 8,
-        "EPOCHS": 6,
-        "PATIENCE": 6,
+        "BATCH_SIZE": 16,
+        "EPOCHS": 8,
+        "PATIENCE": 8,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "pin_test_L4", # name of saved model
-        "plotJSON_fname": "pin_test_L4", # json filename
+        "model_name": "BaselineColabA100", # name of saved model
+        "plotJSON_fname": "BaselineColabA100", # json filename
 
         # PARAMETERS
         "learning_rate": 0.001,

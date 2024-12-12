@@ -40,8 +40,8 @@ def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=
         )
 
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
-        images = list(image.to(device, non_blocking=True) for image in images)
-        targets = [{k: v.to(device, non_blocking=True) if isinstance(v, torch.Tensor) else v for k, v in t.items()} for t in targets]
+        images = list(image.to(device, non_blocking=False) for image in images)
+        targets = [{k: v.to(device, non_blocking=False) if isinstance(v, torch.Tensor) else v for k, v in t.items()} for t in targets]
         with torch.amp.autocast('cuda', enabled=scaler is not None):
             loss_dict = model(images, targets)
             losses = sum(loss for loss in loss_dict.values())
@@ -134,10 +134,10 @@ def validate_step(model, data_loader, device, scaler=None):
 
 
     for images, targets in metric_logger.log_every(data_loader, 10, header):
-        images = list(img.to(device, non_blocking=True) for img in images)
+        images = list(img.to(device, non_blocking=False) for img in images)
 
         targets = [ # targets to get validation loss
-            {k: (v.to(device, non_blocking=True) if isinstance(v, torch.Tensor) else v) for k, v in t.items()}
+            {k: (v.to(device, non_blocking=False) if isinstance(v, torch.Tensor) else v) for k, v in t.items()}
             for t in targets
         ]
 
@@ -178,7 +178,7 @@ def validate_step(model, data_loader, device, scaler=None):
         #outputs = model(images)
         #print(outputs)
 
-        outputs = [{k: v.to(device, non_blocking=True) for k, v in t.items()} for t in outputs]
+        outputs = [{k: v.to(device, non_blocking=False) for k, v in t.items()} for t in outputs]
         model_time = time.time() - model_time
 
         res = {target["image_id"]: output for target, output in zip(targets, outputs)}
