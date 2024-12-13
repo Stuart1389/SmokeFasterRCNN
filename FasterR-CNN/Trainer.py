@@ -236,7 +236,7 @@ class Trainer:
         # list of gpus
         GPU_dict = {"2080" : ("RTX 2080", 0),
                            "100" : ("A100", 8.47),
-                           "l4" : ("L4", 0),
+                           "l4" : ("L4", 2.4),
                            "t4" : ("T4", 0)}
 
         model_name_lower = model_name.lower()
