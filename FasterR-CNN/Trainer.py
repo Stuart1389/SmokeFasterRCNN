@@ -106,9 +106,7 @@ class Trainer:
             self.lr_scheduler.step()
 
             # VALIDATION STEP
-            _, validate_loss_it_dict, validate_loss_dict = validate_step(
-                self.model, self.validate_dataloader, device=self.device
-            )
+            validate_step(self.model, self.validate_dataloader, device=self.device)
 
             # holds number of epochs model trained on
             self.epochs_trained += 1
@@ -116,20 +114,21 @@ class Trainer:
             # Add loss dicts to list
             # Average loss per epoch
             train_loss_vals.append(train_loss_dict)
-            validate_loss_vals.append(validate_loss_dict)
+            #validate_loss_vals.append(validate_loss_dict)
             # loss per iteration
             train_loss_it_vals.append(train_loss_it_dict)
-            validate_loss_it_vals.append(validate_loss_it_dict)
+            #validate_loss_it_vals.append(validate_loss_it_dict)
 
             # get average training loss and display
             current_train_loss = train_loss_dict["avg_total_loss"]
             print(f"Current average training loss: {current_train_loss:.4f}")
 
             # Early stopping get average validation loss
-            current_val_loss = validate_loss_dict["avg_total_loss"]
-            print(f"Current average validation loss: {current_val_loss:.4f}")
+            #current_val_loss = validate_loss_dict["avg_total_loss"]
+            #print(f"Current average validation loss: {current_val_loss:.4f}")
 
             # Early stopping implementation, at each epoch check for improvement in validation loss
+            """
             if current_val_loss < self.best_val_loss:
                 self.best_val_loss = current_val_loss
                 self.best_train_loss = current_train_loss
@@ -143,11 +142,12 @@ class Trainer:
             if self.epochs_no_improve >= self.patience:
                 print(f"Early stopping due to no improvement. Best val loss: {self.best_val_loss:.4f} Best train loss: {self.best_train_loss:.4f}")
                 break
+            """
 
         # GETTING METRICS
         # Creating instance of class to plot graphs from loss values
-        plot_graphs = PlotGraphs(train_loss_vals, validate_loss_vals,
-                                 train_loss_it_vals, validate_loss_it_vals)
+        plot_graphs = PlotGraphs(train_loss_vals, None,
+                                 train_loss_it_vals, None)
         # Get highest vram usage in gpu during training
         cur_highest_vram = torch.cuda.max_memory_allocated() / 1024 / 1024
         torch.cuda.reset_peak_memory_stats() # reset
@@ -162,6 +162,7 @@ class Trainer:
         # stop writing to log and go back to only outputting to console
         sys.stdout.file.close()
         sys.stdout = sys.__stdout__
+        self.save_model()
 
 
     # function displays metrics collected from training loop
@@ -181,16 +182,22 @@ class Trainer:
         gpu = self.get_GPU_name(self.model_name)
         batch_size = setTrainValues("BATCH_SIZE")
 
+        # set patience to same as epoch when we want to compare times
+        if(self.patience == self.epochs):
+            patience_val = "N/A"
+        else:
+            patience_val = self.patience
+
         # Data for table
         data = [
             ["Model Name", f"{self.model_name}"],
             ["GPU", f"{gpu}"],
             ["Batch Size", f"{batch_size}"],
             ["Epochs Set", f"{self.epochs}"],
-            ["Patience", f"{self.patience}"],
+            ["Patience", f"{patience_val}"],
             ["Epochs Trained", f"{epochs_trained}"],
             ["----- Training metrics -----"],
-            ["Best Validation Loss", f"{best_val_loss:.4f}"],
+            ["Best Validation Loss", f"d"],
             ["Best Training Loss", f"{best_train_loss:.4f}"],
             ["Total Training Time", str(timedelta(seconds=total_training_time)).split(".")[0]],
             ["Average Time per Epoch", str(timedelta(seconds=avg_time_per_epoch)).split(".")[0]],
