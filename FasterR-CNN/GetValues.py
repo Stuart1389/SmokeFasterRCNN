@@ -6,7 +6,7 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 16,
-        "EPOCHS": 1,
+        "EPOCHS": 8,
         "PATIENCE": 8,
         "dataset": "Large data", # "Small data" OR "Large data"
         "model_name": "no_validation_a100", # name of saved model
