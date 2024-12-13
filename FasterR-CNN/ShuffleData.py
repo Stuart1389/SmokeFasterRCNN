@@ -91,4 +91,7 @@ def train_test_split():
     print(f"Validation set size: {len(val_dataset)}")
     print(f"Test set size: {len(test_dataset)}")
 
+def compress():
+    print("d")
+
 train_test_split()

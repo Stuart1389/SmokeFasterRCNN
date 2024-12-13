@@ -66,6 +66,7 @@ class Tester:
         #print(self.image_gt_size)
 
         self.cur_batch = None
+        self.model_name = setTestValues("model_name")
 
 
     # !!START TESTING CHAIN!!
@@ -564,19 +565,26 @@ class Tester:
 
     def ugly_layout(self, precision_recall, elapsed_time, avg_benchmark, max_vram):
         # Ugly output for copy and paste
-        print("\nUgly output for excel sheet copy/paste\n")
+        print("\nUgly output for excel sheet copy/paste")
         output_data = [
-            [
+            [   f"\"{self.model_name}\"",
                 f"\"Precision: {precision_recall['global']['precision'] * 100:.2f}%\nRecall: {precision_recall['global']['recall'] * 100:.2f}%\nmAP @0.5: {self.final_mapA['map'] * 100:.2f}%\nmAP @0.3: {self.final_mapB['map'] * 100:.2f}%\"",
                 f"\"Precision: {precision_recall['small']['precision'] * 100:.2f}%\nRecall: {precision_recall['small']['recall'] * 100:.2f}%\nmAP @0.5: {self.final_mapSmallA['map'] * 100:.2f}%\nmAP @0.3: {self.final_mapSmallB['map'] * 100:.2f}%\"",
                 f"\"Precision: {precision_recall['medium']['precision'] * 100:.2f}%\nRecall: {precision_recall['medium']['recall'] * 100:.2f}%\nmAP @0.5: {self.final_mapMediumA['map'] * 100:.2f}%\nmAP @0.3: {self.final_mapMediumB['map'] * 100:.2f}%\"",
                 f"\"Precision: {precision_recall['large']['precision'] * 100:.2f}%\nRecall: {precision_recall['large']['recall'] * 100:.2f}%\nmAP @0.5: {self.final_mapLargeA['map'] * 100:.2f}%\nmAP @0.3: {self.final_mapLargeB['map'] * 100:.2f}%\"",
                 f"\"{max_vram}\"",
                 f"\"{elapsed_time}\"",
-                f"\"{avg_benchmark}\""
+                f"\"{avg_benchmark}\"",
+                f"\"{self.batch_size}\""
             ]
         ]
 
+        # headers
+        headers = ["Model_name", "Global", "Small", "Medium", "Large", "Max size in vram (MB)", "Total time (seconds)",
+                   "Benchmark (seconds), Batch Size"]
+
+        # all this was tryna get excel to paste properly
+        output = "\t".join(headers) + "\n"
         for row in output_data:
             output += "\t".join(row) + "\n"
         print(output.strip())

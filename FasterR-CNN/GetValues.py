@@ -5,12 +5,12 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 8,
+        "BATCH_SIZE": 2,
         "EPOCHS": 6,
         "PATIENCE": 6,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "no_validation_L4", # name of saved model
-        "plotJSON_fname": "no_validation_L4", # json filename
+        "model_name": "no_validation_2080_b", # name of saved model
+        "plotJSON_fname": "no_validation_2080_b", # json filename
 
         # PARAMETERS
         "learning_rate": 0.001,
@@ -27,7 +27,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "no_validation_2080" # name of model to test
+        "model_name": "no_validation_2080_b" # name of model to test
     }
 
     # return value corresponding with val_to_get
