@@ -126,7 +126,6 @@ class smokeDataset(torch.utils.data.Dataset):
 
     # this is transformations for training and validation
     if (self.transform and not self.testing):
-        print("waaaaaaaaaaaaaa")
         """
         # Created seperate labels list cause kept getting empty when i printed label and bbox
         because bbox was out of bounds because crop made image smaller,
