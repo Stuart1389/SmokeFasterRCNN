@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from PIL import Image, ImageDraw
 import matplotlib.pyplot as plt
-from Get_Values import checkColab
+from GetValues import checkColab
 
 # !!Checking bounding box and dataset!!
 # checking dataset before implementing torch dataset

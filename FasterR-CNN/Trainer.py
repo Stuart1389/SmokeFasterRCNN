@@ -10,9 +10,9 @@ from pathlib import Path
 from datetime import datetime
 from TrainingSteps import train_step, validate_step
 from Logger import Logger
-from Get_Values import checkColab, setTrainValues, setGlobalValues
+from GetValues import checkColab, setTrainValues, setGlobalValues
 from SmokeModel import SmokeModel
-from Plot_Graphs import PlotGraphs
+from PlotGraphs import PlotGraphs
 from datetime import timedelta
 from tabulate import tabulate
 

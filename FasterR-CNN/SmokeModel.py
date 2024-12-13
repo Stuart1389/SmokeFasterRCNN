@@ -7,7 +7,7 @@ from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision.transforms import functional as F
 import Dataset
 import time
-from Get_Values import checkColab, setTrainValues, setTestValues
+from GetValues import checkColab, setTrainValues, setTestValues
 from torch.profiler import profile, record_function, ProfilerActivity
 
 # altering data to format that model expects at input or cry

@@ -1,7 +1,7 @@
 import os
 import shutil
 import random
-from Get_Values import checkColab
+from GetValues import checkColab
 
 base_dir = checkColab()
 

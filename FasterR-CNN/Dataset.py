@@ -10,7 +10,7 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import matplotlib.pyplot as plt
 from torchvision.transforms import transforms
-from Get_Values import checkColab, setTrainValues
+from GetValues import checkColab, setTrainValues
 from torch.utils.data import Dataset
 from multiprocessing import Pool
 import time

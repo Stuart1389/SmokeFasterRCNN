@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from datetime import datetime
 from itertools import chain
-from Get_Values import checkColab, setTrainValues
+from GetValues import checkColab, setTrainValues
 
 class PlotGraphs:
     def __init__(self, train_dict, validate_dict, train_loss_it_vals, validate_loss_it_vals):
