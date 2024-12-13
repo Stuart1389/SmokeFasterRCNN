@@ -39,6 +39,7 @@ class Trainer:
         self.best_train_loss = float('inf')  # first value make mega
         self.epochs_no_improve = 0 # number of epochs with no improvement
         self.epochs_trained = 0 # number of epochs trained (tells us epochs trained for early stopping)
+        self.model_name = setTrainValues("model_name")
 
         # getting hyperparameters
         self.learning_rate = setTrainValues("learning_rate")
@@ -46,6 +47,11 @@ class Trainer:
         self.weight_decay = setTrainValues("weight_decay")
         self.step_size = setTrainValues("step_size")
         self.gamma = setTrainValues("gamma")
+
+        # Creating save path
+        self.save_path = Path("savedModels/" + self.model_name)
+        self.save_path.mkdir(parents=True, # make parent dir if doesnt exist
+                         exist_ok=True) # dont cry if already exists
 
         # initialise optimizer and scheduler
         self.params = [p for p in model.parameters() if p.requires_grad] # get model parameters
@@ -68,14 +74,9 @@ class Trainer:
     # function saves model parameters
     def save_model(self):
         # Save model parameters
-        # this is reduntant cause we do it to put log file in same folder but leaving in case i want to do funny business
-        # Creating directory which im gunna save model state_dicts in
-        model_path = Path("savedModels")
-        model_path.mkdir(parents=True, # make parent dir if doesnt exist
-                         exist_ok=True) # dont cry if already exists
         # Setting name
-        model_name = setTrainValues("model_name") + ".pth"
-        model_save_path = model_path / model_name
+        model_save_name = self.model_name + ".pth"
+        model_save_path = self.save_path / model_save_name
         print(f"saving the model to: {model_save_path}")
         # save model parameters to file
         torch.save(obj=self.model.state_dict(), f=model_save_path)
@@ -85,10 +86,8 @@ class Trainer:
     def train_loop(self):
         # start timer
         start_time = time.time()
-        model_path = Path("savedModels")
-        model_path.mkdir(parents=True, exist_ok=True)
         # Creating log file to save console in a .txt file
-        log_filename = model_path / (setTrainValues("model_name") + ".txt")
+        log_filename = self.save_path / (setTrainValues("model_name") + ".txt")
         print(time.strftime("%Y-%m-%d_%H-%M-%S"))
         sys.stdout = Logger(log_filename)
 
@@ -177,13 +176,12 @@ class Trainer:
         """
 
         # Getting values used during training
-        model_name = setTrainValues("model_name")
-        gpu = self.get_GPU_name(model_name)
+        gpu = self.get_GPU_name(self.model_name)
         batch_size = setTrainValues("BATCH_SIZE")
 
         # Data for table
         data = [
-            ["Model Name", f"{model_name}"],
+            ["Model Name", f"{self.model_name}"],
             ["GPU", f"{gpu}"],
             ["Batch Size", f"{batch_size}"],
             ["Epochs Set", f"{self.epochs}"],

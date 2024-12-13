@@ -66,12 +66,13 @@ def plot_all_loss(train_dict, validate_dict, train_loss_it_vals, validate_loss_i
 # funtion saves plot so it can be used later
 def savePlot(plot):
     # Creating directory to save plot
-    PLOT_PATH = Path("savedPlots")
+    model_name = setTrainValues("model_name")
+    PLOT_PATH = Path("savedModels/" + model_name)
     PLOT_PATH.mkdir(parents=True, exist_ok=True)  # Make parent dir if it doesn't exist
     # Setting name using current date and time
     CURRENTDATEANDTIME = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')  # Format as YYYY-MM-DD_HH-MM-SS
     filename = setTrainValues("plotJSON_fname")
-    PLOT_SAVE_PATH = PLOT_PATH / (filename + f"{CURRENTDATEANDTIME}.png") # just name it same as json who cares
+    PLOT_SAVE_PATH = PLOT_PATH / (filename + f"_{CURRENTDATEANDTIME}.png") # just name it same as json who cares
 
     # Saving plot to path
     print(f"Saving the plot to: {PLOT_SAVE_PATH}")
@@ -88,7 +89,8 @@ def saveJSON(train_dict, validate_dict, train_loss_it_vals, validate_loss_it_val
     }
 
     # Creating dict to save json
-    JSON_PATH = Path("savedPlots")
+    model_name = setTrainValues("model_name")
+    JSON_PATH = Path("savedModels/" + model_name)
     JSON_PATH.mkdir(parents=True, exist_ok=True)  # Make parent dir if it doesn't exist
 
     filename = setTrainValues("plotJSON_fname")

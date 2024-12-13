@@ -5,12 +5,12 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 16,
-        "EPOCHS": 8,
-        "PATIENCE": 8,
-        "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "BaselineColabA100", # name of saved model
-        "plotJSON_fname": "BaselineColabA100", # json filename
+        "BATCH_SIZE": 2,
+        "EPOCHS": 1,
+        "PATIENCE": 1,
+        "dataset": "Small data", # "Small data" OR "Large data"
+        "model_name": "test", # name of saved model
+        "plotJSON_fname": "test", # json filename
 
         # PARAMETERS
         "learning_rate": 0.001,
@@ -26,8 +26,8 @@ def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
         "BATCH_SIZE": 4,
-        "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "BaselineLocalRTX2080" # name of model to test
+        "dataset": "Small data", # "Small data" OR "Large data"
+        "model_name": "test" # name of model to test
     }
 
     # return value corresponding with val_to_get
@@ -46,7 +46,7 @@ def setGlobalValues(val_to_get):
     }
 
 def checkColab():
-    if "COLAB_GPU" in os.environ: # think thesis is american for bsc but idc
+    if "COLAB_GPU" in os.environ:
         base_dir = "/content/drive/My Drive/Colab Notebooks/Thesis" # this is to run the program in colab
     else: # change this to (Project folder\\SmokeFasterRCNN) to run locally
         base_dir = "N:\\University subjects\\Thesis\\Python projects\\SmokeFasterRCNN"

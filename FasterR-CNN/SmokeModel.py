@@ -38,6 +38,8 @@ class SmokeModel:
         self.test_dataloader = None
         self.debug_dataloader = None
 
+        self.load_path = Path("savedModels/" + setTrainValues("model_name"))
+
     def get_model(self, testing=None):
         # load faster-rcnn
         self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT")
@@ -48,7 +50,8 @@ class SmokeModel:
 
         # if testing then load a model and use its parameters
         if testing:
-            saved_dir = Path(f"{self.base_dir}/FasterR-CNN/savedModels/" + setTestValues("model_name") + ".pth")
+            #saved_dir = Path(f"{self.base_dir}/FasterR-CNN/savedModels/" + setTestValues("model_name") + ".pth")
+            saved_dir = Path(self.load_path) / f"{setTestValues('model_name')}.pth"
             state_dict = torch.load(saved_dir, weights_only=True)
             self.model.load_state_dict(state_dict)
             return self.model
