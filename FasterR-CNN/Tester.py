@@ -28,12 +28,13 @@ class Tester:
         self.confidence_threshold = 0.5
         self.draw_highest_only = False # only draw bbox with highest score on plot
         self.plot_image = False # plot images
-        self.benchmark = False # measure how long it takes to make average prediction
+        self.benchmark = True # measure how long it takes to make average prediction
         self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
         self.draw_no_true_positive_only = False # only plot images with no true positives
 
         # device agnostic code
-        self.device = setGlobalValues("device")
+        self.device = "cuda" if torch.cuda.is_available() else "cpu" # device agnostic
+        self.batch_size = setTestValues("BATCH_SIZE")
 
         # initialise model
         smoke_model = SmokeModel()
@@ -64,6 +65,8 @@ class Tester:
         self.image_gt_size = self.get_ground_truth_size(self.test_image_dir, self.test_annot_dir)
         #print(self.image_gt_size)
 
+        self.cur_batch = None
+
 
     # !!START TESTING CHAIN!!
     # function starts testing images
@@ -73,6 +76,7 @@ class Tester:
         self.start_time = time.time()
         # Walks through dir_path, for each file call predictBbox and pass file path
         for batch, (image_tensor, filename) in enumerate(test_dataloader):
+            print(f"Processing batch {batch} out of {len(test_dataloader)}")
             self.get_predictions(image_tensor, filename)
         self.get_results()
 
@@ -93,12 +97,12 @@ class Tester:
     @torch.inference_mode()
     def get_predictions(self, image_tensor, filename):
         # getting predictions
-        self.model.to(self.device)  # put model on cpu or gpu
+        self.model.to(self.device, non_blocking=False)  # put model on cpu or gpu
         # set model to evaluation mode
         self.model.eval()
         # print("image:", image, "image_tensor", image_tensor, "filename", filename)
         filenames = list(files for files in filename)
-        image_tensors = list(tensor.to(self.device) for tensor in image_tensor)
+        image_tensors = list(tensor.to(self.device, non_blocking=False) for tensor in image_tensor)
 
         if torch.cuda.is_available():
             torch.cuda.synchronize()
@@ -115,21 +119,22 @@ class Tester:
 
                 # record time taken
                 time_taken = timer.timeit(3) # run code n times, gives average = time taken / n
-                time_taken_ind = time_taken.mean / setTestValues("BATCH_SIZE")
+                time_taken_ind = time_taken.mean / self.batch_size
                 print(f"Prediction time taken: {time_taken_ind:.4f} seconds")
                 self.benchmark_times.append(time_taken_ind)
 
-            outputs, _ = self.model(image_tensors)
+            outputs = self.model(image_tensors)
+            #outputs, _ = self.model(image_tensors)
             temp_index = 1
             # parallel processing after getting model predictions, might aswell
             futures = []
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 for image_tensor, prediction, filename in zip(image_tensor, outputs, filenames):
-                    print(f"{temp_index}! - pred:", prediction, filename)
-                    temp_index += 1
+                    #print(f"{temp_index}! - pred:", prediction, filename)
+                    #temp_index += 1
                     futures.append(executor.submit(self.process_predictions, image_tensor, prediction, filename))
                     #self.process_predictions(image_tensor, prediction, filename)
-            print("outputs", outputs)
+            #print("outputs", outputs)
             concurrent.futures.wait(futures)
 
     def process_predictions(self, image_tensor, predictions, filename):
@@ -151,7 +156,7 @@ class Tester:
         # annotation path for ground truth using test_annot_dir
         # CHANGE image ID to filename
         image_id = filename # temp
-        print(image_id)
+        #print(image_id)
         annotation_path = os.path.join(self.test_annot_dir, f"{image_id}.xml")
         ground_truth = self.parse_xml(annotation_path)
 
@@ -166,7 +171,7 @@ class Tester:
         # getting ground truth size (small, medium, large)
         # filename stored with format in dict, might change dict later
         gt_size = self.image_gt_size.get(filename + ".jpeg")
-        print(gt_size)
+        #print(gt_size)
 
         # getting tp, tn, fp, fn for each image
         metrics = self.get_image_val(
@@ -421,40 +426,41 @@ class Tester:
 
     # !!VISUALISATIONS!!
     def display_prediction(self, filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics):
-        if (self.plot_image == False):
-            matplotlib.use('Agg')
-        # !!! DISPLAYING PREDICTIONS THROUGH MATPLOT LIB !!!
-        filtered_boxes_tensor = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)
-        # Get prediction with highest score and draw only that if draw_only_highest is true
-        if filtered_scores and self.draw_highest_only:
-            max_score_idx = filtered_scores.index(max(filtered_scores))  # get index pos of highest score
-            highest_score_box = filtered_boxes_tensor[max_score_idx].unsqueeze(0)  # Add batch dimension
-            highest_score_label = [filtered_labels[max_score_idx]]  # get highest value using index pos
-
-            # Draw highest scoring bbox in red
-            output_image = draw_bounding_boxes(image, highest_score_box, highest_score_label, colors="red")
-        else:
-            # Draw all predicted bbox in red
-            output_image = draw_bounding_boxes(image, filtered_boxes_tensor, filtered_labels, colors="red")
-
-        # Convert filtered boxes to a tensor
-        filtered_boxes = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)
-        print("output labels", filtered_labels)
-
-        # convert ground truth boxes to tensor
-        ground_truth_boxes = [bbox.clone().detach() for bbox in ground_truth['boxes']]
-
-        # draw ground truth bbox over predicted bbox over image
-        output_image = draw_bounding_boxes(output_image, torch.stack(ground_truth_boxes),
-                                           ["Ground Truth"] * len(ground_truth_boxes), colors="blue")
-
-        # registry increased ide.rest.api.request.per.minute to 100
         if (self.plot_image):
-            time.sleep(2)
-        plt.figure(figsize=(12, 12))
-        plt.imshow(output_image.permute(1, 2, 0))
-        plt.axis('off')
-        plt.show()
+                #matplotlib.use('Agg')
+            # !!! DISPLAYING PREDICTIONS THROUGH MATPLOT LIB !!!
+            filtered_boxes_tensor = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)
+            # Get prediction with highest score and draw only that if draw_only_highest is true
+            if filtered_scores and self.draw_highest_only:
+                max_score_idx = filtered_scores.index(max(filtered_scores))  # get index pos of highest score
+                highest_score_box = filtered_boxes_tensor[max_score_idx].unsqueeze(0)  # Add batch dimension
+                highest_score_label = [filtered_labels[max_score_idx]]  # get highest value using index pos
+
+                # Draw highest scoring bbox in red
+                output_image = draw_bounding_boxes(image, highest_score_box, highest_score_label, colors="red")
+            else:
+                # Draw all predicted bbox in red
+                output_image = draw_bounding_boxes(image, filtered_boxes_tensor, filtered_labels, colors="red")
+
+            # Convert filtered boxes to a tensor
+            filtered_boxes = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)
+            print("output labels", filtered_labels)
+
+            # convert ground truth boxes to tensor
+            ground_truth_boxes = [bbox.clone().detach() for bbox in ground_truth['boxes']]
+
+            # draw ground truth bbox over predicted bbox over image
+            output_image = draw_bounding_boxes(output_image, torch.stack(ground_truth_boxes),
+                                               ["Ground Truth"] * len(ground_truth_boxes), colors="blue")
+
+            # registry increased ide.rest.api.request.per.minute to 100
+            if (self.plot_image):
+                time.sleep(2)
+            plt.figure(figsize=(12, 12))
+            plt.imshow(output_image.permute(1, 2, 0))
+            plt.axis('off')
+            plt.show()
+            matplotlib.pyplot.close()
 
     # starting chain to display results
     def get_results(self):
@@ -558,7 +564,7 @@ class Tester:
 
     def ugly_layout(self, precision_recall, elapsed_time, avg_benchmark, max_vram):
         # Ugly output for copy and paste
-        print("\nUgly output for excel sheet copy/paste")
+        print("\nUgly output for excel sheet copy/paste\n")
         output_data = [
             [
                 f"\"Precision: {precision_recall['global']['precision'] * 100:.2f}%\nRecall: {precision_recall['global']['recall'] * 100:.2f}%\nmAP @0.5: {self.final_mapA['map'] * 100:.2f}%\nmAP @0.3: {self.final_mapB['map'] * 100:.2f}%\"",
@@ -571,12 +577,6 @@ class Tester:
             ]
         ]
 
-        # headers
-        headers = ["Global", "Small", "Medium", "Large", "Max size in vram (MB)", "Total time (seconds)",
-                   "Benchmark (seconds)"]
-
-        # all this was tryna get excel to paste properly
-        output = "\t".join(headers) + "\n"
         for row in output_data:
             output += "\t".join(row) + "\n"
         print(output.strip())

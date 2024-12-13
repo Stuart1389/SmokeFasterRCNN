@@ -6,7 +6,7 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 16,
-        "EPOCHS": 8,
+        "EPOCHS": 1,
         "PATIENCE": 8,
         "dataset": "Large data", # "Small data" OR "Large data"
         "model_name": "no_validation_a100", # name of saved model
@@ -26,8 +26,8 @@ def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
         "BATCH_SIZE": 4,
-        "dataset": "Small data", # "Small data" OR "Large data"
-        "model_name": "test" # name of model to test
+        "dataset": "Large data", # "Small data" OR "Large data"
+        "model_name": "no_validation_2080" # name of model to test
     }
 
     # return value corresponding with val_to_get

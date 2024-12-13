@@ -38,7 +38,7 @@ class SmokeModel:
         self.test_dataloader = None
         self.debug_dataloader = None
 
-        self.load_path = Path("savedModels/" + setTrainValues("model_name"))
+        self.load_path = Path("savedModels/" + setTestValues("model_name"))
 
     def get_model(self, testing=None):
         # load faster-rcnn
@@ -92,11 +92,11 @@ class SmokeModel:
 
         self.test_dataloader = DataLoader(
             dataset=test_dir,
-            batch_size=batch_size,
+            batch_size=test_batch_size,
             num_workers=num_workers,
             collate_fn=collate_fn,
             pin_memory=False,
-            shuffle=True
+            shuffle=False
         )
 
         return self.train_dataloader, self.validate_dataloader, self.test_dataloader
