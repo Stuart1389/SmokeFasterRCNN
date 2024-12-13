@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from datetime import datetime
 from TrainingSteps import train_step, validate_step
-from Plot_Graphs import plot_all_loss
 from Logger import Logger
 from Get_Values import checkColab, setTrainValues, setGlobalValues
 from SmokeModel import SmokeModel
+from Plot_Graphs import PlotGraphs
 from datetime import timedelta
 from tabulate import tabulate
 
@@ -145,8 +145,9 @@ class Trainer:
                 break
 
         # GETTING METRICS
-        # Plotting the mega graphs using lists of loss dicts from training
-        plot_all_loss(train_loss_vals, validate_loss_vals, train_loss_it_vals, validate_loss_it_vals)
+        # Creating instance of class to plot graphs from loss values
+        plot_graphs = PlotGraphs(train_loss_vals, validate_loss_vals,
+                                 train_loss_it_vals, validate_loss_it_vals)
         # Get highest vram usage in gpu during training
         cur_highest_vram = torch.cuda.max_memory_allocated() / 1024 / 1024
         torch.cuda.reset_peak_memory_stats() # reset
@@ -161,6 +162,7 @@ class Trainer:
         # stop writing to log and go back to only outputting to console
         sys.stdout.file.close()
         sys.stdout = sys.__stdout__
+
 
     # function displays metrics collected from training loop
     def display_results(self, cur_highest_vram, total_training_time,

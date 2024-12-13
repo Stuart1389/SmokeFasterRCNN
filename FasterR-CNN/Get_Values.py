@@ -6,7 +6,7 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 2,
-        "EPOCHS": 1,
+        "EPOCHS": 2,
         "PATIENCE": 1,
         "dataset": "Small data", # "Small data" OR "Large data"
         "model_name": "test", # name of saved model
