@@ -235,7 +235,7 @@ class Trainer:
     def get_GPU_name(self, model_name):
         # list of gpus
         GPU_dict = {"2080" : ("RTX 2080", 0),
-                           "100" : ("A100", 8.7),
+                           "100" : ("A100", 8.47),
                            "l4" : ("L4", 0),
                            "t4" : ("T4", 0)}
 
