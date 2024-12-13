@@ -10,7 +10,7 @@ def setTrainValues(val_to_get):
         "PATIENCE": 8,
         "dataset": "Large data", # "Small data" OR "Large data"
         "model_name": "no_validation_a100", # name of saved model
-        "plotJSON_fname": "no_validation_a100", # json filename
+        "plotJSON_fname": "no_validation_a100", # json filename # no_validation_a100
 
         # PARAMETERS
         "learning_rate": 0.001,

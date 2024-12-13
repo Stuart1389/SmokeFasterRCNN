@@ -179,7 +179,9 @@ class Trainer:
         """
 
         # Getting values used during training
-        gpu = self.get_GPU_name(self.model_name)
+        gpu, tokens = self.get_GPU_name(self.model_name)
+        total_training_time_fmt = total_training_time / 3600 # get time in hours
+        tokens_spent = total_training_time_fmt * tokens
         batch_size = setTrainValues("BATCH_SIZE")
 
         # set patience to same as epoch when we want to compare times
@@ -191,7 +193,8 @@ class Trainer:
         # Data for table
         data = [
             ["Model Name", f"{self.model_name}"],
-            ["GPU", f"{gpu}"],
+            ["GPU\nTokens per hours\nTokens used",
+             f"{gpu}\n{tokens}\n{tokens_spent:.2f}"], # lazy
             ["Batch Size", f"{batch_size}"],
             ["Epochs Set", f"{self.epochs}"],
             ["Patience", f"{patience_val}"],
@@ -211,8 +214,12 @@ class Trainer:
         print("\n Ugly output:\n")
         # Get each metric from the table above and print, check if row is empty because of row break
         for row in data:
-            if len(row) > 1:  # Check if the row has at least two elements
-                print(row[1], end="\t")
+            if len(row) > 1:  # Check if the row has value
+                value = row[1]
+                if value == f"{gpu}\n{tokens}\n{tokens_spent:.2f}":
+                    print(f'"{value}"', end="\t")  # Add quotes to paste into same cell
+                else:
+                    print(value, end="\t")
 
         print(f'"lr={self.learning_rate}, momentum={self.momentum}, '
               f'weight_decay={self.weight_decay}, step_size={self.step_size}, '
@@ -227,10 +234,10 @@ class Trainer:
     # Function gets the gpu name from model name so it can be copied into a testing sheet
     def get_GPU_name(self, model_name):
         # list of gpus
-        GPU_dict = {"2080" : "RTX 2080",
-                           "100" : "A100",
-                           "l4" : "L4",
-                           "t4" : "T4"}
+        GPU_dict = {"2080" : ("RTX 2080", 0),
+                           "100" : ("A100", 8.7),
+                           "l4" : ("L4", 0),
+                           "t4" : ("T4", 0)}
 
         model_name_lower = model_name.lower()
         for key in GPU_dict:
