@@ -9,8 +9,8 @@ def setTrainValues(val_to_get):
         "EPOCHS": 6,
         "PATIENCE": 6,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "no_validation_2080_b", # name of saved model
-        "plotJSON_fname": "no_validation_2080_b", # json filename
+        "model_name": "no_patience_2080", # name of saved model
+        "plotJSON_fname": "no_patience_2080", # json filename
 
         # PARAMETERS
         "learning_rate": 0.001,
@@ -27,7 +27,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "no_validation_2080_b" # name of model to test
+        "model_name": "BaselineLocalRTX2080_b" # name of model to test
     }
 
     # return value corresponding with val_to_get

@@ -147,16 +147,15 @@ def validate_step(model, data_loader, device, scaler=None):
         model_time = time.time()
         # validate
         with torch.amp.autocast('cuda', enabled=scaler is not None):
-            outputs = model(images, targets)
-            #losses = sum(loss for loss in loss_dict.values())
+            outputs, loss_dict = model(images, targets)
+            losses = sum(loss for loss in loss_dict.values())
 
         # Getting all loss values below
         # getting combined loss
-        #loss_dict_reduced = utils.reduce_dict(loss_dict)
-        #losses_reduced = sum(loss for loss in loss_dict_reduced.values())
+        loss_dict_reduced = utils.reduce_dict(loss_dict)
+        losses_reduced = sum(loss for loss in loss_dict_reduced.values())
 
         # Getting loss values for iteration
-        """
         iteration_loss_list.append({
             'total_loss': losses_reduced.item(),
             'loss_classifier': loss_dict_reduced['loss_classifier'].item(),
@@ -179,7 +178,7 @@ def validate_step(model, data_loader, device, scaler=None):
 
         #outputs = model(images)
         #print(outputs)
-        """
+
 
         outputs = [{k: v.to(device, non_blocking=False) for k, v in t.items()} for t in outputs]
         model_time = time.time() - model_time
@@ -191,7 +190,7 @@ def validate_step(model, data_loader, device, scaler=None):
         metric_logger.update(model_time=model_time, evaluator_time=evaluator_time)
 
     # Getting average loss values and storing in dict
-    """
+
     avg_loss_dict = {
         "avg_total_loss": total_loss / num_batches,
         "avg_loss_classifier": total_loss_classifier / num_batches,
@@ -199,7 +198,6 @@ def validate_step(model, data_loader, device, scaler=None):
         "avg_loss_objectness": total_loss_objectness / num_batches,
         "avg_loss_rpn_box_reg": total_loss_rpn_box_reg / num_batches
     }
-    """
 
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
@@ -209,4 +207,4 @@ def validate_step(model, data_loader, device, scaler=None):
     # accumulate predictions from all images
     coco_evaluator.accumulate()
     coco_evaluator.summarize()
-    return coco_evaluator
+    return coco_evaluator, iteration_loss_list, avg_loss_dict

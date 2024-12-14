@@ -124,8 +124,8 @@ class Tester:
                 print(f"Prediction time taken: {time_taken_ind:.4f} seconds")
                 self.benchmark_times.append(time_taken_ind)
 
-            outputs = self.model(image_tensors)
-            #outputs, _ = self.model(image_tensors)
+            #outputs = self.model(image_tensors)
+            outputs, _ = self.model(image_tensors)
             temp_index = 1
             # parallel processing after getting model predictions, might aswell
             futures = []
