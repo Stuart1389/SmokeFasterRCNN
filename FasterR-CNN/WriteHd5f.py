@@ -1,0 +1,105 @@
+from GetValues import setTrainValues, checkColab
+from SmokeModel import SmokeModel
+import h5py
+from pathlib import Path
+import numpy as np
+
+class WriteHd5f:
+    def __init__(self):
+        self.batch_size = setTrainValues("BATCH_SIZE")
+        self.epochs = setTrainValues("EPOCHS")
+        self.smoke_model = SmokeModel()
+        self.train_dataloader, self.validate_dataloader, _ = self.smoke_model.get_dataloader()
+
+        # Directory vars
+        self.dir_name = setTrainValues("h5py_dir_save_name")
+        self.base_dir = checkColab()
+        self.write_main_path = Path(f"{self.base_dir}/DatasetH5py/" + setTrainValues("h5py_dir_save_name"))
+        self.write_train_path = Path(f"{self.write_main_path}/Train.hdf5")
+        self.write_validate_path = Path(f"{self.write_main_path}/Validate.hdf5")
+
+        #write to file
+        self.write_to_file(self.train_dataloader, self.write_main_path, self.write_train_path)
+        self.write_to_file(self.validate_dataloader, self.write_main_path, self.write_validate_path)
+
+        #check file
+        self.read_from_file(self.write_train_path)
+        self.read_from_file(self.write_validate_path)
+
+    def read_from_file(self, file_path):
+        with h5py.File(file_path, 'r') as file:
+            # Function to print all groups and datasets recursively
+            def print_items(group, prefix=''):
+                for name, item in group.items():
+                    if isinstance(item, h5py.Group):
+                        print(f'Group: {prefix}{name}')
+                        # Recursively print contents of the group
+                        print_items(item, prefix + name + '/')
+                    elif isinstance(item, h5py.Dataset):
+                        print(f'Dataset: {prefix}{name}, Shape: {item.shape}, Dtype: {item.dtype}')
+                        # Optionally print the actual data
+                        #print(item[:])  # Uncomment to print data
+
+            # Start from the root group and print all items
+            print_items(file)
+
+
+    def write_to_file(self, dataloader, dir_write_path, file_write_path):
+        dir_write_path.mkdir(parents=True, exist_ok=True)
+
+        # get dataset information
+        total_samples = len(dataloader.dataset)
+        #get image dimensions from a image from dataset, all images need to be same size
+        image_shape = dataloader.dataset[0][0].shape
+
+        # open hdf5 and write
+        with h5py.File(file_write_path, "w") as h5df_file:
+            for epoch in range(self.epochs):
+                print(f"Processing epoch {epoch + 1} out of {self.epochs}")
+                epoch_group = h5df_file.create_group(f"epoch_{epoch + 1}")  # Create a group for each epoch
+
+                # creating a dataset for image and each target type
+                image_storage = epoch_group.create_dataset("images", shape=(total_samples, *image_shape),
+                                                           dtype='float32')
+                box_storage = epoch_group.create_dataset("boxes", shape=(total_samples,),
+                                                         dtype=h5py.special_dtype(vlen='float32'))
+                label_storage = epoch_group.create_dataset("labels", shape=(total_samples,), dtype='int64')
+                image_id_storage = epoch_group.create_dataset("image_ids", shape=(total_samples,), dtype='int64')
+                area_storage = epoch_group.create_dataset("areas", shape=(total_samples,),
+                                                          dtype=h5py.special_dtype(vlen='float32'))
+                iscrowd_storage = epoch_group.create_dataset("iscrowds", shape=(total_samples,), dtype='int64')
+
+                # Create global index, this is so that we write to the correct spot when running in parallel
+                global_index = 0
+
+
+                for batch, (images, targets) in enumerate(dataloader):
+                    print(f"Processing batch {batch + 1} out of {len(dataloader)}")
+                    image_tensors = list(tensor.to("cpu", non_blocking=False) for tensor in images)
+                    targets = list(target for target in targets)
+                    batch_size = len(image_tensors)
+
+                    # Write images to HDF5 (assuming image_storage is pre-allocated)
+                    image_storage[global_index:global_index + batch_size] = np.array(
+                        [image.numpy() for image in image_tensors])
+
+                    # Write target dictionaries for each image in the batch
+                    for i in range(batch_size):
+                        target = targets[i]
+                        box_storage[global_index + i] = target["boxes"]
+                        label_storage[global_index + i] = target["labels"]
+                        image_id_storage[global_index + i] = target["image_id"]
+                        area_storage[global_index + i] = target["area"]
+                        iscrowd_storage[global_index + i] = target["iscrowd"]
+
+                    # Update global index for the next batch
+                    global_index += batch_size
+
+                print(f"Data successfully written to {file_write_path}")
+
+if __name__ == '__main__':
+    write_h5py = WriteHd5f()
+
+
+
+

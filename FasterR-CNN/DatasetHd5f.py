@@ -1,0 +1,106 @@
+from GetValues import checkColab, setTrainValues
+from pathlib import Path
+from torch.utils.data import DataLoader
+import torch
+import h5py
+import numpy as np
+import os
+import albumentations as A
+from EpochSampler import EpochSampler
+from albumentations.pytorch import ToTensorV2
+
+class SmokeDatasetHd5f(torch.utils.data.Dataset):
+    def __init__(self, file_path):
+        self.file_path = file_path
+        self.epochs = setTrainValues("EPOCHS")
+        self.debug_dataloader = None
+        self.current_epoch = 0
+
+    def __len__(self):
+        with h5py.File(self.file_path, 'r') as h5df_file:
+            epoch_group = f"epoch_{self.current_epoch + 1}"
+            self.total_samples = len(h5df_file[epoch_group]['images'])
+        print(f"Epoch {self.current_epoch + 1}: Total samples = {self.total_samples}")
+        return self.total_samples
+
+    def __getitem__(self, idx):
+        epoch_idx = self.current_epoch + 1
+        actual_idx = idx % self.total_samples
+
+        # Open the HDF5 file to retrieve data
+        with h5py.File(self.file_path, 'r') as h5df_file:
+            epoch_group = f"epoch_{epoch_idx}"
+            print("Epoch_group", epoch_group)
+            if epoch_group in h5df_file:
+                epoch_data = h5df_file[epoch_group]
+
+                image = torch.tensor(epoch_data['images'][actual_idx], dtype=torch.float32)
+                boxes = torch.tensor(epoch_data['boxes'][actual_idx], dtype=torch.float32)
+                labels = torch.tensor(epoch_data['labels'][actual_idx])
+                image_id = epoch_data['image_ids'][actual_idx]
+                area = torch.tensor(epoch_data['areas'][actual_idx])
+                iscrowd = torch.tensor(epoch_data['iscrowds'][actual_idx])
+
+                target = {
+                    "boxes": boxes.unsqueeze(0),
+                    "labels": labels.unsqueeze(0),
+                    "image_id": image_id,
+                    "area": area,
+                    "iscrowd": iscrowd.unsqueeze(0)
+                }
+                """
+                print(f"Image dtype: {image.dtype}, Shape: {image.shape}")
+                
+                # Print each target item details
+                for key, value in target.items():
+                    print(
+                        f"Key: {key}, Type: {type(value)}, Tensor dtype: {value.dtype if isinstance(value, torch.Tensor) else 'N/A'}, Shape: {value.shape if isinstance(value, torch.Tensor) else 'N/A'}")
+
+            return image, target
+                """
+    def __iter__(self):
+        # Each time iteration starts, increment the epoch counter
+        self.current_epoch = (self.current_epoch + 1) % self.epochs
+        return self
+def collate_fn(batch):
+    batch = [item for item in batch if item is not None]
+    return tuple(zip(*batch))
+
+if __name__ == '__main__':
+    base_dir = checkColab()
+    write_main_path = Path(f"{base_dir}/DatasetH5py/" + setTrainValues("h5py_dir_load_name"))
+    write_train_path = Path(f"{write_main_path}/Train.hdf5")
+
+    #smome_dataset_hd5f = SmokeDatasetHd5f()
+
+    num_workers = os.cpu_count() # threads available
+    batch_size = setTrainValues("BATCH_SIZE")
+    epochs = 2
+
+
+
+
+
+    # Load datasets
+    debug_dir = SmokeDatasetHd5f(str(write_train_path))
+    debug_sampler = EpochSampler(debug_dir, epochs=epochs)
+    debug_dataloader = DataLoader(
+        dataset=debug_dir,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        collate_fn=collate_fn,
+        pin_memory=False,
+        shuffle=False,
+        sampler=debug_sampler
+    )
+
+    for epoch in range(epochs):
+        debug_dir.current_epoch = epoch  # Update the current epoch
+        #print(f"Starting epoch {epoch + 1}/{epochs}")
+
+        for batch, (images, targets) in enumerate(debug_dataloader):
+            print(f"Processing batch {batch} out of {len(debug_dataloader)}")
+            print(images, targets)
+
+        #print(f"Epoch {epoch + 1} completed.")
+

@@ -6,7 +6,9 @@ from torch.utils.data import DataLoader
 from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision.transforms import functional as F
 import Dataset
+import DatasetHd5f
 import time
+from EpochSampler import EpochSampler
 from GetValues import checkColab, setTrainValues, setTestValues
 from torch.profiler import profile, record_function, ProfilerActivity
 
@@ -38,6 +40,8 @@ class SmokeModel:
         self.test_dataloader = None
         self.debug_dataloader = None
 
+        self.num_train_epochs = setTrainValues("EPOCHS")
+
         self.load_path = Path("savedModels/" + setTestValues("model_name"))
 
     def get_model(self, testing=None):
@@ -64,11 +68,21 @@ class SmokeModel:
         batch_size = setTrainValues("BATCH_SIZE")
         test_batch_size = setTestValues("BATCH_SIZE")
         dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTrainValues("dataset"))
+        dataset_hd5f_dir = Path(f"{self.base_dir}/DatasetH5py/" + setTrainValues("h5py_dir_load_name"))
         test_dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTestValues("dataset"))
 
         # Load datasets
-        train_dir = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_train)
-        val_dir = Dataset.smokeDataset(str(dataset_dir) + "/Validate", Dataset.transform_validate)
+        if(setTrainValues("load_hd5f") == True):
+            train_dir = DatasetHd5f.SmokeDatasetHd5f(str(dataset_hd5f_dir) + "/Train.hdf5")
+            num_train_epochs = self.num_train_epochs
+            train_sampler = EpochSampler(train_dir, epochs=num_train_epochs)
+            val_dir = DatasetHd5f.SmokeDatasetHd5f(str(dataset_hd5f_dir) + "/Validate.hdf5")
+            val_sampler = EpochSampler(val_dir, epochs=num_train_epochs)
+        else:
+            train_dir = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_train)
+            val_dir = Dataset.smokeDataset(str(dataset_dir) + "/Validate", Dataset.transform_validate)
+            train_sampler = None
+            val_sampler = None
         test_dir = Dataset.smokeDataset(str(test_dataset_dir) + "/Test", Dataset.transform_test, True)
 
         # Create dataloaders to iterate over dataset (batching)
@@ -78,7 +92,8 @@ class SmokeModel:
             num_workers=num_workers, # set to all available threads
             collate_fn=collate_fn,
             pin_memory=False, # speeds up transfer of data between cpu and gpu/puts data in page locked memory
-            shuffle=True # only shuffle while training
+            shuffle=False, # only shuffle while training
+            sampler=train_sampler
         )
 
         self.validate_dataloader = DataLoader(
@@ -87,7 +102,8 @@ class SmokeModel:
             num_workers=num_workers,
             collate_fn=collate_fn,
             pin_memory=False,
-            shuffle=False
+            shuffle=False,
+            sampler=val_sampler
         )
 
         self.test_dataloader = DataLoader(

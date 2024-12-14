@@ -5,12 +5,16 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 2,
-        "EPOCHS": 6,
-        "PATIENCE": 6,
+        "BATCH_SIZE": 8,
+        "EPOCHS": 25,
+        "PATIENCE": 2,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "no_patience_2080", # name of saved model
-        "plotJSON_fname": "no_patience_2080", # json filename
+        "model_name": "test_hd5f_2080", # name of saved model
+        "plotJSON_fname": "test_hd5f_2080", # json filename
+
+        "load_hd5f" : False, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
+        "h5py_dir_save_name": "Baseline_test", # file name for h5py file
+        "h5py_dir_load_name": "Baseline_test",
 
         # PARAMETERS
         "learning_rate": 0.001,
@@ -27,7 +31,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "BaselineLocalRTX2080_b" # name of model to test
+        "model_name": "no_patience_2080" # name of model to test
     }
 
     # return value corresponding with val_to_get

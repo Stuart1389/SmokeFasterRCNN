@@ -113,6 +113,7 @@ class Trainer:
             # holds number of epochs model trained on
             self.epochs_trained += 1
 
+
             # Add loss dicts to list
             # Average loss per epoch
             train_loss_vals.append(train_loss_dict)
@@ -242,7 +243,7 @@ class Trainer:
         for key in GPU_dict:
             if key in model_name_lower:
                 return GPU_dict[key]
-        return "N/a"  # no gpu in name
+        return "N/A", 0  # no gpu in name
 
 def main():
     # reproducibility
