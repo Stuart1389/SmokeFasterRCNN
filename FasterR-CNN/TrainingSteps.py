@@ -13,6 +13,7 @@ import torchvision.models.detection.mask_rcnn
 import utils
 from coco_eval import CocoEvaluator
 from coco_utils import get_coco_api_from_dataset
+import wandb
 
 def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=None, profiler=None):
     iteration_loss_list = [] # loss graph iteration instead of epoch
@@ -59,6 +60,14 @@ def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=
             'loss_objectness': loss_dict_reduced['loss_objectness'].item(),
             'loss_rpn_box_reg': loss_dict_reduced['loss_rpn_box_reg'].item()
         })
+        # lazy logging
+        wandb.log({
+            'train_total_loss_it': loss_value,
+            'train_loss_classifier_it': loss_dict_reduced['loss_classifier'].item(),
+            'train_loss_box_reg_it': loss_dict_reduced['loss_box_reg'].item(),
+            'train_loss_objectness_it': loss_dict_reduced['loss_objectness'].item(),
+            'train_loss_rpn_box_reg_it': loss_dict_reduced['loss_rpn_box_reg'].item()
+        })
 
         # gettting individual loss from dict for average epoch graphs
         total_loss += losses_reduced.item() # epoch
@@ -97,6 +106,14 @@ def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=
         "avg_loss_objectness": total_loss_objectness / num_batches,
         "avg_loss_rpn_box_reg": total_loss_rpn_box_reg / num_batches
     }
+    # lazy logging
+    wandb.log({
+        "train_avg_total_loss_epoch": total_loss / num_batches,
+        "train_avg_loss_classifier_epoch": total_loss_classifier / num_batches,
+        "train_avg_loss_box_reg_epoch": total_loss_box_reg / num_batches,
+        "train_avg_loss_objectness_epoch": total_loss_objectness / num_batches,
+        "train_avg_loss_rpn_box_reg_epoch": total_loss_rpn_box_reg / num_batches
+    })
     return metric_logger, iteration_loss_list, avg_loss_dict
 
 
@@ -163,6 +180,14 @@ def validate_step(model, data_loader, device, scaler=None, profiler=None):
             'loss_objectness': loss_dict_reduced['loss_objectness'].item(),
             'loss_rpn_box_reg': loss_dict_reduced['loss_rpn_box_reg'].item()
         })
+
+        wandb.log({
+            'val_total_loss_it': losses_reduced.item(),
+            'val_loss_classifier_it': loss_dict_reduced['loss_classifier'].item(),
+            'val_loss_box_reg_it': loss_dict_reduced['loss_box_reg'].item(),
+            'val_loss_objectness_it': loss_dict_reduced['loss_objectness'].item(),
+            'val_loss_rpn_box_reg_it': loss_dict_reduced['loss_rpn_box_reg'].item()
+        })
         #print("it loss:", iteration_loss_list)
         
 
@@ -199,6 +224,14 @@ def validate_step(model, data_loader, device, scaler=None, profiler=None):
         "avg_loss_objectness": total_loss_objectness / num_batches,
         "avg_loss_rpn_box_reg": total_loss_rpn_box_reg / num_batches
     }
+
+    wandb.log({
+        "val_avg_total_loss_epoch": total_loss / num_batches,
+        "val_avg_loss_classifier_epoch": total_loss_classifier / num_batches,
+        "val_avg_loss_box_reg_epoch": total_loss_box_reg / num_batches,
+        "val_avg_loss_objectness_epoch": total_loss_objectness / num_batches,
+        "val_avg_loss_rpn_box_reg_epoch": total_loss_rpn_box_reg / num_batches
+    })
 
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
