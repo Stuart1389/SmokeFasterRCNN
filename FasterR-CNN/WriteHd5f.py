@@ -50,7 +50,7 @@ class WriteHd5f:
         # get dataset information
         total_samples = len(dataloader.dataset)
         #get image dimensions from a image from dataset, all images need to be same size
-        image_shape = dataloader.dataset[0][0].shape
+        #image_shape = dataloader.dataset[0][0].shape
 
         # open hdf5 and write
         with h5py.File(file_write_path, "w") as h5df_file:
@@ -59,34 +59,44 @@ class WriteHd5f:
                 epoch_group = h5df_file.create_group(f"epoch_{epoch + 1}")  # Create a group for each epoch
 
                 # creating a dataset for image and each target type
-                image_storage = epoch_group.create_dataset("images", shape=(total_samples, *image_shape),
-                                                           dtype='float32')
+                image_storage = epoch_group.create_dataset("images", shape=(total_samples,),
+                                                           dtype=h5py.special_dtype(vlen=np.dtype('float32')))
+                # store image width and height so it can be red-assembled
+                image_dims_storage = epoch_group.create_dataset("image_dims", shape=(total_samples, 2), dtype='int32')
                 box_storage = epoch_group.create_dataset("boxes", shape=(total_samples,),
                                                          dtype=h5py.special_dtype(vlen='float32'))
-                label_storage = epoch_group.create_dataset("labels", shape=(total_samples,), dtype='int64')
+                #num off bboxes to reconstruct with cor shape
+                num_bbox_storage = epoch_group.create_dataset("num_bbox", shape=(total_samples, ), dtype='int32')
+                label_storage = epoch_group.create_dataset("labels", shape=(total_samples,), dtype=h5py.special_dtype(vlen='int64'))
                 image_id_storage = epoch_group.create_dataset("image_ids", shape=(total_samples,), dtype='int64')
                 area_storage = epoch_group.create_dataset("areas", shape=(total_samples,),
                                                           dtype=h5py.special_dtype(vlen='float32'))
-                iscrowd_storage = epoch_group.create_dataset("iscrowds", shape=(total_samples,), dtype='int64')
+                iscrowd_storage = epoch_group.create_dataset("iscrowds", shape=(total_samples,), dtype=h5py.special_dtype(vlen='int64'))
 
                 # Create global index, this is so that we write to the correct spot when running in parallel
                 global_index = 0
 
 
                 for batch, (images, targets) in enumerate(dataloader):
+
                     print(f"Processing batch {batch + 1} out of {len(dataloader)}")
                     image_tensors = list(tensor.to("cpu", non_blocking=False) for tensor in images)
                     targets = list(target for target in targets)
                     batch_size = len(image_tensors)
 
-                    # Write images to HDF5 (assuming image_storage is pre-allocated)
-                    image_storage[global_index:global_index + batch_size] = np.array(
-                        [image.numpy() for image in image_tensors])
 
-                    # Write target dictionaries for each image in the batch
+                    # write to file
                     for i in range(batch_size):
+                        # image
+                        image = images[i].numpy()
+                        image_shape = image.shape
+                        image_storage[global_index + i] = image.flatten()
+                        image_dims_storage[global_index + i] = image_shape[:2]
+
+                        #targets
                         target = targets[i]
-                        box_storage[global_index + i] = target["boxes"]
+                        box_storage[global_index + i] = target["boxes"].flatten()
+                        num_bbox_storage[global_index + i] = target["boxes"].shape[0]
                         label_storage[global_index + i] = target["labels"]
                         image_id_storage[global_index + i] = target["image_id"]
                         area_storage[global_index + i] = target["area"]

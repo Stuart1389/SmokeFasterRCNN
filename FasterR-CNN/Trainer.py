@@ -15,6 +15,9 @@ from SmokeModel import SmokeModel
 from PlotGraphs import PlotGraphs
 from datetime import timedelta
 from tabulate import tabulate
+import wandb
+from torch.profiler import profile, schedule, tensorboard_trace_handler
+
 
 current_dir = os.getcwd()
 # add libr as source
@@ -40,6 +43,8 @@ class Trainer:
         self.epochs_no_improve = 0 # number of epochs with no improvement
         self.epochs_trained = 0 # number of epochs trained (tells us epochs trained for early stopping)
         self.model_name = setTrainValues("model_name")
+        self.batch_size = setTrainValues("BATCH_SIZE")
+
 
         # getting hyperparameters
         self.learning_rate = setTrainValues("learning_rate")
@@ -70,6 +75,19 @@ class Trainer:
             gamma=self.gamma # learning rate becomes 10% of previous 0.5 -> 0.05
         )
 
+        # Init wandb
+        wandb.init(project="smoke-detection", name=self.model_name, config={
+            "learning_rate": self.learning_rate,
+            "momentum": self.momentum,
+            "weight_decay": self.weight_decay,
+            "step_size": self.step_size,
+            "gamma": self.gamma,
+            "epochs": self.epochs,
+            "batch_size": self.batch_size,
+            "patience": self.patience
+        })
+
+
 
     # function saves model parameters
     def save_model(self):
@@ -97,53 +115,76 @@ class Trainer:
         train_loss_it_vals = []
         validate_loss_it_vals = []
 
-        # !!TRAINING LOOP START!!
-        for epoch in range(self.epochs):
-            # TRAINING STEP
-            _, train_loss_it_dict, train_loss_dict = train_step(
-                self.model, self.optimizer, self.train_dataloader, self.device, epoch, print_freq=10
-            )
-            self.lr_scheduler.step()
+        # Profiler
+        with torch.profiler.profile(
+                activities=[
+                    torch.profiler.ProfilerActivity.CPU,
+                    torch.profiler.ProfilerActivity.CUDA
+                ],
+                #schedule=torch.profiler.schedule(wait=1, warmup=1, active=3),
+                on_trace_ready=torch.profiler.tensorboard_trace_handler(self.save_path / 'profiler_output'),
+                record_shapes=True,
+                profile_memory=True,
+                with_stack=True,
+                with_flops=False,
+                with_modules=False
+        ) as profiler:
 
-            # VALIDATION STEP
-            _, validate_loss_it_dict, validate_loss_dict = validate_step(
-                self.model, self.validate_dataloader, device=self.device
-            )
+            # !!TRAINING LOOP START!!
+            for epoch in range(self.epochs):
+                # TRAINING STEP
+                with torch.profiler.record_function("train_step"):
+                    _, train_loss_it_dict, train_loss_dict = train_step(
+                        self.model, self.optimizer, self.train_dataloader, self.device, epoch, print_freq=10, profiler=profiler
+                    )
+                    self.lr_scheduler.step()
+                with torch.profiler.record_function("validate_step"):
+                # VALIDATION STEP
+                    _, validate_loss_it_dict, validate_loss_dict = validate_step(
+                        self.model, self.validate_dataloader, device=self.device, profiler=profiler
+                    )
 
-            # holds number of epochs model trained on
-            self.epochs_trained += 1
+                # holds number of epochs model trained on
+                self.epochs_trained += 1
 
 
-            # Add loss dicts to list
-            # Average loss per epoch
-            train_loss_vals.append(train_loss_dict)
-            validate_loss_vals.append(validate_loss_dict)
-            # loss per iteration
-            train_loss_it_vals.append(train_loss_it_dict)
-            validate_loss_it_vals.append(validate_loss_it_dict)
+                # Add loss dicts to list
+                # Average loss per epoch
+                train_loss_vals.append(train_loss_dict)
+                validate_loss_vals.append(validate_loss_dict)
+                # loss per iteration
+                train_loss_it_vals.append(train_loss_it_dict)
+                validate_loss_it_vals.append(validate_loss_it_dict)
 
-            # get average training loss and display
-            current_train_loss = train_loss_dict["avg_total_loss"]
-            print(f"Current average training loss: {current_train_loss:.4f}")
+                # get average training loss and display
+                current_train_loss = train_loss_dict["avg_total_loss"]
+                print(f"Current average training loss: {current_train_loss:.4f}")
 
-            # Early stopping get average validation loss
-            current_val_loss = validate_loss_dict["avg_total_loss"]
-            print(f"Current average validation loss: {current_val_loss:.4f}")
+                # Early stopping get average validation loss
+                current_val_loss = validate_loss_dict["avg_total_loss"]
+                print(f"Current average validation loss: {current_val_loss:.4f}")
 
-            # Early stopping implementation, at each epoch check for improvement in validation loss
-            if current_val_loss < self.best_val_loss:
-                self.best_val_loss = current_val_loss
-                self.best_train_loss = current_train_loss
-                self.epochs_no_improve = 0
-                print(f"Validation loss improved to {self.best_val_loss:.4f}, saving model...")
-                self.save_model() # checkpointing epochs with positive loss values (and by that i mean lower)
-            else:
-                self.epochs_no_improve += 1
-                print(f"No improvement in validation loss for {self.epochs_no_improve} epochs. Current best loss is {self.best_val_loss:.4f}")
-            # stop if loss doesnt improve
-            if self.epochs_no_improve >= self.patience:
-                print(f"Early stopping due to no improvement. Best val loss: {self.best_val_loss:.4f} Best train loss: {self.best_train_loss:.4f}")
-                break
+                #wandb logging
+                wandb.log({
+                    "avg_train_loss": current_train_loss,
+                    "avg_val_loss": current_val_loss,
+                })
+
+                # Early stopping implementation, at each epoch check for improvement in validation loss
+                if current_val_loss < self.best_val_loss:
+                    self.best_val_loss = current_val_loss
+                    self.best_train_loss = current_train_loss
+                    self.epochs_no_improve = 0
+                    print(f"Validation loss improved to {self.best_val_loss:.4f}, saving model...")
+                    self.save_model() # checkpointing epochs with positive loss values (and by that i mean lower)
+                else:
+                    self.epochs_no_improve += 1
+                    print(f"No improvement in validation loss for {self.epochs_no_improve} epochs. Current best loss is {self.best_val_loss:.4f}")
+                # stop if loss doesnt improve
+                if self.epochs_no_improve >= self.patience:
+                    print(f"Early stopping due to no improvement. Best val loss: {self.best_val_loss:.4f} Best train loss: {self.best_train_loss:.4f}")
+                    break
+
 
         # GETTING METRICS
         # Creating instance of class to plot graphs from loss values
@@ -156,14 +197,31 @@ class Trainer:
         end_time = time.time()
         total_training_time = end_time - start_time
         avg_time_per_epoch = total_training_time / self.epochs_trained
+
+        # display profiler metrics
+        if profiler is not None:
+            key_averages = profiler.key_averages()
+            print(key_averages.table())
+
         # Display results
-        self.display_results(cur_highest_vram, total_training_time,
+        tokens_spent = self.display_results(cur_highest_vram, total_training_time,
                               avg_time_per_epoch, self.epochs_trained,
                               self.best_val_loss, self.best_train_loss)
         # stop writing to log and go back to only outputting to console
         sys.stdout.file.close()
         sys.stdout = sys.__stdout__
-        self.save_model()
+        # Logging values
+        wandb.log({
+            "best_val_loss": self.best_val_loss,
+            "best_train_loss": self.best_train_loss,
+            "total_train_time(seconds)": total_training_time,
+            "avg_time_per_epoch(seconds)": avg_time_per_epoch,
+            "tokens_spent": tokens_spent,
+            "epochs_trained": self.epochs_trained
+        })
+
+        #self.save_model()
+        # wandb logging
 
     # function displays metrics collected from training loop
     def display_results(self, cur_highest_vram, total_training_time,
@@ -182,7 +240,6 @@ class Trainer:
         gpu, tokens = self.get_GPU_name(self.model_name)
         total_training_time_fmt = total_training_time / 3600 # get time in hours
         tokens_spent = total_training_time_fmt * tokens
-        batch_size = setTrainValues("BATCH_SIZE")
 
         # set patience to same as epoch when we want to compare times
         if(self.patience == self.epochs):
@@ -195,7 +252,7 @@ class Trainer:
             ["Model Name", f"{self.model_name}"],
             ["GPU\nTokens per hours\nTokens used",
              f"{gpu}\n{tokens}\n{tokens_spent:.2f}"], # lazy
-            ["Batch Size", f"{batch_size}"],
+            ["Batch Size", f"{self.batch_size}"],
             ["Epochs Set", f"{self.epochs}"],
             ["Patience", f"{patience_val}"],
             ["Epochs Trained", f"{epochs_trained}"],
@@ -225,12 +282,7 @@ class Trainer:
               f'weight_decay={self.weight_decay}, step_size={self.step_size}, '
               f'gamma={self.gamma}"')
 
-        # getting hyperparameters
-        self.learning_rate
-        self.momentum
-        self.weight_decay
-        self.step_size
-        self.gamma
+        return tokens_spent
     # Function gets the gpu name from model name so it can be copied into a testing sheet
     def get_GPU_name(self, model_name):
         # list of gpus

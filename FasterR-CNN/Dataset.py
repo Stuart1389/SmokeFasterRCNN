@@ -24,12 +24,16 @@ transform_train = A.Compose([
     #A.PadIfNeeded(min_height=320, min_width=240, border_mode=cv2.BORDER_CONSTANT), # prevents shape mismatch from image being cut off
     #A.PadIfNeeded(min_height=640, min_width=480), # doesnt work currently, need to fix
     #A.RandomCrop(width= round(320), height= round(240)), # needs padding or will throw error
-    #A.BBoxSafeRandomCrop(erosion_rate=0.2, p=0.5),
-    #A.GaussNoise(var_limit=(0.05, 0.01), p=0.3),
-    #A.HorizontalFlip(p=0.5),
     #A.RandomBrightnessContrast(p=0.4),
-    #A.RandomScale(scale_limit=0.2, p=0.5),
-    #A.SafeRotate(limit=5, p=0.5, border_mode=cv2.BORDER_CONSTANT),
+    #A.RandomContrast(p=0.5),
+    A.BBoxSafeRandomCrop(erosion_rate=0.2, p=0.5),
+    A.GaussNoise(var_limit=(0.01, 0.005), p=0.3),
+    A.HorizontalFlip(p=0.5),
+    A.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.4, p=0.5),
+    A.RandomScale(scale_limit=0.2, p=0.5),
+    A.SafeRotate(limit=5, p=0.5, border_mode=cv2.BORDER_CONSTANT),
+    #A.PadIfNeeded(min_height=480, min_width=640),
+    #A.Resize(height=480, width=640),
     ToTensorV2()
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))
 
@@ -161,7 +165,7 @@ class smokeDataset(torch.utils.data.Dataset):
         target["image_id"] = image_id
         target["area"] = area
         target["iscrowd"] = torch.zeros((transformed_bboxes.shape[0],), dtype=torch.int64)
-        """
+
         # Print image information
         print(f"Image dtype: {image.dtype}, Shape: {image.shape}")
         
@@ -169,7 +173,7 @@ class smokeDataset(torch.utils.data.Dataset):
         for key, value in target.items():
             print(
                 f"Key: {key}, Type: {type(value)}, Tensor dtype: {value.dtype if isinstance(value, torch.Tensor) else 'N/A'}, Shape: {value.shape if isinstance(value, torch.Tensor) else 'N/A'}")
-        """
+
         return image, target
 
     if (self.transform and self.testing):

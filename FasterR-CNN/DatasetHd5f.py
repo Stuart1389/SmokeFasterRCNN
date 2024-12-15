@@ -33,20 +33,25 @@ class SmokeDatasetHd5f(torch.utils.data.Dataset):
             print("Epoch_group", epoch_group)
             if epoch_group in h5df_file:
                 epoch_data = h5df_file[epoch_group]
-
-                image = torch.tensor(epoch_data['images'][actual_idx], dtype=torch.float32)
-                boxes = torch.tensor(epoch_data['boxes'][actual_idx], dtype=torch.float32)
+                # get image
+                flat_image = np.array(epoch_data['images'][actual_idx])
+                height, width = epoch_data['image_dims'][actual_idx]
+                image = torch.tensor(flat_image.reshape((height, width, -1)), dtype=torch.float32)
+                # get bbox
+                num_bbox = epoch_data['num_bbox'][actual_idx]
+                boxes = torch.tensor(epoch_data['boxes'][actual_idx].reshape(num_bbox, 4), dtype=torch.float32)
+                # other targets
                 labels = torch.tensor(epoch_data['labels'][actual_idx])
                 image_id = epoch_data['image_ids'][actual_idx]
                 area = torch.tensor(epoch_data['areas'][actual_idx])
                 iscrowd = torch.tensor(epoch_data['iscrowds'][actual_idx])
 
                 target = {
-                    "boxes": boxes.unsqueeze(0),
-                    "labels": labels.unsqueeze(0),
+                    "boxes": boxes,
+                    "labels": labels,
                     "image_id": image_id,
                     "area": area,
-                    "iscrowd": iscrowd.unsqueeze(0)
+                    "iscrowd": iscrowd
                 }
                 """
                 print(f"Image dtype: {image.dtype}, Shape: {image.shape}")
@@ -55,9 +60,8 @@ class SmokeDatasetHd5f(torch.utils.data.Dataset):
                 for key, value in target.items():
                     print(
                         f"Key: {key}, Type: {type(value)}, Tensor dtype: {value.dtype if isinstance(value, torch.Tensor) else 'N/A'}, Shape: {value.shape if isinstance(value, torch.Tensor) else 'N/A'}")
-
-            return image, target
                 """
+            return image, target
     def __iter__(self):
         # Each time iteration starts, increment the epoch counter
         self.current_epoch = (self.current_epoch + 1) % self.epochs

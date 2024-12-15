@@ -14,7 +14,7 @@ import utils
 from coco_eval import CocoEvaluator
 from coco_utils import get_coco_api_from_dataset
 
-def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=None):
+def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=None, profiler=None):
     iteration_loss_list = [] # loss graph iteration instead of epoch
     # Init loss values
     total_loss = 0
@@ -40,8 +40,8 @@ def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=
         )
 
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
-        images = list(image.to(device, non_blocking=False) for image in images)
-        targets = [{k: v.to(device, non_blocking=False) if isinstance(v, torch.Tensor) else v for k, v in t.items()} for t in targets]
+        images = list(image.to(device, non_blocking=True) for image in images)
+        targets = [{k: v.to(device, non_blocking=True) if isinstance(v, torch.Tensor) else v for k, v in t.items()} for t in targets]
         with torch.amp.autocast('cuda', enabled=scaler is not None):
             loss_dict = model(images, targets)
             losses = sum(loss for loss in loss_dict.values())
@@ -87,6 +87,7 @@ def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=
         metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
         #train_loss.append(loss_value)
+        profiler.step()  # update profiler after epoch
 
     # Getting average loss values and storing in dict
     avg_loss_dict = {
@@ -96,7 +97,6 @@ def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=
         "avg_loss_objectness": total_loss_objectness / num_batches,
         "avg_loss_rpn_box_reg": total_loss_rpn_box_reg / num_batches
     }
-
     return metric_logger, iteration_loss_list, avg_loss_dict
 
 
@@ -113,7 +113,7 @@ def get_iou_type(model):
 
 
 @torch.inference_mode()
-def validate_step(model, data_loader, device, scaler=None):
+def validate_step(model, data_loader, device, scaler=None, profiler=None):
     model.eval()
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = "Validation:"
@@ -134,10 +134,10 @@ def validate_step(model, data_loader, device, scaler=None):
 
 
     for images, targets in metric_logger.log_every(data_loader, 10, header):
-        images = list(img.to(device, non_blocking=False) for img in images)
+        images = list(img.to(device, non_blocking=True) for img in images)
 
         targets = [ # targets to get validation loss
-            {k: (v.to(device, non_blocking=False) if isinstance(v, torch.Tensor) else v) for k, v in t.items()}
+            {k: (v.to(device, non_blocking=True) if isinstance(v, torch.Tensor) else v) for k, v in t.items()}
             for t in targets
         ]
 
@@ -180,7 +180,7 @@ def validate_step(model, data_loader, device, scaler=None):
         #print(outputs)
 
 
-        outputs = [{k: v.to(device, non_blocking=False) for k, v in t.items()} for t in outputs]
+        outputs = [{k: v.to(device, non_blocking=True) for k, v in t.items()} for t in outputs]
         model_time = time.time() - model_time
 
         res = {target["image_id"]: output for target, output in zip(targets, outputs)}
@@ -188,6 +188,7 @@ def validate_step(model, data_loader, device, scaler=None):
         coco_evaluator.update(res)
         evaluator_time = time.time() - evaluator_time
         metric_logger.update(model_time=model_time, evaluator_time=evaluator_time)
+        profiler.step()  # update profiler after epoch
 
     # Getting average loss values and storing in dict
 
