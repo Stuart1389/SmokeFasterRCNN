@@ -6,15 +6,19 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 2,
-        "EPOCHS": 2,
-        "PATIENCE": 2,
-        "dataset": "Small data", # "Small data" OR "Large data"
+        "EPOCHS": 1,
+        "PATIENCE": 1,
+        "dataset": "Medium data", # "Small data" OR "Large data"
         "model_name": "augment_test_2080", # name of saved model
         "plotJSON_fname": "augment_test_2080", # json filename
 
         "load_hd5f" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
-        "h5py_dir_save_name": "test_file", # file name for h5py file
-        "h5py_dir_load_name": "test_file",
+        "h5py_dir_save_name": "test_file_medium", # file name for h5py file
+        "h5py_dir_load_name": "test_file_medium",
+
+        # PROFILER
+        "start_profiler" : True,
+        "record_trace" : True,
 
         # PARAMETERS
         "learning_rate": 0.001,
@@ -30,8 +34,12 @@ def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
         "BATCH_SIZE": 4,
-        "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "no_patience_2080" # name of model to test
+        "dataset": "Small data", # "Small data" OR "Large data"
+        "model_name": "augment_test_2080", # name of model to test
+
+        # PROFILER
+        "start_profiler": True,
+        "record_trace": True,
     }
 
     # return value corresponding with val_to_get

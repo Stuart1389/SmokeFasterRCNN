@@ -34,14 +34,17 @@ class Tester:
 
         # device agnostic code
         self.device = "cuda" if torch.cuda.is_available() else "cpu" # device agnostic
+
         self.batch_size = setTestValues("BATCH_SIZE")
+        self.model_name = setTestValues("model_name")
+        self.save_path = Path("savedModels/" + self.model_name)
 
         # initialise model
         smoke_model = SmokeModel()
         self.model = smoke_model.get_model(True)
 
         # get test dataloader
-        _, _, self.test_dataloader = smoke_model.get_dataloader()
+        _, _, self.test_dataloader = smoke_model.get_dataloader(True)
 
         # Paths
         self.test_image_dir = Path(f"{self.base_dir}/Dataset/") / setTestValues("dataset") / "Test/images"
@@ -67,19 +70,39 @@ class Tester:
 
         self.cur_batch = None
         self.model_name = setTestValues("model_name")
+        self.start_profiler = setTestValues("start_profiler")
+        self.record_trace = setTestValues("record_trace")
 
 
     # !!START TESTING CHAIN!!
     # function starts testing images
     def test_dir(self):
-        test_dataloader = self.test_dataloader # change to dataloader
-        # Start timer
-        self.start_time = time.time()
-        # Walks through dir_path, for each file call predictBbox and pass file path
-        for batch, (image_tensor, filename) in enumerate(test_dataloader):
-            print(f"Processing batch {batch} out of {len(test_dataloader)}")
-            self.get_predictions(image_tensor, filename)
-        self.get_results()
+        profiler = torch.profiler.profile(
+                activities=[
+                    torch.profiler.ProfilerActivity.CPU,
+                    torch.profiler.ProfilerActivity.CUDA
+                ],
+                #schedule=torch.profiler.schedule(wait=1, warmup=1, active=3),
+                on_trace_ready=torch.profiler.tensorboard_trace_handler(self.save_path / 'profiler_test_output'),
+                record_shapes=False,
+                profile_memory=False,
+                with_stack=self.record_trace,
+                with_flops=False,
+                with_modules=False
+        )
+        if(self.start_profiler):
+            profiler.start()
+            test_dataloader = self.test_dataloader # change to dataloader
+            # Start timer
+            self.start_time = time.time()
+            # Walks through dir_path, for each file call predictBbox and pass file path
+            for batch, (image_tensor, filename) in enumerate(test_dataloader):
+                print(f"Processing batch {batch} out of {len(test_dataloader)}")
+                self.get_predictions(image_tensor, filename)
+                #profiler.step()
+            self.get_results()
+            if(self.start_profiler):
+                profiler.stop()
 
     # Transform images for model
     def get_transform(self):
@@ -97,35 +120,35 @@ class Tester:
     # !!GETTING PREDICTION!!
     @torch.inference_mode()
     def get_predictions(self, image_tensor, filename):
-        # getting predictions
-        self.model.to(self.device, non_blocking=False)  # put model on cpu or gpu
-        # set model to evaluation mode
-        self.model.eval()
-        # print("image:", image, "image_tensor", image_tensor, "filename", filename)
-        filenames = list(files for files in filename)
-        image_tensors = list(tensor.to(self.device, non_blocking=False) for tensor in image_tensor)
+        with torch.profiler.record_function("test_step"):
+            # getting predictions
+            self.model.to(self.device, non_blocking=False)  # put model on cpu or gpu
+            # set model to evaluation mode
+            self.model.eval()
+            # print("image:", image, "image_tensor", image_tensor, "filename", filename)
+            filenames = list(files for files in filename)
+            image_tensors = list(tensor.to(self.device, non_blocking=False) for tensor in image_tensor)
 
-        if torch.cuda.is_available():
-            torch.cuda.synchronize()
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
 
-        with torch.no_grad():
-            # benchmarking
-            if self.benchmark == True:
-                # start torch.utils.benchmark
-                # will run the below code a second time to measure performance
-                timer = benchmark.Timer(
-                    stmt="model(image_tensors)",  # specify code to be benchmarked
-                    globals={"image_tensors": image_tensors, "model": self.model}  # pass x and model to be used by benchmark
-                )
+            with torch.no_grad():
+                # benchmarking
+                if self.benchmark == True:
+                    # start torch.utils.benchmark
+                    # will run the below code a second time to measure performance
+                    timer = benchmark.Timer(
+                        stmt="model(image_tensors)",  # specify code to be benchmarked
+                        globals={"image_tensors": image_tensors, "model": self.model}  # pass x and model to be used by benchmark
+                    )
 
-                # record time taken
-                time_taken = timer.timeit(3) # run code n times, gives average = time taken / n
-                time_taken_ind = time_taken.mean / self.batch_size
-                print(f"Prediction time taken: {time_taken_ind:.4f} seconds")
-                self.benchmark_times.append(time_taken_ind)
-
-            #outputs = self.model(image_tensors)
-            outputs, _ = self.model(image_tensors)
+                    # record time taken
+                    time_taken = timer.timeit(3) # run code n times, gives average = time taken / n
+                    time_taken_ind = time_taken.mean / self.batch_size
+                    print(f"Prediction time taken: {time_taken_ind:.4f} seconds")
+                    self.benchmark_times.append(time_taken_ind)
+                #outputs = self.model(image_tensors)
+                outputs, _ = self.model(image_tensors)
             temp_index = 1
             # parallel processing after getting model predictions, might aswell
             futures = []

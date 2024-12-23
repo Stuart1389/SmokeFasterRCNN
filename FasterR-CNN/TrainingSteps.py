@@ -96,7 +96,6 @@ def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=
         metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
         #train_loss.append(loss_value)
-        profiler.step()  # update profiler after epoch
 
     # Getting average loss values and storing in dict
     avg_loss_dict = {
@@ -213,7 +212,6 @@ def validate_step(model, data_loader, device, scaler=None, profiler=None):
         coco_evaluator.update(res)
         evaluator_time = time.time() - evaluator_time
         metric_logger.update(model_time=model_time, evaluator_time=evaluator_time)
-        profiler.step()  # update profiler after epoch
 
     # Getting average loss values and storing in dict
 

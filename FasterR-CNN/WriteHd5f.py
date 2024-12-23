@@ -73,7 +73,7 @@ class WriteHd5f:
                                                           dtype=h5py.special_dtype(vlen='float32'))
                 iscrowd_storage = epoch_group.create_dataset("iscrowds", shape=(total_samples,), dtype=h5py.special_dtype(vlen='int64'))
 
-                # Create global index, this is so that we write to the correct spot when running in parallel
+                # Create global index, this is so that we write to the correct spot when using dataloader
                 global_index = 0
 
 

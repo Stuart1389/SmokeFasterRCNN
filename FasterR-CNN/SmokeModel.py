@@ -63,7 +63,7 @@ class SmokeModel:
         return self.model, in_features, self.model.roi_heads.box_predictor
 
     # functions to get train, validate and test dataloaders
-    def get_dataloader(self):
+    def get_dataloader(self, testing = False):
         num_workers = os.cpu_count() # threads available
         batch_size = setTrainValues("BATCH_SIZE")
         test_batch_size = setTestValues("BATCH_SIZE")
@@ -72,7 +72,7 @@ class SmokeModel:
         test_dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTestValues("dataset"))
 
         # Load datasets
-        if(setTrainValues("load_hd5f") == True):
+        if(setTrainValues("load_hd5f") == True and not testing):
             train_dir = DatasetHd5f.SmokeDatasetHd5f(str(dataset_hd5f_dir) + "/Train.hdf5")
             num_train_epochs = self.num_train_epochs
             train_sampler = EpochSampler(train_dir, epochs=num_train_epochs)

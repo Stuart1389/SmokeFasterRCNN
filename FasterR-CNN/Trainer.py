@@ -45,6 +45,10 @@ class Trainer:
         self.model_name = setTrainValues("model_name")
         self.batch_size = setTrainValues("BATCH_SIZE")
 
+        # profiler
+        self.start_profiler = setTrainValues("start_profiler")
+        self.record_trace = setTrainValues("record_trace")
+
 
         # getting hyperparameters
         self.learning_rate = setTrainValues("learning_rate")
@@ -116,82 +120,85 @@ class Trainer:
         validate_loss_it_vals = []
 
         # Profiler
-        with torch.profiler.profile(
-                activities=[
-                    torch.profiler.ProfilerActivity.CPU,
-                    torch.profiler.ProfilerActivity.CUDA
-                ],
-                #schedule=torch.profiler.schedule(wait=1, warmup=1, active=3),
-                on_trace_ready=torch.profiler.tensorboard_trace_handler(self.save_path / 'profiler_output'),
-                record_shapes=True,
-                profile_memory=True,
-                with_stack=True,
-                with_flops=False,
-                with_modules=False
-        ) as profiler:
+        profiler = torch.profiler.profile(
+            activities=[
+                torch.profiler.ProfilerActivity.CPU,
+                torch.profiler.ProfilerActivity.CUDA
+            ],
+            on_trace_ready=torch.profiler.tensorboard_trace_handler(self.save_path / 'profiler_train_output'),
+            record_shapes=False,
+            profile_memory=False,
+            with_stack=self.record_trace,
+            with_flops=False,
+            with_modules=False
+        )
 
-            # !!TRAINING LOOP START!!
-            for epoch in range(self.epochs):
-                # TRAINING STEP
-                with torch.profiler.record_function("train_step"):
-                    _, train_loss_it_dict, train_loss_dict = train_step(
-                        self.model, self.optimizer, self.train_dataloader, self.device, epoch, print_freq=10, profiler=profiler
-                    )
-                    self.lr_scheduler.step()
-                with torch.profiler.record_function("validate_step"):
-                # VALIDATION STEP
-                    _, validate_loss_it_dict, validate_loss_dict = validate_step(
-                        self.model, self.validate_dataloader, device=self.device, profiler=profiler
-                    )
+        # !!TRAINING LOOP START!!
+        for epoch in range(self.epochs):
+            if(self.start_profiler):
+                profiler.start()
+            # TRAINING STEP
+            with torch.profiler.record_function("TRAINING"):
+                _, train_loss_it_dict, train_loss_dict = train_step(
+                    self.model, self.optimizer, self.train_dataloader, self.device, epoch, print_freq=10
+                )
+                self.lr_scheduler.step()
+            with torch.profiler.record_function("VALIDATING"):
+            # VALIDATION STEP
+                _, validate_loss_it_dict, validate_loss_dict = validate_step(
+                    self.model, self.validate_dataloader, device=self.device
+                )
 
-                # holds number of epochs model trained on
-                self.epochs_trained += 1
+            # holds number of epochs model trained on
+            self.epochs_trained += 1
 
 
-                # Add loss dicts to list
-                # Average loss per epoch
-                train_loss_vals.append(train_loss_dict)
-                validate_loss_vals.append(validate_loss_dict)
-                # loss per iteration
-                train_loss_it_vals.append(train_loss_it_dict)
-                validate_loss_it_vals.append(validate_loss_it_dict)
+            # Add loss dicts to list
+            # Average loss per epoch
+            train_loss_vals.append(train_loss_dict)
+            validate_loss_vals.append(validate_loss_dict)
+            # loss per iteration
+            train_loss_it_vals.append(train_loss_it_dict)
+            validate_loss_it_vals.append(validate_loss_it_dict)
 
-                # get average training loss and display
-                current_train_loss = train_loss_dict["avg_total_loss"]
-                print(f"Current average training loss: {current_train_loss:.4f}")
+            # get average training loss and display
+            current_train_loss = train_loss_dict["avg_total_loss"]
+            print(f"Current average training loss: {current_train_loss:.4f}")
 
-                # Early stopping get average validation loss
-                current_val_loss = validate_loss_dict["avg_total_loss"]
-                print(f"Current average validation loss: {current_val_loss:.4f}")
+            # Early stopping get average validation loss
+            current_val_loss = validate_loss_dict["avg_total_loss"]
+            print(f"Current average validation loss: {current_val_loss:.4f}")
 
-                #wandb logging
-                wandb.log({
-                    "avg_train_loss": current_train_loss,
-                    "avg_val_loss": current_val_loss,
-                })
+            #wandb logging
+            wandb.log({
+                "avg_train_loss": current_train_loss,
+                "avg_val_loss": current_val_loss,
+            })
 
-                # Early stopping implementation, at each epoch check for improvement in validation loss
-                if current_val_loss < self.best_val_loss:
-                    self.best_val_loss = current_val_loss
-                    self.best_train_loss = current_train_loss
-                    self.epochs_no_improve = 0
-                    print(f"Validation loss improved to {self.best_val_loss:.4f}, saving model...")
-                    self.save_model() # checkpointing epochs with positive loss values (and by that i mean lower)
-                else:
-                    self.epochs_no_improve += 1
-                    print(f"No improvement in validation loss for {self.epochs_no_improve} epochs. Current best loss is {self.best_val_loss:.4f}")
-                # stop if loss doesnt improve
-                if self.epochs_no_improve >= self.patience:
-                    print(f"Early stopping due to no improvement. Best val loss: {self.best_val_loss:.4f} Best train loss: {self.best_train_loss:.4f}")
-                    break
+            # Early stopping implementation, at each epoch check for improvement in validation loss
+            if current_val_loss < self.best_val_loss:
+                self.best_val_loss = current_val_loss
+                self.best_train_loss = current_train_loss
+                self.epochs_no_improve = 0
+                print(f"Validation loss improved to {self.best_val_loss:.4f}, saving model...")
+                self.save_model() # checkpointing epochs with positive loss values (and by that i mean lower)
+            else:
+                self.epochs_no_improve += 1
+                print(f"No improvement in validation loss for {self.epochs_no_improve} epochs. Current best loss is {self.best_val_loss:.4f}")
+            # stop if loss doesnt improve
+            if self.epochs_no_improve >= self.patience:
+                print(f"Early stopping due to no improvement. Best val loss: {self.best_val_loss:.4f} Best train loss: {self.best_train_loss:.4f}")
+                break
+            if(self.start_profiler):
+                profiler.stop()
 
 
         # GETTING METRICS
         # Creating instance of class to plot graphs from loss values
         plot_graphs = PlotGraphs(train_loss_vals, validate_loss_vals,
                                  train_loss_it_vals, validate_loss_it_vals)
-        # Get highest vram usage in gpu during training
-        cur_highest_vram = torch.cuda.max_memory_allocated() / 1024 / 1024
+        # Get highest vram reserved value since program start
+        cur_highest_vram = torch.cuda.max_memory_reserved() / 1024 / 1024
         torch.cuda.reset_peak_memory_stats() # reset
         # calculate total time taken to train
         end_time = time.time()
@@ -199,7 +206,7 @@ class Trainer:
         avg_time_per_epoch = total_training_time / self.epochs_trained
 
         # display profiler metrics
-        if profiler is not None:
+        if profiler is not None and self.start_profiler:
             key_averages = profiler.key_averages()
             print(key_averages.table())
 
@@ -217,7 +224,8 @@ class Trainer:
             "total_train_time(seconds)": total_training_time,
             "avg_time_per_epoch(seconds)": avg_time_per_epoch,
             "tokens_spent": tokens_spent,
-            "epochs_trained": self.epochs_trained
+            "epochs_trained": self.epochs_trained,
+            "reserved_vram": cur_highest_vram
         })
 
         #self.save_model()
