@@ -92,17 +92,17 @@ class Tester:
         )
         if(self.start_profiler):
             profiler.start()
-            test_dataloader = self.test_dataloader # change to dataloader
-            # Start timer
-            self.start_time = time.time()
-            # Walks through dir_path, for each file call predictBbox and pass file path
-            for batch, (image_tensor, filename) in enumerate(test_dataloader):
-                print(f"Processing batch {batch} out of {len(test_dataloader)}")
-                self.get_predictions(image_tensor, filename)
-                #profiler.step()
-            self.get_results()
-            if(self.start_profiler):
-                profiler.stop()
+        test_dataloader = self.test_dataloader # change to dataloader
+        # Start timer
+        self.start_time = time.time()
+        # Walks through dir_path, for each file call predictBbox and pass file path
+        for batch, (image_tensor, filename) in enumerate(test_dataloader):
+            print(f"Processing batch {batch} out of {len(test_dataloader)}")
+            self.get_predictions(image_tensor, filename)
+            #profiler.step()
+        self.get_results()
+        if(self.start_profiler):
+            profiler.stop()
 
     # Transform images for model
     def get_transform(self):

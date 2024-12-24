@@ -6,19 +6,19 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 8,
-        "EPOCHS": 1,
-        "PATIENCE": 1,
-        "dataset": "Medium data", # "Small data" OR "Large data"
-        "model_name": "augment_test_2080B", # name of saved model
-        "plotJSON_fname": "augment_test_2080B", # json filename
+        "EPOCHS": 6,
+        "PATIENCE": 6,
+        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data"
+        "model_name": "with_debug_L4", # name of saved model
+        "plotJSON_fname": "with_debug_L4", # json filename
 
         "load_hd5f" : False, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
         "h5py_dir_save_name": "test_file_medium", # file name for h5py file
         "h5py_dir_load_name": "test_file_medium",
 
         # PROFILER
-        "start_profiler" : True,
-        "record_trace" : True,
+        "start_profiler" : False,
+        "record_trace" : False,
 
         # PARAMETERS
         "learning_rate": 0.001,
@@ -34,12 +34,12 @@ def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
         "BATCH_SIZE": 4,
-        "dataset": "Small data", # "Small data" OR "Large data"
-        "model_name": "augment_test_2080", # name of model to test
+        "dataset": "Large data", # "Small data" OR "Large data"
+        "model_name": "with_debug_2080", # name of model to test
 
         # PROFILER
-        "start_profiler": True,
-        "record_trace": True,
+        "start_profiler": False,
+        "record_trace": False,
     }
 
     # return value corresponding with val_to_get

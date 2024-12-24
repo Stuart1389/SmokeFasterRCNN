@@ -91,7 +91,7 @@ class SmokeModel:
             batch_size=batch_size,
             num_workers=num_workers, # set to all available threads
             collate_fn=collate_fn,
-            pin_memory=True, # speeds up transfer of data between cpu and gpu/puts data in page locked memory
+            pin_memory=False, # speeds up transfer of data between cpu and gpu/puts data in page locked memory
             shuffle=False, # only shuffle while training
             sampler=train_sampler
         )
@@ -101,7 +101,7 @@ class SmokeModel:
             batch_size=batch_size,
             num_workers=num_workers,
             collate_fn=collate_fn,
-            pin_memory=True,
+            pin_memory=False,
             shuffle=False,
             sampler=val_sampler
         )
@@ -111,7 +111,7 @@ class SmokeModel:
             batch_size=test_batch_size,
             num_workers=num_workers,
             collate_fn=collate_fn,
-            pin_memory=True,
+            pin_memory=False,
             shuffle=False
         )
 

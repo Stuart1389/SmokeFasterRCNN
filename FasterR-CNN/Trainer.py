@@ -330,7 +330,7 @@ def main():
     model, in_features, model.roi_heads.box_predictor = Model.getModel()
     """
 
-    model.to(device, non_blocking=True) # put model on gpu (or cpu :( )
+    model.to(device, non_blocking=False) # put model on gpu (or cpu :( )
 
     # create instance of class
     trainer = Trainer(model, train_dataloader, validate_dataloader, device)

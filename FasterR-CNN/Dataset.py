@@ -165,7 +165,7 @@ class smokeDataset(torch.utils.data.Dataset):
         target["image_id"] = image_id
         target["area"] = area
         target["iscrowd"] = torch.zeros((transformed_bboxes.shape[0],), dtype=torch.int64)
-
+        """
         # Print image information
         print(f"Image dtype: {image.dtype}, Shape: {image.shape}")
         
@@ -173,7 +173,7 @@ class smokeDataset(torch.utils.data.Dataset):
         for key, value in target.items():
             print(
                 f"Key: {key}, Type: {type(value)}, Tensor dtype: {value.dtype if isinstance(value, torch.Tensor) else 'N/A'}, Shape: {value.shape if isinstance(value, torch.Tensor) else 'N/A'}")
-
+        """
         return image, target
 
     if (self.transform and self.testing):
