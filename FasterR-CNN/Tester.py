@@ -120,7 +120,7 @@ class Tester:
     # !!GETTING PREDICTION!!
     @torch.inference_mode()
     def get_predictions(self, image_tensor, filename):
-        with torch.profiler.record_function("test_step"):
+        with torch.profiler.record_function("TESTING"):
             # getting predictions
             self.model.to(self.device, non_blocking=False)  # put model on cpu or gpu
             # set model to evaluation mode
@@ -128,7 +128,6 @@ class Tester:
             # print("image:", image, "image_tensor", image_tensor, "filename", filename)
             filenames = list(files for files in filename)
             image_tensors = list(tensor.to(self.device, non_blocking=False) for tensor in image_tensor)
-
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
 

@@ -5,14 +5,14 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 2,
+        "BATCH_SIZE": 8,
         "EPOCHS": 1,
         "PATIENCE": 1,
         "dataset": "Medium data", # "Small data" OR "Large data"
-        "model_name": "augment_test_2080", # name of saved model
-        "plotJSON_fname": "augment_test_2080", # json filename
+        "model_name": "augment_test_2080B", # name of saved model
+        "plotJSON_fname": "augment_test_2080B", # json filename
 
-        "load_hd5f" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
+        "load_hd5f" : False, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
         "h5py_dir_save_name": "test_file_medium", # file name for h5py file
         "h5py_dir_load_name": "test_file_medium",
 
