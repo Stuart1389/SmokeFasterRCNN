@@ -15,7 +15,7 @@ from coco_eval import CocoEvaluator
 from coco_utils import get_coco_api_from_dataset
 import wandb
 
-def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=None, profiler=None):
+def train_step(model, optimizer, data_loader, device, epoch, iteration, print_freq, scaler=None, profiler=None):
     iteration_loss_list = [] # loss graph iteration instead of epoch
     # Init loss values
     total_loss = 0
@@ -46,6 +46,7 @@ def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=
         with torch.amp.autocast('cuda', enabled=scaler is not None):
             loss_dict = model(images, targets)
             losses = sum(loss for loss in loss_dict.values())
+            iteration += 1
 
         # reduce losses over all GPUs for logging purposes
         loss_dict_reduced = utils.reduce_dict(loss_dict)
@@ -67,7 +68,8 @@ def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=
             'train_loss_box_reg_it': loss_dict_reduced['loss_box_reg'].item(),
             'train_loss_objectness_it': loss_dict_reduced['loss_objectness'].item(),
             'train_loss_rpn_box_reg_it': loss_dict_reduced['loss_rpn_box_reg'].item(),
-            'current_epoch': epoch + 1
+            'current_epoch': epoch + 1,
+            'current_iteration': iteration
         })
 
         # gettting individual loss from dict for average epoch graphs
@@ -113,9 +115,10 @@ def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=
         "train_avg_loss_box_reg_epoch": total_loss_box_reg / num_batches,
         "train_avg_loss_objectness_epoch": total_loss_objectness / num_batches,
         "train_avg_loss_rpn_box_reg_epoch": total_loss_rpn_box_reg / num_batches,
-        'current_epoch': epoch + 1
+        'current_epoch': epoch + 1,
+        'current_iteration': iteration
     })
-    return metric_logger, iteration_loss_list, avg_loss_dict
+    return metric_logger, iteration_loss_list, avg_loss_dict, iteration
 
 
 def get_iou_type(model):
@@ -131,7 +134,7 @@ def get_iou_type(model):
 
 
 @torch.inference_mode()
-def validate_step(model, data_loader, device, epoch, scaler=None, profiler=None):
+def validate_step(model, data_loader, device, epoch, iteration, scaler=None, profiler=None):
     model.eval()
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = "Validation:"
@@ -165,6 +168,7 @@ def validate_step(model, data_loader, device, epoch, scaler=None, profiler=None)
         model_time = time.time()
         # validate
         with torch.amp.autocast('cuda', enabled=scaler is not None):
+            iteration += 1
             outputs, loss_dict = model(images, targets)
             losses = sum(loss for loss in loss_dict.values())
 
@@ -188,7 +192,8 @@ def validate_step(model, data_loader, device, epoch, scaler=None, profiler=None)
             'val_loss_box_reg_it': loss_dict_reduced['loss_box_reg'].item(),
             'val_loss_objectness_it': loss_dict_reduced['loss_objectness'].item(),
             'val_loss_rpn_box_reg_it': loss_dict_reduced['loss_rpn_box_reg'].item(),
-            'current_epoch': epoch + 1
+            'current_epoch': epoch + 1,
+            'current_iteration': iteration
         })
         #print("it loss:", iteration_loss_list)
         
@@ -232,7 +237,8 @@ def validate_step(model, data_loader, device, epoch, scaler=None, profiler=None)
         "val_avg_loss_box_reg_epoch": total_loss_box_reg / num_batches,
         "val_avg_loss_objectness_epoch": total_loss_objectness / num_batches,
         "val_avg_loss_rpn_box_reg_epoch": total_loss_rpn_box_reg / num_batches,
-        'current_epoch': epoch + 1
+        'current_epoch': epoch + 1,
+        'current_iteration': iteration
     })
 
     # gather the stats from all processes
@@ -243,4 +249,4 @@ def validate_step(model, data_loader, device, epoch, scaler=None, profiler=None)
     # accumulate predictions from all images
     coco_evaluator.accumulate()
     coco_evaluator.summarize()
-    return coco_evaluator, iteration_loss_list, avg_loss_dict
+    return coco_evaluator, iteration_loss_list, avg_loss_dict, iteration

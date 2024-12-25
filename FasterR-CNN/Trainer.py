@@ -44,6 +44,8 @@ class Trainer:
         self.epochs_trained = 0 # number of epochs trained (tells us epochs trained for early stopping)
         self.model_name = setTrainValues("model_name")
         self.batch_size = setTrainValues("BATCH_SIZE")
+        self.cur_train_iteration = 0
+        self.cur_val_iteration = 0
 
         # profiler
         self.start_profiler = setTrainValues("start_profiler")
@@ -139,14 +141,14 @@ class Trainer:
                 profiler.start()
             # TRAINING STEP
             with torch.profiler.record_function("TRAINING"):
-                _, train_loss_it_dict, train_loss_dict = train_step(
-                    self.model, self.optimizer, self.train_dataloader, self.device, epoch, print_freq=10
+                _, train_loss_it_dict, train_loss_dict, self.cur_train_iteration = train_step(
+                    self.model, self.optimizer, self.train_dataloader, self.device, epoch, self.cur_train_iteration, print_freq=10
                 )
                 self.lr_scheduler.step()
             with torch.profiler.record_function("VALIDATING"):
             # VALIDATION STEP
-                _, validate_loss_it_dict, validate_loss_dict = validate_step(
-                    self.model, self.validate_dataloader, self.device, epoch
+                _, validate_loss_it_dict, validate_loss_dict, self.cur_val_iteration = validate_step(
+                    self.model, self.validate_dataloader, self.device, epoch, self.cur_val_iteration
                 )
 
             # holds number of epochs model trained on
