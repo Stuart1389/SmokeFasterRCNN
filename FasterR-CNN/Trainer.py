@@ -146,7 +146,7 @@ class Trainer:
             with torch.profiler.record_function("VALIDATING"):
             # VALIDATION STEP
                 _, validate_loss_it_dict, validate_loss_dict = validate_step(
-                    self.model, self.validate_dataloader, device=self.device
+                    self.model, self.validate_dataloader, self.device, epoch
                 )
 
             # holds number of epochs model trained on

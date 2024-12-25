@@ -58,7 +58,7 @@ def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=
             'loss_classifier': loss_dict_reduced['loss_classifier'].item(),
             'loss_box_reg': loss_dict_reduced['loss_box_reg'].item(),
             'loss_objectness': loss_dict_reduced['loss_objectness'].item(),
-            'loss_rpn_box_reg': loss_dict_reduced['loss_rpn_box_reg'].item()
+            'loss_rpn_box_reg': loss_dict_reduced['loss_rpn_box_reg'].item(),
         })
         # lazy logging
         wandb.log({
@@ -66,7 +66,8 @@ def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=
             'train_loss_classifier_it': loss_dict_reduced['loss_classifier'].item(),
             'train_loss_box_reg_it': loss_dict_reduced['loss_box_reg'].item(),
             'train_loss_objectness_it': loss_dict_reduced['loss_objectness'].item(),
-            'train_loss_rpn_box_reg_it': loss_dict_reduced['loss_rpn_box_reg'].item()
+            'train_loss_rpn_box_reg_it': loss_dict_reduced['loss_rpn_box_reg'].item(),
+            'current_epoch': epoch + 1
         })
 
         # gettting individual loss from dict for average epoch graphs
@@ -103,7 +104,7 @@ def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=
         "avg_loss_classifier": total_loss_classifier / num_batches,
         "avg_loss_box_reg": total_loss_box_reg / num_batches,
         "avg_loss_objectness": total_loss_objectness / num_batches,
-        "avg_loss_rpn_box_reg": total_loss_rpn_box_reg / num_batches
+        "avg_loss_rpn_box_reg": total_loss_rpn_box_reg / num_batches,
     }
     # lazy logging
     wandb.log({
@@ -111,7 +112,8 @@ def train_step(model, optimizer, data_loader, device, epoch, print_freq, scaler=
         "train_avg_loss_classifier_epoch": total_loss_classifier / num_batches,
         "train_avg_loss_box_reg_epoch": total_loss_box_reg / num_batches,
         "train_avg_loss_objectness_epoch": total_loss_objectness / num_batches,
-        "train_avg_loss_rpn_box_reg_epoch": total_loss_rpn_box_reg / num_batches
+        "train_avg_loss_rpn_box_reg_epoch": total_loss_rpn_box_reg / num_batches,
+        'current_epoch': epoch + 1
     })
     return metric_logger, iteration_loss_list, avg_loss_dict
 
@@ -129,7 +131,7 @@ def get_iou_type(model):
 
 
 @torch.inference_mode()
-def validate_step(model, data_loader, device, scaler=None, profiler=None):
+def validate_step(model, data_loader, device, epoch, scaler=None, profiler=None):
     model.eval()
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = "Validation:"
@@ -185,7 +187,8 @@ def validate_step(model, data_loader, device, scaler=None, profiler=None):
             'val_loss_classifier_it': loss_dict_reduced['loss_classifier'].item(),
             'val_loss_box_reg_it': loss_dict_reduced['loss_box_reg'].item(),
             'val_loss_objectness_it': loss_dict_reduced['loss_objectness'].item(),
-            'val_loss_rpn_box_reg_it': loss_dict_reduced['loss_rpn_box_reg'].item()
+            'val_loss_rpn_box_reg_it': loss_dict_reduced['loss_rpn_box_reg'].item(),
+            'current_epoch': epoch + 1
         })
         #print("it loss:", iteration_loss_list)
         
@@ -228,7 +231,8 @@ def validate_step(model, data_loader, device, scaler=None, profiler=None):
         "val_avg_loss_classifier_epoch": total_loss_classifier / num_batches,
         "val_avg_loss_box_reg_epoch": total_loss_box_reg / num_batches,
         "val_avg_loss_objectness_epoch": total_loss_objectness / num_batches,
-        "val_avg_loss_rpn_box_reg_epoch": total_loss_rpn_box_reg / num_batches
+        "val_avg_loss_rpn_box_reg_epoch": total_loss_rpn_box_reg / num_batches,
+        'current_epoch': epoch + 1
     })
 
     # gather the stats from all processes
