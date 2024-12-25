@@ -26,12 +26,12 @@ transform_train = A.Compose([
     #A.RandomCrop(width= round(320), height= round(240)), # needs padding or will throw error
     #A.RandomBrightnessContrast(p=0.4),
     #A.RandomContrast(p=0.5),
-    #A.BBoxSafeRandomCrop(erosion_rate=0.2, p=0.5),
-    #A.GaussNoise(var_limit=(0.01, 0.005), p=0.3),
-    #A.HorizontalFlip(p=0.5),
-    #A.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.4, p=0.5),
-    #A.RandomScale(scale_limit=0.2, p=0.5),
-    #A.SafeRotate(limit=5, p=0.5, border_mode=cv2.BORDER_CONSTANT),
+    A.BBoxSafeRandomCrop(erosion_rate=0.2, p=0.5),
+    A.GaussNoise(var_limit=(0.01, 0.005), p=0.3),
+    A.HorizontalFlip(p=0.5),
+    A.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.4, p=0.5),
+    A.RandomScale(scale_limit=0.2, p=0.5),
+    A.SafeRotate(limit=5, p=0.5, border_mode=cv2.BORDER_CONSTANT),
     #A.PadIfNeeded(min_height=480, min_width=640),
     #A.Resize(height=480, width=640),
     ToTensorV2()

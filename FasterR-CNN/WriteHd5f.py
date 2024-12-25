@@ -3,6 +3,7 @@ from SmokeModel import SmokeModel
 import h5py
 from pathlib import Path
 import numpy as np
+import time
 
 class WriteHd5f:
     def __init__(self):
@@ -107,8 +108,14 @@ class WriteHd5f:
 
                 print(f"Data successfully written to {file_write_path}")
 
+
 if __name__ == '__main__':
+    start_time = time.time()
     write_h5py = WriteHd5f()
+    end_time = time.time()
+
+    elapsed_time = end_time - start_time
+    print(f"Execution time: {elapsed_time:.2f} seconds")
 
 
 
