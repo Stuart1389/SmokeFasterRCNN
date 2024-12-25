@@ -228,6 +228,8 @@ class Trainer:
             "reserved_vram": cur_highest_vram
         })
 
+        wandb.finish()
+
         #self.save_model()
         # wandb logging
 
