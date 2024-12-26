@@ -5,12 +5,12 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 6,
+        "BATCH_SIZE": 2,
         "EPOCHS": 25,
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data"
-        "model_name": "inc_lr_L4", # name of saved model
-        "plotJSON_fname": "inc_lr_L4", # json filename
+        "model_name": "reduce_batch_L4", # name of saved model
+        "plotJSON_fname": "reduce_batch_L4", # json filename
 
         "load_hd5f" : False, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
         "h5py_dir_save_name": "basic_transform_large", # file name for h5py file
@@ -21,7 +21,7 @@ def setTrainValues(val_to_get):
         "record_trace" : False,
 
         # PARAMETERS
-        "learning_rate": 0.003,
+        "learning_rate": 0.001,
         "momentum": 0.9,
         "weight_decay": 0.0005,
         "step_size": 3,
