@@ -311,7 +311,8 @@ class Trainer:
 
 def main():
     # reproducibility
-    SEED = 1390
+    #SEED = 1390
+    SEED = 5242
     torch.manual_seed(SEED)
     torch.cuda.manual_seed(SEED)
     np.random.seed(SEED)
@@ -321,6 +322,7 @@ def main():
     # Setting variables for instance
     #device = setGlobalValues("device")
     device = "cuda" if torch.cuda.is_available() else "cpu" # device agnostic
+    print(device)
     # Create instance of SmokeModel class
     smoke_model = SmokeModel()
     # get dataloaders from model class

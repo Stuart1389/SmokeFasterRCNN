@@ -47,6 +47,7 @@ class SmokeModel:
     def get_model(self, testing=None):
         # load faster-rcnn
         self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT")
+        print(os.path.expanduser('~/.cache/torch/hub/checkpoints'))
         # Set in features to whatever region of interest(ROI) expects
         in_features = self.model.roi_heads.box_predictor.cls_score.in_features
         # Required to work with 2 classes
