@@ -349,6 +349,7 @@ if __name__ == '__main__':
     main()
 
 
+
     # IoU - Measures overlap between 2 bounding boxes
     # Precission - Measures how many positive predictions were correct | high = few false positives
     # Recall - Measures how many objects the model detected | high = detected most objects
