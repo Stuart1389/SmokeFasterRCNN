@@ -246,7 +246,7 @@ if __name__ == '__main__':
 
 
     # Creates plot with image
-    def visualize(image, bboxes, labels):
+    def visualize(image, bboxes, labels, image_id):
         img = image.permute(1, 2, 0).numpy() # convert tensor to numpy array
         #img = image.copy() # throws error
 
@@ -268,14 +268,25 @@ if __name__ == '__main__':
         plt.figure(figsize=(12, 12))
         plt.axis('off')
         plt.imshow(img)
-        plt.show()
+
+        save_path = './test_image'
+        save_file = os.path.join(save_path, f"visualized_image_{image_id}.png")
+        plt.savefig(save_file, bbox_inches='tight', pad_inches=0)
+        plt.close()  # Close the figure to avoid memory issues
+        print(f"Image saved to {save_file}")
 
     #image, bbox, label = train_test.__getitem__(1) # get image and annotation at index 1
+    # Define the path for the directory
+    directory_path = './test_image'
+
+    # Create the directory if it doesn't exist
+    os.makedirs(directory_path, exist_ok=True)
+
     image, target = train_test.__getitem__(1) # get image and annotation at index 1
     bbox = target["boxes"]
     #label = target["labels"] cba
     label = "smoke"
-    visualize(image, bbox, label)
+    visualize(image, bbox, label, 0)
 
 
     # Test the test dataset too
@@ -285,4 +296,4 @@ if __name__ == '__main__':
     bbox = target["boxes"]
     #label = target["labels"]
     label = "smoke"
-    visualize(image, bbox, label)
+    visualize(image, bbox, label, 1)
