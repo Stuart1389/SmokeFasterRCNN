@@ -5,8 +5,8 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 2,
-        "EPOCHS": 25,
+        "BATCH_SIZE": 4,
+        "EPOCHS": 6,
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data"
         "model_name": "torch_update_L4", # name of saved model

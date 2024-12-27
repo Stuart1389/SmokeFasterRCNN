@@ -57,8 +57,12 @@ class smokeDataset(torch.utils.data.Dataset):
   def __init__(self, main_dir: str, transform=None, testing = False):
 
     self.main_dir = main_dir
+    """
     self.images = list(Path(str(main_dir) + "/images/").glob("*.jpeg")) # set to list of all images
     self.annotations = list(Path(str(main_dir) + "/annotations/xmls").glob("*.xml")) # set to list of all xml files
+    """
+    self.images = sorted(list(Path(str(main_dir) + "/images/").glob("*.jpeg")))
+    self.annotations = sorted(list(Path(str(main_dir) + "/annotations/xmls").glob("*.xml")))
     #self.loaded_images = [np.array(Image.open(img_path)) for img_path in self.images]
     self.transform = transform
     self.testing = testing
@@ -272,6 +276,7 @@ if __name__ == '__main__':
         save_path = './test_image'
         save_file = os.path.join(save_path, f"visualized_image_{image_id}.png")
         plt.savefig(save_file, bbox_inches='tight', pad_inches=0)
+        plt.show()
         plt.close()  # Close the figure to avoid memory issues
         print(f"Image saved to {save_file}")
 
