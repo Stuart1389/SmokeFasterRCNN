@@ -5,16 +5,16 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 2,
-        "EPOCHS": 25,
-        "PATIENCE": 4,
+        "BATCH_SIZE": 8,
+        "EPOCHS": 6,
+        "PATIENCE": 6,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data"
-        "model_name": "sorted_image_l4", # name of saved model
-        "plotJSON_fname": "sorted_image_l4", # json filename
+        "model_name": "BaselineColabL4", # name of saved model
+        "plotJSON_fname": "BaselineColabL4", # json filename
 
         "load_hd5f" : False, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
-        "h5py_dir_save_name": "test_file", # file name for h5py file
-        "h5py_dir_load_name": "test_file", #basic_transform_large
+        "h5py_dir_save_name": "test_file_large_compB", # file name for h5py file
+        "h5py_dir_load_name": "test_file_large_compB", #basic_transform_large
 
         # PROFILER
         "start_profiler" : False,

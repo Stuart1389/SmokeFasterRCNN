@@ -4,6 +4,7 @@ import h5py
 from pathlib import Path
 import numpy as np
 import time
+import gzip
 
 class WriteHd5f:
     def __init__(self):

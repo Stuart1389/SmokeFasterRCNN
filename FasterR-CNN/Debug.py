@@ -10,3 +10,9 @@ pip install torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https
 """
 
 #pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+"""
+PyTorch version: 2.4.1+cu118
+CUDA version: 11.8
+torchvision version: 0.19.1+cu118
+"""
