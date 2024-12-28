@@ -6,11 +6,11 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 16,
-        "EPOCHS": 25,
+        "EPOCHS": 15,
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data"
-        "model_name": "003_lr_A100", # name of saved model
-        "plotJSON_fname": "003_lr_A100", # json filename
+        "model_name": "003_lr_2080", # name of saved model
+        "plotJSON_fname": "003_lr_2080", # json filename
 
         "load_hd5f" : False, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
         "h5py_dir_save_name": "test_file_large_compB", # file name for h5py file

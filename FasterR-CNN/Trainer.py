@@ -311,8 +311,7 @@ class Trainer:
 
 def main():
     # reproducibility
-    #SEED = 1390
-    SEED = 5242
+    SEED = 1390
     torch.manual_seed(SEED)
     torch.cuda.manual_seed(SEED)
     np.random.seed(SEED)
