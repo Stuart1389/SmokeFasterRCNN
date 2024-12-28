@@ -301,7 +301,7 @@ class Trainer:
         GPU_dict = {"2080" : ("RTX 2080", 0),
                            "100" : ("A100", 8.47),
                            "l4" : ("L4", 2.4),
-                           "t4" : ("T4", 0)}
+                           "t4" : ("T4", 1.44)}
 
         model_name_lower = model_name.lower()
         for key in GPU_dict:

@@ -21,7 +21,7 @@ def setTrainValues(val_to_get):
         "record_trace" : False,
 
         # PARAMETERS
-        "learning_rate": 0.003,
+        "learning_rate": 0.001,
         "momentum": 0.9,
         "weight_decay": 0.0005,
         "step_size": 3,
