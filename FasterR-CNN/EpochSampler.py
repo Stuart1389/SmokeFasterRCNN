@@ -1,6 +1,11 @@
 import torch
 from torch.utils.data import Sampler
-
+"""
+the purpose of this sampler is so that we can track what epoch we're on
+this is necessary when using hdf5 with transforms since we need to read
+from the current epoch
+otherwise transforms will always be the same
+"""
 class EpochSampler(Sampler):
     def __init__(self, dataset, epochs):
         self.dataset = dataset

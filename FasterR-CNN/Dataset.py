@@ -20,7 +20,7 @@ import time
 # Albumentations library, can do transforms for image and bbox as one
 # pascal_voc is format (xmin, ymin, xmax, ymax) we're using for bounding box coords
 transform_train = A.Compose([
-    #A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
+    A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
     #A.PadIfNeeded(min_height=320, min_width=240, border_mode=cv2.BORDER_CONSTANT), # prevents shape mismatch from image being cut off
     #A.PadIfNeeded(min_height=640, min_width=480), # doesnt work currently, need to fix
     #A.RandomCrop(width= round(320), height= round(240)), # needs padding or will throw error
@@ -60,7 +60,8 @@ class smokeDataset(torch.utils.data.Dataset):
     if(testing):
         self.images = list(Path(str(main_dir) + "/images/").glob("*.jpeg")) # set to list of all images
         self.annotations = list(Path(str(main_dir) + "/annotations/xmls").glob("*.xml")) # set to list of all xml files
-    else: # lazy google colab fix for unsorted images
+    else: # lazy google colab fix for using images from google drive since order is wonky
+        # this causes a random inconsistant crash when testing
         self.images = sorted(list(Path(str(main_dir) + "/images/").glob("*.jpeg")))
         self.annotations = sorted(list(Path(str(main_dir) + "/annotations/xmls").glob("*.xml")))
     #self.loaded_images = [np.array(Image.open(img_path)) for img_path in self.images]
@@ -121,8 +122,11 @@ class smokeDataset(torch.utils.data.Dataset):
     #image = self.loaded_images[idx]
     #Convert to float32 for model
     # normalize the image to [0, 1] if it is not already in float format, prevents image from being completely white
+    """
+    UNCOMMENT IF NOT USING STANDARD IMAGENET NORMALIZATION!!!!!!!
     if image.dtype == np.uint8:
       image = image / 255.0
+    """
 
     image = image.astype(np.float32)
 

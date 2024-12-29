@@ -86,6 +86,7 @@ class Trainer:
 
         # Init wandb
         if(not self.logWB):
+            # disable wandb
             os.environ["WANDB_MODE"] = "disabled"
             print("wandbdisabled")
 
