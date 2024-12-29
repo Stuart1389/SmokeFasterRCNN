@@ -32,8 +32,8 @@ transform_train = A.Compose([
     #A.ToGray(p=1.0),
     #A.RandomScale(scale_limit=0.3, p=0.5),
 
-    A.SafeRotate(limit=5, p=1, border_mode=cv2.BORDER_CONSTANT),
-    #A.BBoxSafeRandomCrop(erosion_rate=0.2, p=0.5),
+    #A.SafeRotate(limit=5, p=1, border_mode=cv2.BORDER_CONSTANT),
+    A.BBoxSafeRandomCrop(erosion_rate=0.2, p=0.5),
     #A.GaussNoise(var_limit=(0.01, 0.005), p=1),
 
     ToTensorV2()
