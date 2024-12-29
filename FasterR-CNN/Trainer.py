@@ -43,6 +43,8 @@ class Trainer:
         self.epochs_no_improve = 0 # number of epochs with no improvement
         self.epochs_trained = 0 # number of epochs trained (tells us epochs trained for early stopping)
         self.model_name = setTrainValues("model_name")
+        self.log_model_name = setTrainValues("model_id") + "_" + self.model_name
+        print(self.log_model_name)
         self.batch_size = setTrainValues("BATCH_SIZE")
         self.cur_train_iteration = 0
         self.cur_val_iteration = 0
@@ -88,7 +90,7 @@ class Trainer:
             print("wandbdisabled")
 
 
-        wandb.init(project="smoke-detection", name=self.model_name, config={
+        wandb.init(project="smoke-detection", name=self.log_model_name, config={
             "learning_rate": self.learning_rate,
             "momentum": self.momentum,
             "weight_decay": self.weight_decay,

@@ -5,12 +5,13 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 16,
+        "BATCH_SIZE": 8,
         "EPOCHS": 15,
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data"
-        "model_name": "17_006_lr_A100", # name of saved model
-        "plotJSON_fname": "17_006_lr_A100", # json filename
+        "model_name": "004_lr_L4", # name of saved model
+        "plotJSON_fname": "004_lr_L4", # json filename
+        "model_id": "18",
 
         "load_hd5f" : False, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
         "h5py_dir_save_name": "test_file_large_compB", # file name for h5py file
@@ -22,7 +23,7 @@ def setTrainValues(val_to_get):
         "logWB" : True,
 
         # PARAMETERS
-        "learning_rate": 0.006,
+        "learning_rate": 0.004,
         "momentum": 0.9,
         "weight_decay": 0.0005,
         "step_size": 3,
@@ -36,7 +37,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "no_validation_A100", # name of model to test
+        "model_name": "17_006_lr_A100", # name of model to test
 
         # PROFILER
         "start_profiler": False,
