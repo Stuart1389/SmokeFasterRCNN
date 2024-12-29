@@ -50,6 +50,7 @@ class Trainer:
         # profiler
         self.start_profiler = setTrainValues("start_profiler")
         self.record_trace = setTrainValues("record_trace")
+        self.logWB = setTrainValues("logWB")
 
 
         # getting hyperparameters
@@ -82,6 +83,11 @@ class Trainer:
         )
 
         # Init wandb
+        if(not self.logWB):
+            os.environ["WANDB_MODE"] = "disabled"
+            print("wandbdisabled")
+
+
         wandb.init(project="smoke-detection", name=self.model_name, config={
             "learning_rate": self.learning_rate,
             "momentum": self.momentum,
@@ -234,6 +240,7 @@ class Trainer:
 
         #self.save_model()
         # wandb logging
+        self.save_model()
 
     # function displays metrics collected from training loop
     def display_results(self, cur_highest_vram, total_training_time,
