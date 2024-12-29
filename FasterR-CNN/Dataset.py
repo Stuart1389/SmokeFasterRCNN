@@ -57,12 +57,12 @@ class smokeDataset(torch.utils.data.Dataset):
   def __init__(self, main_dir: str, transform=None, testing = False):
 
     self.main_dir = main_dir
-    """
-    self.images = list(Path(str(main_dir) + "/images/").glob("*.jpeg")) # set to list of all images
-    self.annotations = list(Path(str(main_dir) + "/annotations/xmls").glob("*.xml")) # set to list of all xml files
-    """
-    self.images = sorted(list(Path(str(main_dir) + "/images/").glob("*.jpeg")))
-    self.annotations = sorted(list(Path(str(main_dir) + "/annotations/xmls").glob("*.xml")))
+    if(testing):
+        self.images = list(Path(str(main_dir) + "/images/").glob("*.jpeg")) # set to list of all images
+        self.annotations = list(Path(str(main_dir) + "/annotations/xmls").glob("*.xml")) # set to list of all xml files
+    else: # lazy google colab fix for unsorted images
+        self.images = sorted(list(Path(str(main_dir) + "/images/").glob("*.jpeg")))
+        self.annotations = sorted(list(Path(str(main_dir) + "/annotations/xmls").glob("*.xml")))
     #self.loaded_images = [np.array(Image.open(img_path)) for img_path in self.images]
     self.transform = transform
     self.testing = testing
