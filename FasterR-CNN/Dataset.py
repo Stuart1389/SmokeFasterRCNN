@@ -20,7 +20,7 @@ import time
 # Albumentations library, can do transforms for image and bbox as one
 # pascal_voc is format (xmin, ymin, xmax, ymax) we're using for bounding box coords
 transform_train = A.Compose([
-    A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
+    #A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
     #A.PadIfNeeded(min_height=320, min_width=240, border_mode=cv2.BORDER_CONSTANT), # prevents shape mismatch from image being cut off
     #A.PadIfNeeded(min_height=640, min_width=480), # doesnt work currently, need to fix
     #A.RandomCrop(width= round(320), height= round(240)), # needs padding or will throw error
@@ -28,7 +28,7 @@ transform_train = A.Compose([
     #A.RandomContrast(p=0.5),
     #A.BBoxSafeRandomCrop(erosion_rate=0.2, p=0.5),
     #A.GaussNoise(var_limit=(0.01, 0.005), p=0.3),
-    #A.HorizontalFlip(p=0.5),
+    A.HorizontalFlip(p=0.5),
     #A.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.4, p=0.5),
     #A.RandomScale(scale_limit=0.2, p=0.5),
     #A.SafeRotate(limit=5, p=0.5, border_mode=cv2.BORDER_CONSTANT),
@@ -38,7 +38,7 @@ transform_train = A.Compose([
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))
 
 transform_validate = A.Compose([
-    A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
+    #A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
     ToTensorV2()
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))
 
@@ -123,11 +123,9 @@ class smokeDataset(torch.utils.data.Dataset):
     #image = self.loaded_images[idx]
     #Convert to float32 for model
     # normalize the image to [0, 1] if it is not already in float format, prevents image from being completely white
-    """
-    UNCOMMENT IF NOT USING STANDARD IMAGENET NORMALIZATION!!!!!!!
     if image.dtype == np.uint8:
       image = image / 255.0
-    """
+
 
     image = image.astype(np.float32)
 

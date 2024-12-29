@@ -224,6 +224,7 @@ class Tester:
             self.map_metricLargeB.update([predicted], [ground_truth])
 
         # mAP update
+        print(f"predicted: {predicted}, Ground truth: {ground_truth}")
         self.map_metricGlobalA.update([predicted], [ground_truth])
         self.map_metricGlobalB.update([predicted], [ground_truth])
 
@@ -325,6 +326,10 @@ class Tester:
             ymin = float(xml_box.find("ymin").text)
             xmax = float(xml_box.find("xmax").text)
             ymax = float(xml_box.find("ymax").text)
+
+            if xmin >= xmax or ymin >= ymax:
+                print(f"Invalid area/box coordinates: ({xmin}, {ymin}), ({xmax}, {ymax})")
+
             boxes.append([xmin, ymin, xmax, ymax])
             area = (xmax - xmin) * (ymax - ymin) # get area of ground truth
             if (get_area):
@@ -499,18 +504,25 @@ class Tester:
         # Get final mAP, sync and compute
         self.map_metricSmallA.sync()
         self.final_mapSmallA = self.map_metricSmallA.compute()
+
         self.map_metricSmallB.sync()
         self.final_mapSmallB = self.map_metricSmallB.compute()
+
         self.map_metricMediumA.sync()
         self.final_mapMediumA = self.map_metricMediumA.compute()
+
         self.map_metricMediumB.sync()
         self.final_mapMediumB = self.map_metricMediumB.compute()
+
         self.map_metricLargeA.sync()
         self.final_mapLargeA = self.map_metricLargeA.compute()
+
         self.map_metricLargeB.sync()
         self.final_mapLargeB = self.map_metricLargeB.compute()
+
         self.map_metricGlobalA.sync()
         self.final_mapA = self.map_metricGlobalA.compute()
+
         self.map_metricGlobalB.sync()
         self.final_mapB = self.map_metricGlobalB.compute()
         # get precission and recall
