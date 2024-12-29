@@ -37,7 +37,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "004_lr_A100", # name of model to test
+        "model_name": "004_lr_L4", # name of model to test
 
         # PROFILER
         "start_profiler": False,
