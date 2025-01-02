@@ -30,10 +30,10 @@ transform_train = A.Compose([
     # A.HorizontalFlip(p=0.5),
     #A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=0.5),
     #A.ToGray(p=1.0),
-    #A.RandomScale(scale_limit=0.3, p=0.5),
+    A.RandomScale(scale_limit=0.3, p=0.5),
 
     #A.SafeRotate(limit=5, p=1, border_mode=cv2.BORDER_CONSTANT),
-    A.BBoxSafeRandomCrop(erosion_rate=0.2, p=0.5),
+    #A.BBoxSafeRandomCrop(erosion_rate=0.2, p=0.5),
     #A.GaussNoise(var_limit=(0.01, 0.005), p=1),
 
     ToTensorV2()
@@ -41,7 +41,6 @@ transform_train = A.Compose([
 
 transform_validate = A.Compose([
     #A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
-    A.ToGray(p=1.0),
     ToTensorV2()
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))
 
@@ -126,9 +125,9 @@ class smokeDataset(torch.utils.data.Dataset):
     #image = self.loaded_images[idx]
     #Convert to float32 for model
     # normalize the image to [0, 1] if it is not already in float format, prevents image from being completely white
+
     if image.dtype == np.uint8:
       image = image / 255.0
-
 
     image = image.astype(np.float32)
 
