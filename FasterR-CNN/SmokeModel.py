@@ -48,23 +48,27 @@ class SmokeModel:
 
     def get_model(self, testing=None, resnet101=None):
         if(resnet101):
-            backbone = resnet_fpn_backbone(backbone_name="resnet101", pretrained=True)
+            backbone = resnet_fpn_backbone(backbone_name="resnet18", pretrained=True, trainable_layers=3)
             self.model = FasterRCNN(backbone=backbone, num_classes=self.num_classes)
+            #self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights="DEFAULT")
             print(os.path.expanduser('~/.cache/torch/hub/checkpoints'))
             # Set in features to whatever region of interest(ROI) expects
             in_features = self.model.roi_heads.box_predictor.cls_score.in_features
             # Required to work with 2 classes
             self.model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, self.num_classes)
-            print(self.model.backbone)
+            print(f"Number of parameters in ResNet101 backbone: {self.count_parameters(self.model)}")
+            #print(self.model.backbone)
         else:
             # load faster-rcnn
-            self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT")
+            self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT",
+                                                                                 trainable_backbone_layers=3)
             #self.model = torchvision.models.detection.fasterrcnn_resnet101_fpn_v2(weights="DEFAULT")
             print(os.path.expanduser('~/.cache/torch/hub/checkpoints'))
             # Set in features to whatever region of interest(ROI) expects
             in_features = self.model.roi_heads.box_predictor.cls_score.in_features
             # Required to work with 2 classes
             self.model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, self.num_classes)
+            print(f"Number of parameters in ResNet50 backbone: {self.count_parameters(self.model)}")
 
         # if testing then load a model and use its parameters
         if testing:
@@ -177,6 +181,9 @@ class SmokeModel:
     def checkModel(self):
         print(self.model)
 
+    def count_parameters(self, model):
+        return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
 
 
 # only run if this script is being run (not being called from other)
@@ -184,4 +191,4 @@ if __name__ == '__main__':
     model = SmokeModel()
     model.main()
     model.get_model(resnet101=True)
-    #model.checkModel()
+    model.checkModel()

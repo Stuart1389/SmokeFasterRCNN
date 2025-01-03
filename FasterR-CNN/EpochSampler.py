@@ -15,6 +15,7 @@ class EpochSampler(Sampler):
 
     def __iter__(self):
         # Return indices for the current epoch
+        print(self.current_epoch)
         start_idx = self.current_epoch * self.total_samples
         end_idx = (self.current_epoch + 1) * self.total_samples
         indices = list(range(start_idx, end_idx))
@@ -23,7 +24,7 @@ class EpochSampler(Sampler):
         self.current_epoch += 1
         if self.current_epoch >= self.epochs:
             self.current_epoch = 0  # Reset epoch after completing all epochs
-
+        self.dataset.current_epoch = self.current_epoch
         return iter(indices)
 
     def __len__(self):

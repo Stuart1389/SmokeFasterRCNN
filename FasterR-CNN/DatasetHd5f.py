@@ -30,7 +30,7 @@ class SmokeDatasetHd5f(torch.utils.data.Dataset):
         # Open the HDF5 file to retrieve data
         with h5py.File(self.file_path, 'r') as h5df_file:
             epoch_group = f"epoch_{epoch_idx}"
-            print("Epoch_group", epoch_group)
+            #print("Epoch_group", epoch_group)
             if epoch_group in h5df_file:
                 epoch_data = h5df_file[epoch_group]
                 # get image
@@ -62,10 +62,7 @@ class SmokeDatasetHd5f(torch.utils.data.Dataset):
                         f"Key: {key}, Type: {type(value)}, Tensor dtype: {value.dtype if isinstance(value, torch.Tensor) else 'N/A'}, Shape: {value.shape if isinstance(value, torch.Tensor) else 'N/A'}")
                 """
             return image, target
-    def __iter__(self):
-        # Each time iteration starts, increment the epoch counter
-        self.current_epoch = (self.current_epoch + 1) % self.epochs
-        return self
+
 def collate_fn(batch):
     batch = [item for item in batch if item is not None]
     return tuple(zip(*batch))

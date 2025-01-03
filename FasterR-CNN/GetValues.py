@@ -9,10 +9,10 @@ def setTrainValues(val_to_get):
         "EPOCHS": 15,
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data"
-        "model_name": "resnet101_a100", # name of saved model
-        "plotJSON_fname": "resnet101_a100", # json filename
+        "model_name": "no_255_a100", # name of saved model
+        "plotJSON_fname": "no_255_a100", # json filename
         "model_id": "27",
-        "resnet101": True,
+        "resnet101": False,
 
         "load_hd5f" : False, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
         "h5py_dir_save_name": "test_file", # file name for h5py file
@@ -38,7 +38,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "greyscale_A100", # name of model to test
+        "model_name": "random_crop_A100", # name of model to test
 
         # PROFILER
         "start_profiler": False,

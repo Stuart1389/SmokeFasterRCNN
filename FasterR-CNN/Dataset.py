@@ -127,9 +127,10 @@ class smokeDataset(torch.utils.data.Dataset):
     #image = self.loaded_images[idx]
     #Convert to float32 for model
     # normalize the image to [0, 1] if it is not already in float format, prevents image from being completely white
-
+    """
     if image.dtype == np.uint8:
       image = image / 255.0
+    """
 
     image = image.astype(np.float32)
 
