@@ -11,6 +11,8 @@ import time
 from EpochSampler import EpochSampler
 from GetValues import checkColab, setTrainValues, setTestValues
 from torch.profiler import profile, record_function, ProfilerActivity
+from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
+from torchvision.models.detection import FasterRCNN
 
 # altering data to format that model expects at input or cry
 # i hate this function so much the amount of hours ive spent on this little rascal
@@ -44,14 +46,25 @@ class SmokeModel:
 
         self.load_path = Path("savedModels/" + setTestValues("model_name"))
 
-    def get_model(self, testing=None):
-        # load faster-rcnn
-        self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT")
-        print(os.path.expanduser('~/.cache/torch/hub/checkpoints'))
-        # Set in features to whatever region of interest(ROI) expects
-        in_features = self.model.roi_heads.box_predictor.cls_score.in_features
-        # Required to work with 2 classes
-        self.model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, self.num_classes)
+    def get_model(self, testing=None, resnet101=None):
+        if(resnet101):
+            backbone = resnet_fpn_backbone(backbone_name="resnet101", pretrained=True)
+            self.model = FasterRCNN(backbone=backbone, num_classes=self.num_classes)
+            print(os.path.expanduser('~/.cache/torch/hub/checkpoints'))
+            # Set in features to whatever region of interest(ROI) expects
+            in_features = self.model.roi_heads.box_predictor.cls_score.in_features
+            # Required to work with 2 classes
+            self.model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, self.num_classes)
+            print(self.model.backbone)
+        else:
+            # load faster-rcnn
+            self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT")
+            #self.model = torchvision.models.detection.fasterrcnn_resnet101_fpn_v2(weights="DEFAULT")
+            print(os.path.expanduser('~/.cache/torch/hub/checkpoints'))
+            # Set in features to whatever region of interest(ROI) expects
+            in_features = self.model.roi_heads.box_predictor.cls_score.in_features
+            # Required to work with 2 classes
+            self.model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, self.num_classes)
 
         # if testing then load a model and use its parameters
         if testing:
@@ -161,9 +174,14 @@ class SmokeModel:
         self.get_model()
         #self.check_dataloader()
 
+    def checkModel(self):
+        print(self.model)
+
 
 
 # only run if this script is being run (not being called from other)
 if __name__ == '__main__':
     model = SmokeModel()
     model.main()
+    model.get_model(resnet101=True)
+    #model.checkModel()

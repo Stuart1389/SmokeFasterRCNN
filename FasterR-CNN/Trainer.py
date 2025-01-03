@@ -337,7 +337,8 @@ def main():
     # get dataloaders from model class
     train_dataloader, validate_dataloader, _ = smoke_model.get_dataloader() # don't need test dataloader
     # get model from model class
-    model, in_features, model.roi_heads.box_predictor = smoke_model.get_model()
+    get_resnet101 = setTrainValues("resnet101")
+    model, in_features, model.roi_heads.box_predictor = smoke_model.get_model(resnet101=get_resnet101)
 
     """
     train_dataloader, validate_dataloader, _ = Model.getDataloader() # don't need test dataloader
