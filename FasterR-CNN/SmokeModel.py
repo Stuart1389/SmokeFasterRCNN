@@ -13,6 +13,7 @@ from GetValues import checkColab, setTrainValues, setTestValues
 from torch.profiler import profile, record_function, ProfilerActivity
 from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
 from torchvision.models.detection import FasterRCNN
+from torchvision.models.detection.rpn import AnchorGenerator
 
 # altering data to format that model expects at input or cry
 # i hate this function so much the amount of hours ive spent on this little rascal
@@ -63,6 +64,16 @@ class SmokeModel:
             self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT",
                                                                                  trainable_backbone_layers=3)
             #self.model = torchvision.models.detection.fasterrcnn_resnet101_fpn_v2(weights="DEFAULT")
+
+            # Modify anchor box, defaults in detection/faster_rcnn
+            # ((32,), (64,), (128,), (256,), (512,)), ((0.5, 1.0, 2.0),) * len(anchor_sizes)
+            # ((16, 32), (48, 64), (96, 128), (192, 256), (384, 512))
+            # fpn takes 1 tuple per feature map, and has 5 feature maps
+            #anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
+            #anchor_sizes = ((16,), (32,), (64,), (128,), (256,))
+            #aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
+            #self.model.rpn.anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
+
             print(os.path.expanduser('~/.cache/torch/hub/checkpoints'))
             # Set in features to whatever region of interest(ROI) expects
             in_features = self.model.roi_heads.box_predictor.cls_score.in_features
