@@ -61,8 +61,7 @@ class SmokeModel:
             #print(self.model.backbone)
         else:
             # load faster-rcnn
-            self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT",
-                                                                                 trainable_backbone_layers=3)
+            self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT")
             #self.model = torchvision.models.detection.fasterrcnn_resnet101_fpn_v2(weights="DEFAULT")
 
             # Modify anchor box, defaults in detection/faster_rcnn
