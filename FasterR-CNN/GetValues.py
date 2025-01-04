@@ -6,7 +6,7 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 12,
-        "EPOCHS": 1,
+        "EPOCHS": 2,
         "PATIENCE": 15,
         "dataset": "Medium data", # "Small data" , "Medium data" OR "Large data"
         "model_name": "transform_csj_a100_prof", # name of saved model
