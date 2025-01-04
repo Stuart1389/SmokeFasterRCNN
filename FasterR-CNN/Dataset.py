@@ -37,6 +37,7 @@ transform_train = A.Compose([
 
     #A.SafeRotate(limit=10, p=0.5, border_mode=cv2.BORDER_CONSTANT),
     #A.GaussNoise(var_limit=(0.01, 0.005), p=1),
+    A.Resize(height=480, width=640),
 
     ToTensorV2()
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))
@@ -62,7 +63,6 @@ dataset_dir = Path(f"{base_dir}/Dataset/" + setTrainValues("dataset"))
 class smokeDataset(torch.utils.data.Dataset):
   # Constructor, setting instanced variables
   def __init__(self, main_dir: str, transform=None, testing = False):
-
     self.main_dir = main_dir
     if(testing):
         self.images = list(Path(str(main_dir) + "/images/").glob("*.jpeg")) # set to list of all images
@@ -128,12 +128,10 @@ class smokeDataset(torch.utils.data.Dataset):
     image = np.array(Image.open(img_path))
     #image = self.loaded_images[idx]
     #Convert to float32 for model
-    # normalize the image to [0, 1] if it is not already in float format, prevents image from being completely white
+    # normalize the image to [0, 1] if it is not already in float format
 
     if image.dtype == np.uint8:
       image = image / 255.0
-
-
 
     image = image.astype(np.float32)
 

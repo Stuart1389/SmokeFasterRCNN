@@ -5,7 +5,7 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 12,
+        "BATCH_SIZE": 16,
         "EPOCHS": 15,
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data"
@@ -16,7 +16,7 @@ def setTrainValues(val_to_get):
 
         "load_hd5f" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
         "h5py_dir_save_name": "transform_csj", # file name for h5py file
-        "h5py_dir_load_name": "transform_csj", #basic_transform_large, transform_csj
+        "h5py_dir_load_name": "transform_csj", #large_15_no_transform, transform_csj, large_1_transform,
 
         # PROFILER
         "start_profiler" : False,
