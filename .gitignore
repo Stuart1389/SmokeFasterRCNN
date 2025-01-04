@@ -10,6 +10,7 @@ env/
 __pycache__/
 savedModels
 TempML
+TempCW
 
 # Node.js dependencies
 node_modules/
