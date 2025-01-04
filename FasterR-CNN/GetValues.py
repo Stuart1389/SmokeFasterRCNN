@@ -5,23 +5,23 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 12,
-        "EPOCHS": 2,
-        "PATIENCE": 15,
-        "dataset": "Medium data", # "Small data" , "Medium data" OR "Large data"
-        "model_name": "transform_csj_a100_prof", # name of saved model
-        "plotJSON_fname": "transform_csj_a100_prof", # json filename
-        "model_id": "28",
+        "BATCH_SIZE": 16,
+        "EPOCHS": 15,
+        "PATIENCE": 4,
+        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data"
+        "model_name": "hdf5_a100", # name of saved model
+        "plotJSON_fname": "hdf5_a100", # json filename
+        "model_id": "29",
         "resnet101": False,
 
-        "load_hd5f" : False, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
+        "load_hd5f" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
         "h5py_dir_save_name": "transform_csj", # file name for h5py file
         "h5py_dir_load_name": "transform_csj", #basic_transform_large, transform_csj
 
         # PROFILER
-        "start_profiler" : True,
-        "record_trace" : True,
-        "logWB" : False,
+        "start_profiler" : False,
+        "record_trace" : False,
+        "logWB" : True,
 
         # PARAMETERS
         "learning_rate": 0.003,
