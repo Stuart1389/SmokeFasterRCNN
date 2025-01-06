@@ -9,9 +9,9 @@ def setTrainValues(val_to_get):
         "EPOCHS": 15,
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data"
-        "model_name": "reduce_anchor_a100", # name of saved model
-        "plotJSON_fname": "reduce_anchor_a100", # json filename
-        "model_id": "30",
+        "model_name": "reduce_anchor_further_a100", # name of saved model
+        "plotJSON_fname": "reduce_anchor_further_a100", # json filename
+        "model_id": "31",
 
         # Knowlege distillation
         "know_distil": False,

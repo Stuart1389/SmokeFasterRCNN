@@ -92,8 +92,8 @@ class SmokeModel:
             # fpn takes 1 tuple per feature map, and has 5 feature maps
             #anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
             #anchor_sizes = ((8,), (32,), (128,), (256,), (512,)) good
-            anchor_sizes = ((16,), (32,), (64,), (128,), (256,)) # better
-            #anchor_sizes = ((8,), (16,), (32,), (64,), (128,)) # best
+            #anchor_sizes = ((16,), (32,), (64,), (128,), (256,)) # better
+            anchor_sizes = ((8,), (16,), (32,), (64,), (128,)) # best
             aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
             self.model.rpn.anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
 
