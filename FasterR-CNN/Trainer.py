@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from datetime import datetime
 from TrainingSteps import train_step, validate_step
+from TrainingStepsKnowDistil import train_step_know_distil
 from Logger import Logger
 from GetValues import checkColab, setTrainValues, setGlobalValues
 from SmokeModel import SmokeModel
@@ -27,9 +28,10 @@ sys.path.append(relative_path)
 
 class Trainer:
     # Constructor
-    def __init__(self, model, train_dataloader, validate_dataloader, device, plot_train_loss=True, checkpoint = None):
+    def __init__(self, model, train_dataloader, validate_dataloader, device, plot_train_loss=True, checkpoint = None, teacher=None):
         # initialising variables
         self.model = model
+        self.teacher_model = teacher
         self.train_dataloader = train_dataloader
         self.validate_dataloader = validate_dataloader
         self.device = device
@@ -48,6 +50,7 @@ class Trainer:
         self.batch_size = setTrainValues("BATCH_SIZE")
         self.cur_train_iteration = 0
         self.cur_val_iteration = 0
+        self.know_distil = setTrainValues("know_distil")
 
         # profiler
         self.start_profiler = setTrainValues("start_profiler")
@@ -150,9 +153,15 @@ class Trainer:
                 profiler.start()
             # TRAINING STEP
             with torch.profiler.record_function("TRAINING"):
-                _, train_loss_it_dict, train_loss_dict, self.cur_train_iteration = train_step(
-                    self.model, self.optimizer, self.train_dataloader, self.device, epoch, self.cur_train_iteration, print_freq=10
-                )
+                if(self.know_distil):
+                    _, train_loss_it_dict, train_loss_dict, self.cur_train_iteration = train_step_know_distil(
+                        self.model, self.optimizer, self.train_dataloader, self.device, epoch,
+                        self.cur_train_iteration, print_freq=10, teacher=self.teacher_model
+                    )
+                else:
+                    _, train_loss_it_dict, train_loss_dict, self.cur_train_iteration = train_step(
+                        self.model, self.optimizer, self.train_dataloader, self.device, epoch, self.cur_train_iteration, print_freq=10
+                    )
                 self.lr_scheduler.step()
             with torch.profiler.record_function("VALIDATING"):
             # VALIDATION STEP
@@ -332,13 +341,19 @@ def main():
     #device = setGlobalValues("device")
     device = "cuda" if torch.cuda.is_available() else "cpu" # device agnostic
     print(device)
+
     # Create instance of SmokeModel class
     smoke_model = SmokeModel()
     # get dataloaders from model class
     train_dataloader, validate_dataloader, _ = smoke_model.get_dataloader() # don't need test dataloader
     # get model from model class
-    get_resnet101 = setTrainValues("resnet101")
-    model, in_features, model.roi_heads.box_predictor = smoke_model.get_model(resnet101=get_resnet101)
+    get_student = setTrainValues("know_distil")
+    if (setTrainValues("know_distil")):
+        # getting teacher model for knowlege distil
+        teacher_model = smoke_model.get_model(get_teacher=True) # Getting teacher
+        teacher_model.to(device, non_blocking=False)
+    # getting model to train
+    model, in_features, model.roi_heads.box_predictor = smoke_model.get_model(know_distil=get_student)
 
     """
     train_dataloader, validate_dataloader, _ = Model.getDataloader() # don't need test dataloader
@@ -349,7 +364,10 @@ def main():
     model.to(device, non_blocking=False) # put model on gpu (or cpu :( )
 
     # create instance of class
-    trainer = Trainer(model, train_dataloader, validate_dataloader, device)
+    if(get_student):
+        trainer = Trainer(model, train_dataloader, validate_dataloader, device, teacher=teacher_model)
+    else:
+        trainer = Trainer(model, train_dataloader, validate_dataloader, device)
     # Start training loop
     trainer.train_loop()
 

@@ -15,7 +15,20 @@ from coco_eval import CocoEvaluator
 from coco_utils import get_coco_api_from_dataset
 import wandb
 
-def train_step(model, optimizer, data_loader, device, epoch, iteration, print_freq, scaler=None, profiler=None):
+def get_iou_type(model):
+    model_without_ddp = model
+    if isinstance(model, torch.nn.parallel.DistributedDataParallel):
+        model_without_ddp = model.module
+    iou_types = ["bbox"]
+    if isinstance(model_without_ddp, torchvision.models.detection.MaskRCNN):
+        iou_types.append("segm")
+    if isinstance(model_without_ddp, torchvision.models.detection.KeypointRCNN):
+        iou_types.append("keypoints")
+    return iou_types
+
+
+def train_step(model, optimizer, data_loader, device, epoch, iteration, print_freq,
+               scaler=None, profiler=None):
     iteration_loss_list = [] # loss graph iteration instead of epoch
     # Init loss values
     total_loss = 0
@@ -43,8 +56,9 @@ def train_step(model, optimizer, data_loader, device, epoch, iteration, print_fr
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
         images = list(image.to(device, non_blocking=False) for image in images)
         targets = [{k: v.to(device, non_blocking=False) if isinstance(v, torch.Tensor) else v for k, v in t.items()} for t in targets]
+
         with torch.amp.autocast('cuda', enabled=scaler is not None):
-            loss_dict = model(images, targets)
+            loss_dict, _ = model(images, targets)
             losses = sum(loss for loss in loss_dict.values())
             iteration += 1
 
@@ -54,23 +68,7 @@ def train_step(model, optimizer, data_loader, device, epoch, iteration, print_fr
 
         loss_value = losses_reduced.item() # this batch
         # Getting loss values for iterations
-        iteration_loss_list.append({
-            'total_loss': loss_value,
-            'loss_classifier': loss_dict_reduced['loss_classifier'].item(),
-            'loss_box_reg': loss_dict_reduced['loss_box_reg'].item(),
-            'loss_objectness': loss_dict_reduced['loss_objectness'].item(),
-            'loss_rpn_box_reg': loss_dict_reduced['loss_rpn_box_reg'].item(),
-        })
-        # lazy logging
-        wandb.log({
-            'train_total_loss_it': loss_value,
-            'train_loss_classifier_it': loss_dict_reduced['loss_classifier'].item(),
-            'train_loss_box_reg_it': loss_dict_reduced['loss_box_reg'].item(),
-            'train_loss_objectness_it': loss_dict_reduced['loss_objectness'].item(),
-            'train_loss_rpn_box_reg_it': loss_dict_reduced['loss_rpn_box_reg'].item(),
-            'current_epoch': epoch + 1,
-            'current_iteration': iteration
-        })
+        log_it_loss(iteration_loss_list, loss_value, loss_dict_reduced, epoch, iteration)
 
         # gettting individual loss from dict for average epoch graphs
         total_loss += losses_reduced.item() # epoch
@@ -100,7 +98,15 @@ def train_step(model, optimizer, data_loader, device, epoch, iteration, print_fr
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
         #train_loss.append(loss_value)
 
-    # Getting average loss values and storing in dict
+    # Logging average loss
+    avg_loss_dict = log_avg_loss(total_loss, total_loss_classifier, total_loss_box_reg,
+                                 total_loss_objectness, total_loss_rpn_box_reg, num_batches, epoch, iteration)
+
+    return metric_logger, iteration_loss_list, avg_loss_dict, iteration
+
+
+
+def log_avg_loss(total_loss, total_loss_classifier, total_loss_box_reg, total_loss_objectness, total_loss_rpn_box_reg, num_batches, epoch, iteration):
     avg_loss_dict = {
         "avg_total_loss": total_loss / num_batches,
         "avg_loss_classifier": total_loss_classifier / num_batches,
@@ -108,29 +114,35 @@ def train_step(model, optimizer, data_loader, device, epoch, iteration, print_fr
         "avg_loss_objectness": total_loss_objectness / num_batches,
         "avg_loss_rpn_box_reg": total_loss_rpn_box_reg / num_batches,
     }
-    # lazy logging
     wandb.log({
-        "train_avg_total_loss_epoch": total_loss / num_batches,
-        "train_avg_loss_classifier_epoch": total_loss_classifier / num_batches,
-        "train_avg_loss_box_reg_epoch": total_loss_box_reg / num_batches,
-        "train_avg_loss_objectness_epoch": total_loss_objectness / num_batches,
-        "train_avg_loss_rpn_box_reg_epoch": total_loss_rpn_box_reg / num_batches,
+        "train_avg_total_loss_epoch": avg_loss_dict["avg_total_loss"],
+        "train_avg_loss_classifier_epoch": avg_loss_dict["avg_loss_classifier"],
+        "train_avg_loss_box_reg_epoch": avg_loss_dict["avg_loss_box_reg"],
+        "train_avg_loss_objectness_epoch": avg_loss_dict["avg_loss_objectness"],
+        "train_avg_loss_rpn_box_reg_epoch": avg_loss_dict["avg_loss_rpn_box_reg"],
         'current_epoch': epoch + 1,
         'current_iteration': iteration
     })
-    return metric_logger, iteration_loss_list, avg_loss_dict, iteration
+    return avg_loss_dict
 
 
-def get_iou_type(model):
-    model_without_ddp = model
-    if isinstance(model, torch.nn.parallel.DistributedDataParallel):
-        model_without_ddp = model.module
-    iou_types = ["bbox"]
-    if isinstance(model_without_ddp, torchvision.models.detection.MaskRCNN):
-        iou_types.append("segm")
-    if isinstance(model_without_ddp, torchvision.models.detection.KeypointRCNN):
-        iou_types.append("keypoints")
-    return iou_types
+def log_it_loss(iteration_loss_list, loss_value, loss_dict_reduced, epoch, iteration):
+    iteration_loss_list.append({
+        'total_loss': loss_value,
+        'loss_classifier': loss_dict_reduced['loss_classifier'].item(),
+        'loss_box_reg': loss_dict_reduced['loss_box_reg'].item(),
+        'loss_objectness': loss_dict_reduced['loss_objectness'].item(),
+        'loss_rpn_box_reg': loss_dict_reduced['loss_rpn_box_reg'].item(),
+    })
+    wandb.log({
+        'train_total_loss_it': loss_value,
+        'train_loss_classifier_it': loss_dict_reduced['loss_classifier'].item(),
+        'train_loss_box_reg_it': loss_dict_reduced['loss_box_reg'].item(),
+        'train_loss_objectness_it': loss_dict_reduced['loss_objectness'].item(),
+        'train_loss_rpn_box_reg_it': loss_dict_reduced['loss_rpn_box_reg'].item(),
+        'current_epoch': epoch + 1,
+        'current_iteration': iteration
+    })
 
 
 @torch.inference_mode()
@@ -169,7 +181,7 @@ def validate_step(model, data_loader, device, epoch, iteration, scaler=None, pro
         # validate
         with torch.amp.autocast('cuda', enabled=scaler is not None):
             iteration += 1
-            outputs, loss_dict = model(images, targets)
+            outputs, loss_dict, _ = model(images, targets)
             losses = sum(loss for loss in loss_dict.values())
 
         # Getting all loss values below

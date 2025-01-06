@@ -16,6 +16,7 @@ from torchmetrics.detection.mean_ap import MeanAveragePrecision
 from torchvision.ops import box_iou
 from torchvision.transforms import v2 as T
 from torchvision.utils import draw_bounding_boxes
+import numpy as np
 
 
 class Tester:
@@ -425,6 +426,24 @@ class Tester:
         print(f"Medium: {size_counts['medium']}")
         print(f"Large: {size_counts['large']}")
         print(f"None: {size_counts['none']}")
+
+        # Print area metrics
+        # remove outliers
+        q1 = np.percentile(all_areas, 25)
+        q3 = np.percentile(all_areas, 75)
+        iqr = q3 - q1
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+        filtered_areas = [area for area in all_areas if lower_bound <= area <= upper_bound]
+
+        # get min max and avg
+        max_area = max(filtered_areas)
+        min_area = min(filtered_areas)
+        avg_area = sum(filtered_areas) / len(filtered_areas)
+
+        print(f"Max Area (25th to 75th percentile): {max_area}")
+        print(f"Min Area (25th to 75th percentile): {min_area}")
+        print(f"Avg Area (25th to 75th percentile): {avg_area:.2f}")
 
         return categorized_images_dict
 

@@ -13,7 +13,14 @@ from GetValues import checkColab, setTrainValues, setTestValues
 from torch.profiler import profile, record_function, ProfilerActivity
 from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
 from torchvision.models.detection import FasterRCNN
-from torchvision.models.detection.rpn import AnchorGenerator
+from torchvision.models.detection.faster_rcnn import FastRCNNConvFCHead
+from torchvision.models.detection.rpn import AnchorGenerator, RPNHead
+from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor
+from torchvision.models import resnet50
+from RoIHeadLogit import RoIHeadsCustom
+import torch.nn as nn
+from torchsummary import summary
+
 
 # altering data to format that model expects at input or cry
 # i hate this function so much the amount of hours ive spent on this little rascal
@@ -45,31 +52,49 @@ class SmokeModel:
 
         self.num_train_epochs = setTrainValues("EPOCHS")
 
-        self.load_path = Path("savedModels/" + setTestValues("model_name"))
+        self.load_path_train = Path("savedModels/" + setTrainValues("teacher_model_name"))
+        self.load_path_test = Path("savedModels/" + setTestValues("model_name"))
 
-    def get_model(self, testing=None, resnet101=None):
-        if(resnet101):
-            backbone = resnet_fpn_backbone(backbone_name="resnet18", pretrained=True, trainable_layers=3)
-            self.model = FasterRCNN(backbone=backbone, num_classes=self.num_classes)
+    def get_model(self, testing=None, know_distil=None, get_teacher=None):
+        if(know_distil):
+            backbone = resnet_fpn_backbone(backbone_name="resnet50", pretrained=True, trainable_layers=3)
+            anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
+            aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
+            self.model.rpn.anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
             #self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights="DEFAULT")
             print(os.path.expanduser('~/.cache/torch/hub/checkpoints'))
             # Set in features to whatever region of interest(ROI) expects
             in_features = self.model.roi_heads.box_predictor.cls_score.in_features
             # Required to work with 2 classes
             self.model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, self.num_classes)
-            print(f"Number of parameters in ResNet101 backbone: {self.count_parameters(self.model)}")
+            """
+            box_head = FastRCNNConvFCHead(
+                (backbone.out_channels, 7, 7), [256, 256, 256, 256], [1024], norm_layer=nn.BatchNorm2d
+            ) box_head=box_head
+            """
+
+            print(f"Number of parameters in alt model backbone: {self.count_parameters(self.model)}")
+            print("student ROI Head:")
+            #print(self.model.roi_heads)
+            self.model = FasterRCNN(backbone=backbone, num_classes=self.num_classes,
+                                    rpn_anchor_generator=self.model.rpn.anchor_generator)
+            self.model.rpn_pre_nms_top_n_test = 2000
+            self.model.rpn_post_nms_top_n_test = 2000
+
             #print(self.model.backbone)
+            #print(self.model)
+
         else:
             # load faster-rcnn
             self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT")
-            #self.model = torchvision.models.detection.fasterrcnn_resnet101_fpn_v2(weights="DEFAULT")
 
             # Modify anchor box, defaults in detection/faster_rcnn
             # ((32,), (64,), (128,), (256,), (512,)), ((0.5, 1.0, 2.0),) * len(anchor_sizes)
-            # ((16, 32), (48, 64), (96, 128), (192, 256), (384, 512))
             # fpn takes 1 tuple per feature map, and has 5 feature maps
             #anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
-            #anchor_sizes = ((16,), (32,), (64,), (128,), (256,))
+            #anchor_sizes = ((8,), (32,), (128,), (256,), (512,)) good
+            #anchor_sizes = ((16,), (32,), (64,), (128,), (256,)) # better
+            #anchor_sizes = ((8,), (16,), (32,), (64,), (128,)) # best
             #aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
             #self.model.rpn.anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
 
@@ -78,12 +103,19 @@ class SmokeModel:
             in_features = self.model.roi_heads.box_predictor.cls_score.in_features
             # Required to work with 2 classes
             self.model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, self.num_classes)
-            print(f"Number of parameters in ResNet50 backbone: {self.count_parameters(self.model)}")
+            #print(f"Number of parameters in ResNet50 backbone: {self.count_parameters(self.model)}")
+            #print("Teacher ROI Head:")
+            #print(self.model.roi_heads)
+            #print(self.model)
+            #print(self.model.roi_heads)
 
-        # if testing then load a model and use its parameters
-        if testing:
-            #saved_dir = Path(f"{self.base_dir}/FasterR-CNN/savedModels/" + setTestValues("model_name") + ".pth")
-            saved_dir = Path(self.load_path) / f"{setTestValues('model_name')}.pth"
+        # loading model weights if necessary
+        if get_teacher:
+            saved_dir = Path(self.load_path_train) / f"{setTrainValues('teacher_model_name')}.pth"
+        elif testing:
+            saved_dir = Path(self.load_path_test) / f"{setTestValues('model_name')}.pth"
+
+        if testing or get_teacher:
             state_dict = torch.load(saved_dir, weights_only=True)
             self.model.load_state_dict(state_dict)
             return self.model
@@ -200,5 +232,5 @@ class SmokeModel:
 if __name__ == '__main__':
     model = SmokeModel()
     model.main()
-    model.get_model(resnet101=True)
-    model.checkModel()
+    model.get_model(know_distil=True)
+    #model.checkModel()
