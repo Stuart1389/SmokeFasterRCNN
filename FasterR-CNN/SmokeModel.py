@@ -17,7 +17,6 @@ from torchvision.models.detection.faster_rcnn import FastRCNNConvFCHead
 from torchvision.models.detection.rpn import AnchorGenerator, RPNHead
 from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor
 from torchvision.models import resnet50
-from RoIHeadLogit import RoIHeadsCustom
 import torch.nn as nn
 from torchsummary import summary
 
