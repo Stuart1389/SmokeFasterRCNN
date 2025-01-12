@@ -58,7 +58,7 @@ def train_step(model, optimizer, data_loader, device, epoch, iteration, print_fr
         targets = [{k: v.to(device, non_blocking=False) if isinstance(v, torch.Tensor) else v for k, v in t.items()} for t in targets]
 
         with torch.amp.autocast('cuda', enabled=scaler is not None):
-            loss_dict, _ = model(images, targets)
+            loss_dict, _, _, _, _ = model(images, targets)
             losses = sum(loss for loss in loss_dict.values())
             iteration += 1
 
@@ -181,7 +181,7 @@ def validate_step(model, data_loader, device, epoch, iteration, scaler=None, pro
         # validate
         with torch.amp.autocast('cuda', enabled=scaler is not None):
             iteration += 1
-            outputs, loss_dict, _ = model(images, targets)
+            outputs, loss_dict, _, _, _, _ = model(images, targets)
             losses = sum(loss for loss in loss_dict.values())
 
         # Getting all loss values below

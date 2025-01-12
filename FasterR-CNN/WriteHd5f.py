@@ -51,7 +51,7 @@ class WriteHd5f:
 
     def write_to_file(self, dataloader, dir_write_path, file_write_path):
         dir_write_path.mkdir(parents=True, exist_ok=True)
-        chunk_size = 28
+        chunk_size = 1
         # get dataset information
         total_samples = len(dataloader.dataset)
         #get image dimensions from a image from dataset, all images need to be same size
@@ -64,21 +64,21 @@ class WriteHd5f:
                 epoch_group = h5df_file.create_group(f"epoch_{epoch + 1}")  # Create a group for each epoch
 
                 # creating a dataset for image and each target type
-                image_storage = epoch_group.create_dataset("images", shape=(total_samples,), chunks=True,
+                image_storage = epoch_group.create_dataset("images", shape=(total_samples,), chunks=chunk_size,
                                                            dtype=h5py.special_dtype(vlen=np.dtype('float32')))
                 print("image chunks = ", image_storage.chunks)
                 # store image width and height so it can be red-assembled
-                image_dims_storage = epoch_group.create_dataset("image_dims", shape=(total_samples, 2), chunks=True, dtype='int32')
-                box_storage = epoch_group.create_dataset("boxes", shape=(total_samples,), chunks=True,
+                image_dims_storage = epoch_group.create_dataset("image_dims", shape=(total_samples, 2), chunks=(chunk_size, 2), dtype='int32')
+                box_storage = epoch_group.create_dataset("boxes", shape=(total_samples,), chunks=chunk_size,
                                                          dtype=h5py.special_dtype(vlen='float32'))
                 print(box_storage.chunks)
                 #num off bboxes to reconstruct with cor shape
-                num_bbox_storage = epoch_group.create_dataset("num_bbox", shape=(total_samples, ), chunks=True, dtype='int32')
-                label_storage = epoch_group.create_dataset("labels", shape=(total_samples,), chunks=True, dtype=h5py.special_dtype(vlen='int64'))
-                image_id_storage = epoch_group.create_dataset("image_ids", shape=(total_samples,), chunks=True, dtype='int64')
+                num_bbox_storage = epoch_group.create_dataset("num_bbox", shape=(total_samples, ), chunks=chunk_size, dtype='int32')
+                label_storage = epoch_group.create_dataset("labels", shape=(total_samples,), chunks=chunk_size, dtype=h5py.special_dtype(vlen='int64'))
+                image_id_storage = epoch_group.create_dataset("image_ids", shape=(total_samples,), chunks=chunk_size, dtype='int64')
                 area_storage = epoch_group.create_dataset("areas", shape=(total_samples,),
-                                                          chunks=True, dtype=h5py.special_dtype(vlen='float32'))
-                iscrowd_storage = epoch_group.create_dataset("iscrowds", shape=(total_samples,), chunks=True, dtype=h5py.special_dtype(vlen='int64'))
+                                                          chunks=chunk_size, dtype=h5py.special_dtype(vlen='float32'))
+                iscrowd_storage = epoch_group.create_dataset("iscrowds", shape=(total_samples,), chunks=chunk_size, dtype=h5py.special_dtype(vlen='int64'))
 
                 # Create global index, this is so that we write to the correct spot when using dataloader
                 global_index = 0

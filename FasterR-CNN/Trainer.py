@@ -18,6 +18,7 @@ from datetime import timedelta
 from tabulate import tabulate
 import wandb
 from torch.profiler import profile, schedule, tensorboard_trace_handler
+from AdaptStudentFeatures import AdaptFeatures
 
 
 current_dir = os.getcwd()
@@ -28,10 +29,11 @@ sys.path.append(relative_path)
 
 class Trainer:
     # Constructor
-    def __init__(self, model, train_dataloader, validate_dataloader, device, plot_train_loss=True, checkpoint = None, teacher=None):
+    def __init__(self, model, train_dataloader, validate_dataloader, device, plot_train_loss=True, checkpoint = None, teacher=None, adaptive_model=None):
         # initialising variables
         self.model = model
         self.teacher_model = teacher
+        self.adaptive_model = adaptive_model
         self.train_dataloader = train_dataloader
         self.validate_dataloader = validate_dataloader
         self.device = device
@@ -155,8 +157,8 @@ class Trainer:
             with torch.profiler.record_function("TRAINING"):
                 if(self.know_distil):
                     _, train_loss_it_dict, train_loss_dict, self.cur_train_iteration = train_step_know_distil(
-                        self.model, self.optimizer, self.train_dataloader, self.device, epoch,
-                        self.cur_train_iteration, print_freq=10, teacher=self.teacher_model
+                        self.model, self.optimizer, self.train_dataloader, self.device, epoch, self.epochs,
+                        self.cur_train_iteration, print_freq=10, teacher=self.teacher_model, adaptive_model=self.adaptive_model
                     )
                 else:
                     _, train_loss_it_dict, train_loss_dict, self.cur_train_iteration = train_step(
@@ -352,6 +354,9 @@ def main():
         # getting teacher model for knowlege distil
         teacher_model = smoke_model.get_model(get_teacher=True) # Getting teacher
         teacher_model.to(device, non_blocking=False)
+        adaptive_model = AdaptFeatures()
+        adaptive_model.to(device, non_blocking=False)
+        print(adaptive_model)
     # getting model to train
     model, in_features, model.roi_heads.box_predictor = smoke_model.get_model(know_distil=get_student)
 
@@ -365,7 +370,7 @@ def main():
 
     # create instance of class
     if(get_student):
-        trainer = Trainer(model, train_dataloader, validate_dataloader, device, teacher=teacher_model)
+        trainer = Trainer(model, train_dataloader, validate_dataloader, device, teacher=teacher_model, adaptive_model=adaptive_model)
     else:
         trainer = Trainer(model, train_dataloader, validate_dataloader, device)
     # Start training loop

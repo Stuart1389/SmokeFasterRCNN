@@ -54,9 +54,11 @@ class SmokeModel:
         self.load_path_train = Path("savedModels/" + setTrainValues("teacher_model_name"))
         self.load_path_test = Path("savedModels/" + setTestValues("model_name"))
 
+        self.device = None
+
     def get_model(self, testing=None, know_distil=None, get_teacher=None):
         if(know_distil):
-            backbone = resnet_fpn_backbone(backbone_name="resnet50", pretrained=True, trainable_layers=3)
+            backbone = resnet_fpn_backbone(backbone_name="resnet18", pretrained=True, trainable_layers=3)
             anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
             aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
             self.model.rpn.anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
@@ -73,7 +75,7 @@ class SmokeModel:
             """
 
             print(f"Number of parameters in alt model backbone: {self.count_parameters(self.model)}")
-            print("student ROI Head:")
+            #print("student ROI Head:")
             #print(self.model.roi_heads)
             self.model = FasterRCNN(backbone=backbone, num_classes=self.num_classes,
                                     rpn_anchor_generator=self.model.rpn.anchor_generator)
@@ -90,10 +92,10 @@ class SmokeModel:
             # Modify anchor box, defaults in detection/faster_rcnn
             # ((32,), (64,), (128,), (256,), (512,)), ((0.5, 1.0, 2.0),) * len(anchor_sizes)
             # fpn takes 1 tuple per feature map, and has 5 feature maps
-            #anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
-            #anchor_sizes = ((8,), (32,), (128,), (256,), (512,)) good
+            anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
+            #anchor_sizes = ((8,), (32,), (128,), (256,), (512,)) #good
             #anchor_sizes = ((16,), (32,), (64,), (128,), (256,)) # better
-            anchor_sizes = ((8,), (16,), (32,), (64,), (128,)) # best
+            #anchor_sizes = ((8,), (16,), (32,), (64,), (128,)) # best
             aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
             self.model.rpn.anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
 
@@ -214,13 +216,19 @@ class SmokeModel:
 
     # checking model and dataloaders
     def main(self):
-        device = "cuda" if torch.cuda.is_available() else "cpu"  # device agnostic
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"  # device agnostic
         self.get_dataloader()
         self.get_model()
         #self.check_dataloader()
 
     def checkModel(self):
-        print(self.model)
+        self.model.to(self.device)
+
+        # Create a dummy input tensor on the same device as the model
+        dummy_input = torch.randn(1, 3, 224, 224).to(self.device)
+
+        # Print the summary using the dummy input
+        summary(self.model.backbone.body, input_size=(3, 224, 224), device=str(self.device))
 
     def count_parameters(self, model):
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -231,5 +239,10 @@ class SmokeModel:
 if __name__ == '__main__':
     model = SmokeModel()
     model.main()
-    model.get_model(know_distil=True)
-    #model.checkModel()
+    model.get_model(know_distil=False)
+    model.checkModel()
+
+    modelS = SmokeModel()
+    modelS.main()
+    modelS.get_model(know_distil=True)
+    modelS.checkModel()
