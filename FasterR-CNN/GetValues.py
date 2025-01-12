@@ -11,15 +11,15 @@ def setTrainValues(val_to_get):
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data"
         "model_name": "hdf5_chunk_def_a100", # name of saved model
         "plotJSON_fname": "hdf5_chunk_def_a100", # json filename
-        "model_id": "32",
+        "model_id": "33",
 
         # Knowlege distillation
         "know_distil": False,
         "teacher_model_name": "transform_csj_a100",
 
         "load_hd5f" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
-        "h5py_dir_save_name": "transform_csj_3_1", # file name for h5py file
-        "h5py_dir_load_name": "transform_csj_3_def", #large_15_no_transform, transform_csj, large_1_transform, test_file
+        "h5py_dir_save_name": "transform_csj_3_100", # file name for h5py file
+        "h5py_dir_load_name": "transform_csj_3_100", #large_15_no_transform, transform_csj, large_1_transform, test_file
         # transform_csj_3_def, transform_csj_3_100, transform_csj_3_1
 
         # PROFILER
