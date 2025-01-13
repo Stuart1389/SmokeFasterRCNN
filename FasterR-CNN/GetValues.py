@@ -9,14 +9,14 @@ def setTrainValues(val_to_get):
         "EPOCHS": 15,
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "pinned_non_block_a100", # name of saved model
-        "plotJSON_fname": "pinned_non_block_a100", # json filename
-        "model_id": "36",
+        "model_name": "resnet101_a100_fpn2", # name of saved model
+        "plotJSON_fname": "resnet101_a100_fpn2", # json filename
+        "model_id": "37",
 
         # use alternate model, if knowlege distil this will be student
-        "alt_model": False,
-        "alt_model_backbone": "resnet50", #resnet18, resnet50, resnet101, etc
-        "fpnv2": False,
+        "alt_model": True,
+        "alt_model_backbone": "resnet101", #resnet18, resnet50, resnet101, etc
+        "fpnv2": True,
 
         # Knowlege distillation, uses alt model
         "know_distil": False,
