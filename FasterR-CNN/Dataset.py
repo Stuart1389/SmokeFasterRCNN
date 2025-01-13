@@ -69,11 +69,15 @@ class smokeDataset(torch.utils.data.Dataset):
         self.annotations = list(Path(str(main_dir) + "/annotations/xmls").glob("*.xml")) # set to list of all xml files
     else: # lazy google colab fix for using images from google drive since order is wonky
         # this causes a random inconsistant crash when testing
+        # should really just match these
         self.images = sorted(list(Path(str(main_dir) + "/images/").glob("*.jpeg")))
+        self.images += sorted(list(Path(str(main_dir) + "/images/").glob("*.jpg")))
+        #print(self.images)
         self.annotations = sorted(list(Path(str(main_dir) + "/annotations/xmls").glob("*.xml")))
     #self.loaded_images = [np.array(Image.open(img_path)) for img_path in self.images]
     self.transform = transform
     self.testing = testing
+    self.empty_image = None
 
 
 
@@ -122,7 +126,19 @@ class smokeDataset(torch.utils.data.Dataset):
     # Return items from dataset
     img_path = self.images[idx] # return image at index
     filename = img_path.stem # get filename
-    annotation_path = self.annotations[idx] # return annotation at index
+    if(idx < len(self.annotations)):
+        annotation_path = self.annotations[idx] # return annotation at index
+        #print(f"Image dtype: {image.dtype}")
+        #Parse data and return to instance
+        boxes, labels, labels_int = self.parse_xml(annotation_path)
+        #boxes, labels = self.parse_xml(annotation_path)
+        #boxes = self.parse_xml(annotation_path)
+    else:
+        self.empty_image = True
+        boxes = []
+        labels = []
+        labels_int = []
+
     #image = Image.open(img_path)
     #albumentations wants numpy
     image = np.array(Image.open(img_path))
@@ -134,12 +150,6 @@ class smokeDataset(torch.utils.data.Dataset):
       image = image / 255.0
 
     image = image.astype(np.float32)
-
-    #print(f"Image dtype: {image.dtype}")
-    #Parse data and return to instance
-    boxes, labels, labels_int = self.parse_xml(annotation_path)
-    #boxes, labels = self.parse_xml(annotation_path)
-    #boxes = self.parse_xml(annotation_path)
 
     # this is transformations for training and validation
     if (self.transform and not self.testing):
@@ -161,20 +171,26 @@ class smokeDataset(torch.utils.data.Dataset):
         Target should be a dictionary containing bounding box and label
         boxes, labels, image_id, area, iscrowd
         """
-
         image = transformed_image
         image_id = idx
         #print(transformed_bboxes)
         # if there are no bboxes and we calculate area then it will throw error
         # check if bboxes exist, if they do then calculate area otherwise just set it to nothing
-        if(transformed_bboxes.numel() == 0):
-            return None
+        #if(transformed_bboxes.numel() == 0):
+            #return None
 
-        area = (transformed_bboxes[:, 3] - transformed_bboxes[:, 1]) * (transformed_bboxes[:, 2] - transformed_bboxes[:, 0])
 
         target = {}
-        target["boxes"] = transformed_bboxes
-        target["labels"] = transformed_class_id
+        if(self.empty_image):
+            # empty targets if we dont have annotations, implemented for training on clouds
+            target["boxes"] = torch.as_tensor(np.array(np.zeros((0, 4)), dtype=float))
+            target["labels"] = torch.as_tensor(np.array([], dtype=int), dtype=torch.int64)
+            area = 0
+        else:
+            target["boxes"] = transformed_bboxes
+            target["labels"] = transformed_class_id
+            area = (transformed_bboxes[:, 3] - transformed_bboxes[:, 1]) * (
+                        transformed_bboxes[:, 2] - transformed_bboxes[:, 0])
         target["image_id"] = image_id
         target["area"] = area
         target["iscrowd"] = torch.zeros((transformed_bboxes.shape[0],), dtype=torch.int64)

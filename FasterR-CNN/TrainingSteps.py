@@ -14,6 +14,7 @@ import utils
 from coco_eval import CocoEvaluator
 from coco_utils import get_coco_api_from_dataset
 import wandb
+from GetValues import setTrainValues
 
 def get_iou_type(model):
     model_without_ddp = model
@@ -37,6 +38,8 @@ def train_step(model, optimizer, data_loader, device, epoch, iteration, print_fr
     total_loss_objectness = 0
     total_loss_rpn_box_reg = 0
     num_batches = len(data_loader)
+    non_blocking = setTrainValues("non_blocking")
+
 
 
     model.train()
@@ -54,8 +57,8 @@ def train_step(model, optimizer, data_loader, device, epoch, iteration, print_fr
         )
 
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
-        images = list(image.to(device, non_blocking=False) for image in images)
-        targets = [{k: v.to(device, non_blocking=False) if isinstance(v, torch.Tensor) else v for k, v in t.items()} for t in targets]
+        images = list(image.to(device, non_blocking=non_blocking) for image in images)
+        targets = [{k: v.to(device, non_blocking=non_blocking) if isinstance(v, torch.Tensor) else v for k, v in t.items()} for t in targets]
 
         with torch.amp.autocast('cuda', enabled=scaler is not None):
             loss_dict, _, _, _, _ = model(images, targets)
@@ -167,10 +170,10 @@ def validate_step(model, data_loader, device, epoch, iteration, scaler=None, pro
 
 
     for images, targets in metric_logger.log_every(data_loader, 10, header):
-        images = list(img.to(device, non_blocking=False) for img in images)
+        images = list(img.to(device, non_blocking=non_blocking) for img in images)
 
         targets = [ # targets to get validation loss
-            {k: (v.to(device, non_blocking=False) if isinstance(v, torch.Tensor) else v) for k, v in t.items()}
+            {k: (v.to(device, non_blocking=non_blocking) if isinstance(v, torch.Tensor) else v) for k, v in t.items()}
             for t in targets
         ]
 
@@ -224,7 +227,7 @@ def validate_step(model, data_loader, device, epoch, iteration, scaler=None, pro
         #print(outputs)
 
 
-        outputs = [{k: v.to(device, non_blocking=False) for k, v in t.items()} for t in outputs]
+        outputs = [{k: v.to(device, non_blocking=non_blocking) for k, v in t.items()} for t in outputs]
         model_time = time.time() - model_time
 
         res = {target["image_id"]: output for target, output in zip(targets, outputs)}

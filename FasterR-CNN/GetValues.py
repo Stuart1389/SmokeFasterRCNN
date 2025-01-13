@@ -6,20 +6,25 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 16,
-        "EPOCHS": 3,
-        "PATIENCE": 3,
-        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data"
-        "model_name": "hdf5_chunk_def_a100", # name of saved model
-        "plotJSON_fname": "hdf5_chunk_def_a100", # json filename
-        "model_id": "33",
+        "EPOCHS": 15,
+        "PATIENCE": 4,
+        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "model_name": "pinned_non_block_a100", # name of saved model
+        "plotJSON_fname": "pinned_non_block_a100", # json filename
+        "model_id": "36",
 
-        # Knowlege distillation
+        # use alternate model, if knowlege distil this will be student
+        "alt_model": False,
+        "alt_model_backbone": "resnet50", #resnet18, resnet50, resnet101, etc
+        "fpnv2": False,
+
+        # Knowlege distillation, uses alt model
         "know_distil": False,
         "teacher_model_name": "transform_csj_a100",
 
-        "load_hd5f" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
-        "h5py_dir_save_name": "transform_csj_3_100", # file name for h5py file
-        "h5py_dir_load_name": "transform_csj_3_100", #large_15_no_transform, transform_csj, large_1_transform, test_file
+        "load_hd5f" : False, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
+        "h5py_dir_save_name": "transform_csj_3_def", # file name for h5py file
+        "h5py_dir_load_name": "transform_csj_3_def", #large_15_no_transform, transform_csj, large_1_transform, test_file
         # transform_csj_3_def, transform_csj_3_100, transform_csj_3_1
 
         # PROFILER
@@ -32,7 +37,11 @@ def setTrainValues(val_to_get):
         "momentum": 0.9,
         "weight_decay": 0.0005,
         "step_size": 3,
-        "gamma": 0.1
+        "gamma": 0.1,
+
+        # DATALOADER/TODEVICE
+        "non_blocking": True,
+        "pinned_memory": True,
     }
     # return value corresponding with val_to_get
     return train_values.get(val_to_get, None)
@@ -47,6 +56,11 @@ def setTestValues(val_to_get):
         # PROFILER
         "start_profiler": False,
         "record_trace": False,
+
+        # DATALOADER/TODEVICE
+        "non_blocking": True,
+        "pinned_memory": True,
+
     }
 
     # return value corresponding with val_to_get

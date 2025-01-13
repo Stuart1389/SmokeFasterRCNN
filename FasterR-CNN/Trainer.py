@@ -338,6 +338,7 @@ def main():
     np.random.seed(SEED)
     random.seed(SEED)
     torch.backends.cudnn.deterministic = True
+    non_blocking = setTrainValues("non_blocking")
 
     # Setting variables for instance
     #device = setGlobalValues("device")
@@ -353,9 +354,9 @@ def main():
     if (setTrainValues("know_distil")):
         # getting teacher model for knowlege distil
         teacher_model = smoke_model.get_model(get_teacher=True) # Getting teacher
-        teacher_model.to(device, non_blocking=False)
+        teacher_model.to(device, non_blocking=non_blocking)
         adaptive_model = AdaptFeatures()
-        adaptive_model.to(device, non_blocking=False)
+        adaptive_model.to(device, non_blocking=non_blocking)
         print(adaptive_model)
     # getting model to train
     model, in_features, model.roi_heads.box_predictor = smoke_model.get_model(know_distil=get_student)
@@ -366,7 +367,7 @@ def main():
     model, in_features, model.roi_heads.box_predictor = Model.getModel()
     """
 
-    model.to(device, non_blocking=False) # put model on gpu (or cpu :( )
+    model.to(device, non_blocking=non_blocking) # put model on gpu (or cpu :( )
 
     # create instance of class
     if(get_student):
