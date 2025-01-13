@@ -166,6 +166,7 @@ def validate_step(model, data_loader, device, epoch, iteration, scaler=None, pro
     total_loss_objectness = 0
     total_loss_rpn_box_reg = 0
     num_batches = len(data_loader)
+    non_blocking = setTrainValues("non_blocking")
 
 
 
