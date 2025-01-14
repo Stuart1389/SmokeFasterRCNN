@@ -185,14 +185,14 @@ class smokeDataset(torch.utils.data.Dataset):
             # empty targets if we dont have annotations, implemented for training on clouds
             target["boxes"] = torch.as_tensor(np.array(np.zeros((0, 4)), dtype=float))
             target["labels"] = torch.as_tensor(np.array([], dtype=int), dtype=torch.int64)
-            area = 0
+            target["area"] = torch.as_tensor(np.array([], dtype=float))
         else:
             target["boxes"] = transformed_bboxes
             target["labels"] = transformed_class_id
             area = (transformed_bboxes[:, 3] - transformed_bboxes[:, 1]) * (
                         transformed_bboxes[:, 2] - transformed_bboxes[:, 0])
+            target["area"] = area
         target["image_id"] = image_id
-        target["area"] = area
         target["iscrowd"] = torch.zeros((transformed_bboxes.shape[0],), dtype=torch.int64)
         """
         # Print image information

@@ -6,29 +6,29 @@ from GetValues import checkColab
 base_dir = checkColab()
 
 # Main dir, keep dataset intact
-main_dir = os.path.join(base_dir, "Dataset", "Large data", "Main")
+main_dir = os.path.join(base_dir, "Dataset", "Cloud", "Main")
 main_annot = os.path.join(main_dir, "annotations", "xmls")
 main_image = os.path.join(main_dir, "images")
 
 # Train dir
-train_dir = os.path.join(base_dir, "Dataset", "Large data", "Train")
+train_dir = os.path.join(base_dir, "Dataset", "Cloud", "Train")
 train_annot = os.path.join(train_dir, "annotations", "xmls")
 train_image = os.path.join(train_dir, "images")
 
 # Validate dir
-val_dir = os.path.join(base_dir, "Dataset", "Large data", "Validate")
+val_dir = os.path.join(base_dir, "Dataset", "Cloud", "Validate")
 val_annot = os.path.join(val_dir, "annotations", "xmls")
 val_image = os.path.join(val_dir, "images")
 
 # Test dir
-test_dir = os.path.join(base_dir, "Dataset", "Large data", "Test")
+test_dir = os.path.join(base_dir, "Dataset", "Cloud", "Test")
 test_annot = os.path.join(test_dir, "annotations", "xmls")
 test_image = os.path.join(test_dir, "images")
 
 # split ratios (70/15/15)
-train_split = 0.7
-val_split = 0.15
-test_split = 0.15
+train_split = 0.8
+val_split = 0.2
+test_split = 0
 
 # function deletes files from dir
 def clear_directory(directory):
@@ -43,8 +43,16 @@ def copy_files(file_pairs, dest_image_dir, dest_annot_dir):
         shutil.copy(image_file, dest_image_dir)
         shutil.copy(annot_file, dest_annot_dir)
 
+def copy_images(image_list, dest_image_dir):
+    for image_file in image_list:
+        image_name = os.path.basename(image_file[0])
+        new_name = f"z{image_name}"
+        print(new_name)
+        dest_path = os.path.join(dest_image_dir, new_name)
+        shutil.copy(image_file[0], dest_path)
+
 # creating train/validate/test splits
-def train_test_split():
+def train_test_split(split_annotations=False):
     # Clear dirs
     clear_directory(train_image)
     clear_directory(train_annot)
@@ -55,10 +63,21 @@ def train_test_split():
 
     # get list of images and annotations
     images = sorted([os.path.join(main_image, f) for f in os.listdir(main_image) if f.endswith(('.jpg', '.jpeg', '.png'))])
-    annotations = sorted([os.path.join(main_annot, f.replace('.jpg', '.xml').replace('.jpeg', '.xml').replace('.png', '.xml')) for f in os.listdir(main_image) if f.endswith(('.jpg', '.jpeg', '.png'))])
+    if(split_annotations):
+        annotations = sorted([os.path.join(main_annot, f.replace('.jpg', '.xml').replace('.jpeg', '.xml').replace('.png', '.xml')) for f in os.listdir(main_image) if f.endswith(('.jpg', '.jpeg', '.png'))])
+        # pair images and annotations
+        dataset = list(zip(images, annotations))
+        os.makedirs(train_annot, exist_ok=True)
+        os.makedirs(val_annot, exist_ok=True)
+        os.makedirs(test_annot, exist_ok=True)
+    else:
+        dataset = list(zip(images))
+        print(dataset)
 
-    #pair images and annotations
-    dataset = list(zip(images, annotations))
+    # make dirs if they dont exist
+    os.makedirs(train_image, exist_ok=True)
+    os.makedirs(val_image, exist_ok=True)
+    os.makedirs(test_image, exist_ok=True)
 
     #Shuffle dataset
     random.shuffle(dataset)
@@ -74,24 +93,22 @@ def train_test_split():
     val_dataset = dataset[train_size:train_size + val_size]
     test_dataset = dataset[train_size + val_size:]
 
-    # make dirs if they dont exist
-    os.makedirs(train_image, exist_ok=True)
-    os.makedirs(train_annot, exist_ok=True)
-    os.makedirs(val_image, exist_ok=True)
-    os.makedirs(val_annot, exist_ok=True)
-    os.makedirs(test_image, exist_ok=True)
-    os.makedirs(test_annot, exist_ok=True)
 
-    #copy files to dirs
-    copy_files(train_dataset, train_image, train_annot)
-    copy_files(val_dataset, val_image, val_annot)
-    copy_files(test_dataset, test_image, test_annot)
+    if(split_annotations):
+        #copy files to dirs
+        copy_files(train_dataset, train_image, train_annot)
+        copy_files(val_dataset, val_image, val_annot)
+        copy_files(test_dataset, test_image, test_annot)
+    else:
+        #copy files to dirs
+        copy_images(train_dataset, train_image)
+        copy_images(val_dataset, val_image)
+        copy_images(test_dataset, test_image)
+
 
     print(f"Training set size: {len(train_dataset)}")
     print(f"Validation set size: {len(val_dataset)}")
     print(f"Test set size: {len(test_dataset)}")
 
-def compress():
-    print("d")
 
 train_test_split()
