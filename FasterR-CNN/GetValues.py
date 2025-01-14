@@ -5,13 +5,13 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 16,
+        "BATCH_SIZE": 14,
         "EPOCHS": 15,
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "101_fpnv2_002lr_a100", # name of saved model
-        "plotJSON_fname": "101_fpnv2_002lr_a100", # json filename
-        "model_id": "39",
+        "model_name": "101_fpnv2_4tl_a100", # name of saved model
+        "plotJSON_fname": "101_fpnv2_4tl_a100", # json filename
+        "model_id": "40",
         # temp resnet101_2080_101,
 
         # use alternate model
