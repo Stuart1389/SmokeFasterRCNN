@@ -8,7 +8,7 @@ def setTrainValues(val_to_get):
         "BATCH_SIZE": 8,
         "EPOCHS": 1,
         "PATIENCE": 4,
-        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "dataset": "Small data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
         "model_name": "resnet101_fpnv2_nw_L4", # name of saved model
         "plotJSON_fname": "resnet101_fpnv2_nw_L4", # json filename
         "model_id": "40",
