@@ -6,7 +6,7 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 8,
-        "EPOCHS": 15,
+        "EPOCHS": 1,
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
         "model_name": "resnet101_fpnv2_nw_L4", # name of saved model
@@ -31,7 +31,7 @@ def setTrainValues(val_to_get):
         # PROFILER
         "start_profiler" : False,
         "record_trace" : False,
-        "logWB" : True,
+        "logWB" : False,
 
         # PARAMETERS
         "learning_rate": 0.003,
@@ -52,7 +52,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "resnet101_fpnv2_nw_a100", # name of model to test
+        "model_name": "resnet101_fpnv2_nw_L4", # name of model to test
 
         # PROFILER
         "start_profiler": False,
