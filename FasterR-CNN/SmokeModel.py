@@ -21,6 +21,9 @@ import torch.nn as nn
 import torch.nn.init as init
 from torchsummary import summary
 from collections import defaultdict
+import matplotlib.pyplot as plt
+import numpy as np
+
 
 
 """
@@ -81,6 +84,7 @@ class SmokeModel:
             self.model.load_state_dict(state_dict)
             return self.model
 
+
         return self.model, self.in_features, self.model.roi_heads.box_predictor
 
     def model_builder(self):
@@ -108,7 +112,7 @@ class SmokeModel:
         self.in_features = self.model.roi_heads.box_predictor.cls_score.in_features
         # set roi to 2 classes, mainly needed for fpnv2
         self.model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(self.in_features,
-                                                                                                        self.num_classes)
+                                                                                                             self.num_classes)
         print(f"Number of parameters: {self.count_parameters(self.model)}")
 
 
@@ -152,7 +156,7 @@ class SmokeModel:
 
 
     # generate weights for adapted fpnv2
-    def generate_fpnv2_weights(self, num_classes):
+    def generate_fpnv2_weights(self):
         # num classes is overwritten by roi using self.num_classes
         self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT",
                                                                              trainable_backbone_layers=3)
