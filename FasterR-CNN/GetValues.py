@@ -6,9 +6,9 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 8,
-        "EPOCHS": 1,
+        "EPOCHS": 15,
         "PATIENCE": 4,
-        "dataset": "Small data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
         "model_name": "resnet101_fpnv2_nw_L4", # name of saved model
         "plotJSON_fname": "resnet101_fpnv2_nw_L4", # json filename
         "model_id": "40",
@@ -31,7 +31,7 @@ def setTrainValues(val_to_get):
         # PROFILER
         "start_profiler" : False,
         "record_trace" : False,
-        "logWB" : False,
+        "logWB" : True,
 
         # PARAMETERS
         "learning_rate": 0.003,
