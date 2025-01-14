@@ -31,7 +31,7 @@ def setTrainValues(val_to_get):
         # PROFILER
         "start_profiler" : False,
         "record_trace" : False,
-        "logWB" : False,
+        "logWB" : True,
 
         # PARAMETERS
         "learning_rate": 0.005,
