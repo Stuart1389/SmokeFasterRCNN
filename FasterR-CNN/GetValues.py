@@ -9,13 +9,13 @@ def setTrainValues(val_to_get):
         "EPOCHS": 15,
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "resnet101_fpnv2_wd_A100", # name of saved model
-        "plotJSON_fname": "resnet101_fpnv2_wd_A100", # json filename
-        "model_id": "42",
+        "model_name": "amp_a100", # name of saved model
+        "plotJSON_fname": "amp_a100", # json filename
+        "model_id": "43",
         # temp resnet101_2080_101,
 
         # use alternate model
-        "alt_model": True,
+        "alt_model": False,
         "alt_model_backbone": "resnet101", #resnet18, resnet50, resnet101, etc
         "fpnv2": True, # Sets alternate model to use fpnv2
 
@@ -34,16 +34,16 @@ def setTrainValues(val_to_get):
         "logWB" : True,
 
         # PARAMETERS
-        "learning_rate": 0.005,
+        "learning_rate": 0.003,
         "momentum": 0.9,
-        "weight_decay": 0.0001,
+        "weight_decay": 0.0005,
         "step_size": 3,
         "gamma": 0.1,
 
         # DATALOADER/TODEVICE/MIXED-PRECISSION
         "non_blocking": True,
         "pinned_memory": True,
-        "amp_mixed_precission": False,
+        "amp_mixed_precission": True,
     }
     # return value corresponding with val_to_get
     return train_values.get(val_to_get, None)
@@ -53,7 +53,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "resnet101_fpnv2_005_A100", # name of model to test
+        "model_name": "resnet101_fpnv2_wd_A100", # name of model to test
 
         # PROFILER
         "start_profiler": False,
