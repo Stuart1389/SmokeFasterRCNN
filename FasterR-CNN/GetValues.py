@@ -5,13 +5,13 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 16,
+        "BATCH_SIZE": 8,
         "EPOCHS": 15,
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "resnet101_fpnv2_nw_a100", # name of saved model
-        "plotJSON_fname": "resnet101_fpnv2_nw_a100", # json filename
-        "model_id": "39",
+        "model_name": "resnet101_fpnv2_nw_L4", # name of saved model
+        "plotJSON_fname": "resnet101_fpnv2_nw_L4", # json filename
+        "model_id": "40",
         # temp resnet101_2080_101,
 
         # use alternate model
@@ -31,7 +31,7 @@ def setTrainValues(val_to_get):
         # PROFILER
         "start_profiler" : False,
         "record_trace" : False,
-        "logWB" : False,
+        "logWB" : True,
 
         # PARAMETERS
         "learning_rate": 0.003,
@@ -52,7 +52,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "test_file", # name of model to test
+        "model_name": "resnet101_fpnv2_nw_a100", # name of model to test
 
         # PROFILER
         "start_profiler": False,
