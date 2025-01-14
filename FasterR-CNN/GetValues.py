@@ -9,9 +9,9 @@ def setTrainValues(val_to_get):
         "EPOCHS": 15,
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "resnet_101_fpnv2", # name of saved model
-        "plotJSON_fname": "resnet_101_fpnv2", # json filename
-        "model_id": "38",
+        "model_name": "101_fpnv2_002lr_a100", # name of saved model
+        "plotJSON_fname": "101_fpnv2_002lr_a100", # json filename
+        "model_id": "39",
         # temp resnet101_2080_101,
 
         # use alternate model
@@ -34,7 +34,7 @@ def setTrainValues(val_to_get):
         "logWB" : True,
 
         # PARAMETERS
-        "learning_rate": 0.003,
+        "learning_rate": 0.002,
         "momentum": 0.9,
         "weight_decay": 0.0005,
         "step_size": 3,
@@ -52,7 +52,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "resnet101_2080_1", # name of model to test
+        "model_name": "resnet_101_fpnv2", # name of model to test
 
         # PROFILER
         "start_profiler": False,
