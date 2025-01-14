@@ -29,7 +29,7 @@ class Tester:
         self.confidence_threshold = 0.5
         self.draw_highest_only = False # only draw bbox with highest score on plot
         self.plot_image = False # plot images
-        self.benchmark = True # measure how long it takes to make average prediction
+        self.benchmark = False # measure how long it takes to make average prediction
         self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
         self.draw_no_true_positive_only = False # only plot images with no true positives
 
@@ -40,9 +40,12 @@ class Tester:
         self.model_name = setTestValues("model_name")
         self.save_path = Path("savedModels/" + self.model_name)
 
+
         # initialise model
         smoke_model = SmokeModel()
         self.model = smoke_model.get_model(True)
+        print(f"Number of parameters: {self.count_parameters(self.model)}")
+        print(self.model.rpn)
 
         # get test dataloader
         _, _, self.test_dataloader = smoke_model.get_dataloader(True)
@@ -74,6 +77,8 @@ class Tester:
         self.start_profiler = setTestValues("start_profiler")
         self.record_trace = setTestValues("record_trace")
 
+    def count_parameters(self, model):
+        return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
     # !!START TESTING CHAIN!!
     # function starts testing images

@@ -27,9 +27,31 @@ def get_iou_type(model):
         iou_types.append("keypoints")
     return iou_types
 
+def debugging(cur_debugging):
+    for name, param in cur_debugging.named_parameters():
+        print(f"Layer: {name}, Requires Grad: {param.requires_grad}")
+
+def count_activated_params(cur_debugging):
+    activated_params = 0
+    total_params = 0
+    for param in cur_debugging.parameters():
+        total_params += param.numel()
+        activated_params += (param != 0).sum().item()
+    return activated_params, total_params
+
+def count_trainable_params(cur_debugging):
+    trainable_params = sum(p.numel() for p in cur_debugging.parameters() if p.requires_grad)
+    return trainable_params
+
+def make_all_params_trainable(cur_debugging):
+    for param in cur_debugging.parameters():
+        param.requires_grad = True
+
 
 def train_step(model, optimizer, data_loader, device, epoch, iteration, print_freq,
                scaler=None, profiler=None):
+    cur_debugging = model.backbone.body
+
     iteration_loss_list = [] # loss graph iteration instead of epoch
     # Init loss values
     total_loss = 0
@@ -40,9 +62,39 @@ def train_step(model, optimizer, data_loader, device, epoch, iteration, print_fr
     num_batches = len(data_loader)
     non_blocking = setTrainValues("non_blocking")
 
+    active_neurons = 0
+    feature_map_sizes = []
+
+    def hook_fn(module, input, output):
+        nonlocal active_neurons
+        feature_map_sizes.append(output.shape)  # Store the shape of the output tensor (feature map size)
+        active_neurons += output.numel()
+
+
 
 
     model.train()
+    hooks = []
+    for layer in cur_debugging.children():
+        hook = layer.register_forward_hook(hook_fn)
+        hooks.append(hook)
+
+    #DEBUGGING
+    #debugging(model)
+    activated_params, total_params = count_activated_params(cur_debugging)
+    #print(f"Activated Parameters in Backbone: {activated_params}")
+    #print(f"Total Parameters in Backbone: {total_params}")
+
+    trainable_params = count_trainable_params(cur_debugging)
+
+    #print(f"Trainable parameters in model: {trainable_params}")
+
+    #make_all_params_trainable(model.backbone.body)
+    #trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    #print(f"Trainable parameters after making all parameters trainable: {trainable_params}")
+
+    #print(model.backbone.fpn)
+
     metric_logger = utils.MetricLogger(delimiter="  ")
     metric_logger.add_meter("lr", utils.SmoothedValue(window_size=1, fmt="{value:.6f}"))
     header = f"Epoch: [{epoch}]"
@@ -64,6 +116,11 @@ def train_step(model, optimizer, data_loader, device, epoch, iteration, print_fr
             loss_dict, _, _, _, _ = model(images, targets)
             losses = sum(loss for loss in loss_dict.values())
             iteration += 1
+            for hook in hooks:
+                hook.remove()
+
+            #print(f"Active neurons: {active_neurons}")
+            #print(f"Feature Map Sizes: {feature_map_sizes}")
 
         # reduce losses over all GPUs for logging purposes
         loss_dict_reduced = utils.reduce_dict(loss_dict)

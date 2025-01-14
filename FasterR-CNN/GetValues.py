@@ -9,14 +9,15 @@ def setTrainValues(val_to_get):
         "EPOCHS": 15,
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "resnet101_a100_fpn2", # name of saved model
-        "plotJSON_fname": "resnet101_a100_fpn2", # json filename
-        "model_id": "37",
+        "model_name": "resnet_101_fpnv2", # name of saved model
+        "plotJSON_fname": "resnet_101_fpnv2", # json filename
+        "model_id": "38",
+        # temp resnet101_2080_101,
 
-        # use alternate model, if knowlege distil this will be student
+        # use alternate model
         "alt_model": True,
         "alt_model_backbone": "resnet101", #resnet18, resnet50, resnet101, etc
-        "fpnv2": True,
+        "fpnv2": True, # Sets alternate model to use fpnv2
 
         # Knowlege distillation, uses alt model
         "know_distil": False,
@@ -24,7 +25,7 @@ def setTrainValues(val_to_get):
 
         "load_hd5f" : False, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
         "h5py_dir_save_name": "transform_csj_3_def", # file name for h5py file
-        "h5py_dir_load_name": "transform_csj_3_def", #large_15_no_transform, transform_csj, large_1_transform, test_file
+        "h5py_dir_load_name": "test_file", #large_15_no_transform, transform_csj, large_1_transform, test_file
         # transform_csj_3_def, transform_csj_3_100, transform_csj_3_1
 
         # PROFILER
@@ -51,7 +52,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "hd5f_a100", # name of model to test
+        "model_name": "resnet101_2080_1", # name of model to test
 
         # PROFILER
         "start_profiler": False,

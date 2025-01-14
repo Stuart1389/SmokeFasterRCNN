@@ -20,6 +20,7 @@ class SmokeDatasetHd5f(torch.utils.data.Dataset):
         with h5py.File(self.file_path, 'r') as h5df_file:
             epoch_group = f"epoch_{self.current_epoch + 1}"
             self.total_samples = len(h5df_file[epoch_group]['images'])
+        # nice to check things are correct at start
         print(f"Epoch {self.current_epoch + 1}: Total samples = {self.total_samples}")
         return self.total_samples
 
