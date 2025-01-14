@@ -45,7 +45,7 @@ class Tester:
         smoke_model = SmokeModel()
         self.model = smoke_model.get_model(True)
         print(f"Number of parameters: {self.count_parameters(self.model)}")
-        print(self.model.rpn)
+        #print(self.model.rpn)
 
         # get test dataloader
         _, _, self.test_dataloader = smoke_model.get_dataloader(True)

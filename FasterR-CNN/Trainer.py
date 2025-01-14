@@ -19,6 +19,7 @@ from tabulate import tabulate
 import wandb
 from torch.profiler import profile, schedule, tensorboard_trace_handler
 from AdaptStudentFeatures import AdaptFeatures
+from torch.amp import GradScaler, autocast
 
 
 current_dir = os.getcwd()
@@ -71,6 +72,10 @@ class Trainer:
         self.save_path = Path("savedModels/" + self.model_name)
         self.save_path.mkdir(parents=True, # make parent dir if doesnt exist
                          exist_ok=True) # dont cry if already exists
+        self.scalar = None
+        # mixed precission
+        if(setTrainValues("amp_mixed_precission")):
+            self.scalar = GradScaler('cuda')
 
         # initialise optimizer and scheduler
         self.params = [p for p in model.parameters() if p.requires_grad] # get model parameters
@@ -162,7 +167,7 @@ class Trainer:
                     )
                 else:
                     _, train_loss_it_dict, train_loss_dict, self.cur_train_iteration = train_step(
-                        self.model, self.optimizer, self.train_dataloader, self.device, epoch, self.cur_train_iteration, print_freq=10
+                        self.model, self.optimizer, self.train_dataloader, self.device, epoch, self.cur_train_iteration, print_freq=10, scaler=self.scalar
                     )
                 self.lr_scheduler.step()
             with torch.profiler.record_function("VALIDATING"):
