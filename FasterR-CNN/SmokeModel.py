@@ -95,7 +95,7 @@ class SmokeModel:
             roi_heads = torch.load(self.model_arch_path / "roi.pth", weights_only=True)
             rpn = torch.load(self.model_arch_path / "rpn.pth", weights_only=True)
             self.model = torchvision.models.detection.stus_resnet_fpnv2_builder(weights_backbone="DEFAULT",
-                                                                                trainable_backbone_layers=4,
+                                                                                trainable_backbone_layers=3,
                                                                                 roi_head_weights=roi_heads,
                                                                                 rpn_weights=rpn, fpn_weights=fpn)
             self.model.rpn.anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
