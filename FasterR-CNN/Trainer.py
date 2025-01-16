@@ -20,6 +20,7 @@ import wandb
 from torch.profiler import profile, schedule, tensorboard_trace_handler
 from AdaptStudentFeatures import AdaptFeatures
 from torch.amp import GradScaler, autocast
+from SmokeUtils import get_layers_to_fuse
 
 
 current_dir = os.getcwd()
@@ -153,6 +154,23 @@ class Trainer:
             with_flops=False,
             with_modules=False
         )
+
+        if(setTrainValues("quant_aware_training")):
+            # QUANT AWARE TRAINING
+            # quant fusions must be done in eval mode
+            self.model.eval()
+            #Quant aware training
+            self.model.backbone.body.qconfig = torch.ao.quantization.get_default_qconfig('x86')
+            #print(self.model.backbone.body)
+
+            module_names = list(self.model.backbone.body.named_modules())
+            # get layers to fure, see smoke utils
+            layers_to_fuse = get_layers_to_fuse(module_names)
+
+            self.model.backbone.body = torch.ao.quantization.fuse_modules(self.model.backbone.body,layers_to_fuse)
+            # prepare requires train mode
+            self.model.train()
+            self.model.backbone.body = torch.ao.quantization.prepare_qat(self.model.backbone.body)
 
         # !!TRAINING LOOP START!!
         for epoch in range(self.epochs):
@@ -400,3 +418,5 @@ if __name__ == '__main__':
     # Loss box reg - measures how accuratley predicted bbox is when compared to og bbox, lower is better
     # Loss objectness - model confidence at seperating background from object, lower is better
     # Loss rpn box reg - RPN(regional proposal network) regression loss, measures region accuracy, lower is better
+
+

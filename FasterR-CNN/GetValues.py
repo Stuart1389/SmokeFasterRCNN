@@ -5,12 +5,12 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 16,
-        "EPOCHS": 15,
+        "BATCH_SIZE": 2,
+        "EPOCHS": 1,
         "PATIENCE": 4,
-        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "amp_a100", # name of saved model
-        "plotJSON_fname": "amp_a100", # json filename
+        "dataset": "Small data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "model_name": "test_quant", # name of saved model
+        "plotJSON_fname": "test_quant", # json filename
         "model_id": "43",
         # temp resnet101_2080_101,
 
@@ -23,7 +23,7 @@ def setTrainValues(val_to_get):
         "know_distil": False,
         "teacher_model_name": "transform_csj_a100",
 
-        "load_hd5f" : False, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
+        "load_hd5f" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
         "h5py_dir_save_name": "transform_csj_3_def", # file name for h5py file
         "h5py_dir_load_name": "test_file", #large_15_no_transform, transform_csj, large_1_transform, test_file
         # transform_csj_3_def, transform_csj_3_100, transform_csj_3_1
@@ -31,7 +31,7 @@ def setTrainValues(val_to_get):
         # PROFILER
         "start_profiler" : False,
         "record_trace" : False,
-        "logWB" : True,
+        "logWB" : False,
 
         # PARAMETERS
         "learning_rate": 0.003,
@@ -43,7 +43,10 @@ def setTrainValues(val_to_get):
         # DATALOADER/TODEVICE/MIXED-PRECISSION
         "non_blocking": True,
         "pinned_memory": True,
-        "amp_mixed_precission": True,
+        "amp_mixed_precission": False,
+
+        # QUANT
+        "quant_aware_training": True
     }
     # return value corresponding with val_to_get
     return train_values.get(val_to_get, None)
@@ -52,8 +55,8 @@ def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
         "BATCH_SIZE": 4,
-        "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "resnet101_fpnv2_wd_A100", # name of model to test
+        "dataset": "Small data", # "Small data" OR "Large data"
+        "model_name": "transform_csj_a100", # name of model to test
 
         # PROFILER
         "start_profiler": False,
@@ -62,6 +65,9 @@ def setTestValues(val_to_get):
         # DATALOADER/TODEVICE
         "non_blocking": True,
         "pinned_memory": True,
+
+        # Quants, only enable if testing
+        "static_quant": True
 
     }
 

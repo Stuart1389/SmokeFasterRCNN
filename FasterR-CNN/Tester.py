@@ -16,6 +16,7 @@ from torchmetrics.detection.mean_ap import MeanAveragePrecision
 from torchvision.ops import box_iou
 from torchvision.transforms import v2 as T
 from torchvision.utils import draw_bounding_boxes
+import torch.ao.quantization as quantization
 import numpy as np
 
 
@@ -29,7 +30,7 @@ class Tester:
         self.confidence_threshold = 0.5
         self.draw_highest_only = False # only draw bbox with highest score on plot
         self.plot_image = False # plot images
-        self.benchmark = True # measure how long it takes to make average prediction
+        self.benchmark = False # measure how long it takes to make average prediction
         self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
         self.draw_no_true_positive_only = False # only plot images with no true positives
 
@@ -77,6 +78,12 @@ class Tester:
         self.start_profiler = setTestValues("start_profiler")
         self.record_trace = setTestValues("record_trace")
 
+        # quants
+        self.static_quants = setTestValues("static_quant")
+        # pytorch only supports static quants on cpu
+        if(self.static_quants):
+            self.device = "cpu"
+
     def count_parameters(self, model):
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
@@ -99,6 +106,27 @@ class Tester:
         if(self.start_profiler):
             profiler.start()
         test_dataloader = self.test_dataloader # change to dataloader
+        # getting predictions
+        self.model.to(self.device, non_blocking=False)  # put model on cpu or gpu
+        # set model to evaluation mode
+        self.model.eval()
+        # Static quantization
+        #print(self.model)
+        #print(self.model.backbone.body)
+        #print(self.model.backbone)
+        # static quants
+        if(self.static_quants):
+            self.model.backbone.body.qconfig = torch.ao.quantization.get_default_qconfig('x86')
+            #fused_model = torch.ao.quantization.fuse_modules(self.model.backbone.body, [['body.conv1', 'body.relu']])
+
+            prepped_model = torch.ao.quantization.prepare(self.model.backbone.body, inplace=False)
+            image_tensor, filename = next(iter(test_dataloader)) # get size for quant
+            prepped_model(image_tensor[0].unsqueeze(0))
+
+
+            self.model.backbone.body = torch.ao.quantization.convert(prepped_model)
+
+
         # Start timer
         self.start_time = time.time()
         # Walks through dir_path, for each file call predictBbox and pass file path
@@ -127,10 +155,7 @@ class Tester:
     @torch.inference_mode()
     def get_predictions(self, image_tensor, filename):
         with torch.profiler.record_function("TESTING"):
-            # getting predictions
-            self.model.to(self.device, non_blocking=False)  # put model on cpu or gpu
-            # set model to evaluation mode
-            self.model.eval()
+
             # print("image:", image, "image_tensor", image_tensor, "filename", filename)
             filenames = list(files for files in filename)
             image_tensors = list(tensor.to(self.device, non_blocking=False) for tensor in image_tensor)
