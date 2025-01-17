@@ -71,7 +71,7 @@ def setTestValues(val_to_get):
         "static_quant": True,
         "CPU_inference": True,
         "calibrate_full_set": False,
-        "load_QAT_model": False
+        "load_QAT_model": True
 
     }
 
