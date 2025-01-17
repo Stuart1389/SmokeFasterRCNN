@@ -6,12 +6,12 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 16,
-        "EPOCHS": 15,
-        "PATIENCE": 4,
+        "EPOCHS": 2,
+        "PATIENCE": 2,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "qat_csj_a100", # name of saved model
-        "plotJSON_fname": "qat_csj_a100", # json filename
-        "model_id": "43",
+        "model_name": "qat_csj_a100_am", # name of saved model
+        "plotJSON_fname": "qat_csj_a100_am", # json filename
+        "model_id": "44",
         "save_at_end" : False,
         # temp resnet101_2080_101,
 
@@ -35,7 +35,7 @@ def setTrainValues(val_to_get):
         "logWB" : True,
 
         # PARAMETERS
-        "learning_rate": 0.003,
+        "learning_rate": 0.003 / 10,
         "momentum": 0.9,
         "weight_decay": 0.0005,
         "step_size": 3,
@@ -47,7 +47,9 @@ def setTrainValues(val_to_get):
         "amp_mixed_precission": False,
 
         # QUANT
-        "quant_aware_training": True
+        "quant_aware_training": True,
+        "start_from_checkpoint": True,
+        "model_load_name": "qat_csj_a100",
     }
     # return value corresponding with val_to_get
     return train_values.get(val_to_get, None)
@@ -56,8 +58,8 @@ def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
         "BATCH_SIZE": 4,
-        "dataset": "Small data", # "Small data" OR "Large data"
-        "model_name": "place_test", # name of model to test
+        "dataset": "Large data", # "Small data" OR "Large data"
+        "model_name": "qat_csj_a100", # name of model to test
 
         # PROFILER
         "start_profiler": False,
@@ -69,8 +71,8 @@ def setTestValues(val_to_get):
 
         # Quants, only enable if testing
         "static_quant": True,
-        "CPU_inference": True,
-        "calibrate_full_set": False,
+        "CPU_inference": True, # force cpu inference even if cuda is available
+        "calibrate_full_set": True,
         "load_QAT_model": False
 
     }

@@ -209,9 +209,9 @@ class Trainer:
 
             # holds number of epochs model trained on
             self.epochs_trained += 1
-            #if(epoch > 3 and setTrainValues("quant_aware_training")):
+            #if(epoch > 8 and setTrainValues("quant_aware_training")):
                 #self.model.backbone.body.apply(torch.ao.quantization.disable_observer)
-            #if (epoch > 2 and setTrainValues("quant_aware_training")):
+            #if (epoch > 8 and setTrainValues("quant_aware_training")):
                 #self.model.backbone.body.apply(torch.nn.intrinsic.qat.freeze_bn_stats)
 
 

@@ -66,6 +66,7 @@ class SmokeModel:
 
         self.generate_weights = False
         self.load_qat_model = setTestValues("load_QAT_model")
+        self.start_from_checkpoint = setTrainValues("start_from_checkpoint")
 
     def get_model(self, testing=None, know_distil=None, get_teacher=None):
         state_dict = None
@@ -82,8 +83,10 @@ class SmokeModel:
             saved_dir = Path(self.load_path_train) / f"{setTrainValues('teacher_model_name')}.pth"
         elif testing:
             saved_dir = Path(self.load_path_test) / f"{setTestValues('model_name')}.pth"
+        else:
+            saved_dir = Path(self.load_path_train) / f"{setTrainValues('model_load_name')}.pth"
 
-        if testing and not self.load_qat_model or get_teacher:
+        if testing and not self.load_qat_model or get_teacher or self.start_from_checkpoint:
             state_dict = torch.load(saved_dir, weights_only=True)
             self.model.load_state_dict(state_dict)
             return self.model
