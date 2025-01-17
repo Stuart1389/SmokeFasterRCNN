@@ -125,6 +125,7 @@ class Trainer:
             # so deep copy model and get its state_dict
             temp_model = copy.deepcopy(self.model)
             temp_model.to('cpu')
+            temp_model.eval()
             temp_model.backbone.body = torch.ao.quantization.convert(temp_model.backbone.body, inplace=True)
             state_dict = temp_model.state_dict()
             #self.model.to('cpu')

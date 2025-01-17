@@ -605,7 +605,7 @@ class Tester:
         precision_recall = self.calculate_total_precision_recall()
         # get max vram
         max_vram = round(torch.cuda.max_memory_allocated() / 1024 / 1024, 2)
-        torch.cuda.reset_peak_memory_stats()  # reset
+        #torch.cuda.reset_peak_memory_stats()  # reset
 
         # start displaying
         self.nice_layout(precision_recall, elapsed_time, avg_benchmark, max_vram)

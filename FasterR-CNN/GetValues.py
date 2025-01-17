@@ -5,12 +5,12 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 8,
-        "EPOCHS": 4,
+        "BATCH_SIZE": 2,
+        "EPOCHS": 15,
         "PATIENCE": 4,
-        "dataset": "Small data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "qat_csj_a100_test", # name of saved model
-        "plotJSON_fname": "qat_csj_a100_test", # json filename
+        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "model_name": "qat_csj_a100", # name of saved model
+        "plotJSON_fname": "qat_csj_a100", # json filename
         "model_id": "43",
         "save_at_end" : False,
         # temp resnet101_2080_101,
@@ -24,9 +24,9 @@ def setTrainValues(val_to_get):
         "know_distil": False,
         "teacher_model_name": "transform_csj_a100",
 
-        "load_hd5f" : False, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
+        "load_hd5f" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
         "h5py_dir_save_name": "transform_csj_3_def", # file name for h5py file
-        "h5py_dir_load_name": "test_file", #large_15_no_transform, transform_csj, large_1_transform, test_file
+        "h5py_dir_load_name": "transform_csj", #large_15_no_transform, transform_csj, large_1_transform, test_file
         # transform_csj_3_def, transform_csj_3_100, transform_csj_3_1
 
         # PROFILER
@@ -35,7 +35,7 @@ def setTrainValues(val_to_get):
         "logWB" : False,
 
         # PARAMETERS
-        "learning_rate": 0.003,
+        "learning_rate": 0.001,
         "momentum": 0.9,
         "weight_decay": 0.0005,
         "step_size": 3,
@@ -56,8 +56,8 @@ def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
         "BATCH_SIZE": 4,
-        "dataset": "Small data", # "Small data" OR "Large data"
-        "model_name": "qat_csj_a100_test", # name of model to test
+        "dataset": "Large data", # "Small data" OR "Large data"
+        "model_name": "qat_csj_a100", # name of model to test
 
         # PROFILER
         "start_profiler": False,
