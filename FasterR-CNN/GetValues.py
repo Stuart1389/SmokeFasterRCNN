@@ -6,7 +6,7 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 8,
-        "EPOCHS": 4,
+        "EPOCHS": 1,
         "PATIENCE": 4,
         "dataset": "Small data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
         "model_name": "qat_csj_a100_test", # name of saved model
