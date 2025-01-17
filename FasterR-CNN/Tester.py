@@ -46,7 +46,11 @@ class Tester:
 
         # initialise model
         smoke_model = SmokeModel()
-        self.model = smoke_model.get_model(True)
+        if(setTestValues("load_QAT_model")):
+            # can only load qat state dict once model has been prepped
+            self.model, self.qat_state_dict = smoke_model.get_model(True)
+        else:
+            self.model = smoke_model.get_model(True)
         print(f"Number of parameters: {self.count_parameters(self.model)}")
         #print(self.model.rpn)
 
@@ -119,7 +123,8 @@ class Tester:
         #print(self.model)
         #print(self.model.backbone.body)
         #print(self.model.backbone)
-        # static quants
+
+        # QUANTS!
         if(self.static_quants):
             print(f"Threads available: {torch.get_num_threads()}")
             #torch.set_num_threads(torch.get_num_threads())
@@ -127,7 +132,6 @@ class Tester:
             self.model.backbone.body.qconfig = torch.ao.quantization.get_default_qconfig('x86')
             layers_to_fuse = get_layers_to_fuse(module_names)
             self.model.backbone.body = torch.ao.quantization.fuse_modules(self.model.backbone.body, layers_to_fuse)
-
             self.model.backbone.body = torch.ao.quantization.prepare(self.model.backbone.body, inplace=False)
             if(self.calibrate_full_set):
                 start_time = time.time()
@@ -143,8 +147,11 @@ class Tester:
                 image_tensor, filename = next(iter(self.validate_dataloader)) # quant calibration
                 self.model.backbone.body(image_tensor[0].unsqueeze(0))
 
-
             self.model.backbone.body = torch.ao.quantization.convert(self.model.backbone.body)
+            if (setTestValues("load_QAT_model")):
+                # load quant aware state dict after converting model
+                self.model.load_state_dict(self.qat_state_dict)
+
 
 
         # Start timer

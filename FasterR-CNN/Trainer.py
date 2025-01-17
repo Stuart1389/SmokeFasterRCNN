@@ -116,7 +116,10 @@ class Trainer:
 
 
     # function saves model parameters
-    def save_model(self):
+    def save_model(self, quant_convert_save = None):
+        if(quant_convert_save):
+            self.model.to('cpu')
+            self.model.backbone.body = torch.ao.quantization.convert(self.model.backbone.body, inplace=True)
         # Save model parameters
         # Setting name
         model_save_name = self.model_name + ".pth"
@@ -170,7 +173,7 @@ class Trainer:
             self.model.backbone.body = torch.ao.quantization.fuse_modules(self.model.backbone.body,layers_to_fuse)
             # prepare requires train mode
             self.model.train()
-            self.model.backbone.body = torch.ao.quantization.prepare_qat(self.model.backbone.body)
+            self.model.backbone.body = torch.ao.quantization.prepare_qat(self.model.backbone.body, inplace=True)
 
         # !!TRAINING LOOP START!!
         for epoch in range(self.epochs):
@@ -196,6 +199,11 @@ class Trainer:
 
             # holds number of epochs model trained on
             self.epochs_trained += 1
+            if(epoch > 3 and setTrainValues("quant_aware_training")):
+                self.model.backbone.body.apply(torch.ao.quantization.disable_observer)
+            if (epoch > 2 and setTrainValues("quant_aware_training")):
+                self.model.backbone.body.apply(torch.nn.intrinsic.qat.freeze_bn_stats)
+
 
 
             # Add loss dicts to list
@@ -274,10 +282,10 @@ class Trainer:
         })
 
         wandb.finish()
-
-        #self.save_model()
+        if(setTrainValues("save_at_end")):
+            self.save_model()
         # wandb logging
-        self.save_model()
+        self.save_model(quant_convert_save=True)
 
     # function displays metrics collected from training loop
     def display_results(self, cur_highest_vram, total_training_time,

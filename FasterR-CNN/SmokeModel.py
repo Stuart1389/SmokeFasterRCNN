@@ -64,8 +64,11 @@ class SmokeModel:
         self.force_default = force_default
 
         self.generate_weights = False
+        self.load_qat_model = setTestValues("load_QAT_model")
 
     def get_model(self, testing=None, know_distil=None, get_teacher=None):
+        state_dict = None
+        saved_dir = None
         if(setTrainValues("alt_model") or know_distil and not self.force_default and not self.generate_weights):
             self.model_builder()
         elif(not self.generate_weights):
@@ -79,13 +82,15 @@ class SmokeModel:
         elif testing:
             saved_dir = Path(self.load_path_test) / f"{setTestValues('model_name')}.pth"
 
-        if testing or get_teacher:
+        if testing and not self.load_qat_model or get_teacher:
             state_dict = torch.load(saved_dir, weights_only=True)
             self.model.load_state_dict(state_dict)
             return self.model
-
-
-        return self.model, self.in_features, self.model.roi_heads.box_predictor
+        elif self.load_qat_model:
+            state_dict = torch.load(saved_dir, weights_only=True)
+            return self.model, state_dict
+        else:
+            return self.model, self.in_features, self.model.roi_heads.box_predictor
 
     def model_builder(self):
         print(f"Model builder, Backbone: {self.model_backbone}, FpnV2: {self.fpnv2}")
