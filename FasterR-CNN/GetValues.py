@@ -6,13 +6,13 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 16,
-        "EPOCHS": 2,
-        "PATIENCE": 2,
+        "EPOCHS": 15,
+        "PATIENCE": 4,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "qat_csj_a100_am", # name of saved model
-        "plotJSON_fname": "qat_csj_a100_am", # json filename
-        "model_id": "44",
-        "save_at_end" : True,
+        "model_name": "amp_a100", # name of saved model
+        "plotJSON_fname": "amp_a100", # json filename
+        "model_id": "45",
+        "save_at_end" : False,
         # temp resnet101_2080_101,
 
         # use alternate model
@@ -35,7 +35,7 @@ def setTrainValues(val_to_get):
         "logWB" : True,
 
         # PARAMETERS
-        "learning_rate": 0.003 / 10,
+        "learning_rate": 0.003,
         "momentum": 0.9,
         "weight_decay": 0.0005,
         "step_size": 3,
@@ -44,11 +44,11 @@ def setTrainValues(val_to_get):
         # DATALOADER/TODEVICE/MIXED-PRECISSION
         "non_blocking": True,
         "pinned_memory": True,
-        "amp_mixed_precission": False,
+        "amp_mixed_precission": True,
 
         # QUANT
-        "quant_aware_training": True,
-        "start_from_checkpoint": True,
+        "quant_aware_training": False,
+        "start_from_checkpoint": False,
         "model_load_name": "transform_csj_a100",
     }
     # return value corresponding with val_to_get
@@ -58,8 +58,8 @@ def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
         "BATCH_SIZE": 4,
-        "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "qat_csj_a100", # name of model to test
+        "dataset": "Small data", # "Small data" OR "Large data"
+        "model_name": "amp_a100", # name of model to test
 
         # PROFILER
         "start_profiler": False,
@@ -70,9 +70,9 @@ def setTestValues(val_to_get):
         "pinned_memory": True,
 
         # Quants, only enable if testing
-        "static_quant": True,
-        "CPU_inference": True, # force cpu inference even if cuda is available
-        "calibrate_full_set": True,
+        "static_quant": False,
+        "CPU_inference": False, # force cpu inference even if cuda is available
+        "calibrate_full_set": False,
         "load_QAT_model": False
 
     }
