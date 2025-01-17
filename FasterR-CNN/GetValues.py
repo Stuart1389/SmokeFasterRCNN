@@ -5,8 +5,8 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 2,
-        "EPOCHS": 1,
+        "BATCH_SIZE": 8,
+        "EPOCHS": 4,
         "PATIENCE": 4,
         "dataset": "Small data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
         "model_name": "qat_csj_a100_test", # name of saved model
@@ -71,7 +71,7 @@ def setTestValues(val_to_get):
         "static_quant": True,
         "CPU_inference": True,
         "calibrate_full_set": False,
-        "load_QAT_model": True,
+        "load_QAT_model": False
 
     }
 

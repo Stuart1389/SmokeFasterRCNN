@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 import torch
 import torchvision
@@ -91,7 +92,7 @@ class SmokeModel:
                 state_dict = torch.load(saved_dir, weights_only=True)
             except AttributeError:
                 print("Ensure load QAT model is disabled (GetValues.py) if not TESTING and a quant aware trained model\n")
-
+                sys.exit(1)
             return self.model, state_dict
         else:
             return self.model, self.in_features, self.model.roi_heads.box_predictor
