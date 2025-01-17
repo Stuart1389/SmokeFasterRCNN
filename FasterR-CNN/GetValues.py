@@ -5,7 +5,7 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 8,
+        "BATCH_SIZE": 2,
         "EPOCHS": 1,
         "PATIENCE": 4,
         "dataset": "Small data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
@@ -71,7 +71,7 @@ def setTestValues(val_to_get):
         "static_quant": True,
         "CPU_inference": True,
         "calibrate_full_set": False,
-        "load_QAT_model": False,
+        "load_QAT_model": True,
 
     }
 
@@ -96,3 +96,9 @@ def checkColab():
     else: # change this to (Project folder\\SmokeFasterRCNN) to run locally
         base_dir = "N:\\University subjects\\Thesis\\Python projects\\SmokeFasterRCNN"
     return base_dir
+"""
+#!pip uninstall torch torchvision torchaudio -y
+pytorch colab:2.5.1+cu121 - pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+pytorch local bult with: pip install torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu118
+"""
+
