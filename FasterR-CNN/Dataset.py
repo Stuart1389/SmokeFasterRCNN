@@ -32,12 +32,12 @@ transform_train = A.Compose([
     # A.GaussNoise(var_limit=(0.01, 0.005), p=1),
     # A.HorizontalFlip(p=0.5),
 
-    #A.BBoxSafeRandomCrop(erosion_rate=0, p=0.5),
-    #A.RandomScale(scale_limit=0.3, p=0.5),
-    #A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=0.5),
+    A.BBoxSafeRandomCrop(erosion_rate=0, p=0.5),
+    A.RandomScale(scale_limit=0.3, p=0.5),
+    A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=0.5),
 
 
-    #A.Resize(height=480, width=640),
+    A.Resize(height=480, width=640),
 
     ToTensorV2()
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))

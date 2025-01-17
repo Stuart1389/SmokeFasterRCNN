@@ -10,7 +10,7 @@ def setTrainValues(val_to_get):
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
         "model_name": "qat_csj_a100", # name of saved model
-        "plotJSON_fname": "test_quant", # json filename
+        "plotJSON_fname": "qat_csj_a100", # json filename
         "model_id": "43",
         # temp resnet101_2080_101,
 
