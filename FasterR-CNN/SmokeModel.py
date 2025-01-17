@@ -254,6 +254,25 @@ class SmokeModel:
 
         return self.train_dataloader, self.validate_dataloader, self.test_dataloader
 
+    def get_validate_test_dataloader(self):
+        test_dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTestValues("dataset"))
+        num_workers = os.cpu_count() # threads available
+        test_batch_size = setTestValues("BATCH_SIZE")
+        pinned_test = setTestValues("pinned_memory")
+
+        # Load datasets
+        val_dir = Dataset.smokeDataset(str(test_dataset_dir) + "/Validate", Dataset.transform_validate)
+        self.test_validate_dataloader = DataLoader(
+            dataset=val_dir,
+            batch_size=test_batch_size,
+            num_workers=num_workers,
+            collate_fn=collate_fn,
+            pin_memory=pinned_test,
+            shuffle=False
+        )
+
+        return self.test_validate_dataloader
+
     def get_debug_dataloader(self):
         num_workers = os.cpu_count() # threads available
         batch_size = setTrainValues("BATCH_SIZE")

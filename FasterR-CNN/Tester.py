@@ -1,5 +1,6 @@
 ### Testing model predictions
 import os
+#os.environ["OMP_NUM_THREADS"] = "8"
 import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -18,6 +19,7 @@ from torchvision.transforms import v2 as T
 from torchvision.utils import draw_bounding_boxes
 import torch.ao.quantization as quantization
 import numpy as np
+from SmokeUtils import get_layers_to_fuse
 
 
 class Tester:
@@ -50,6 +52,7 @@ class Tester:
 
         # get test dataloader
         _, _, self.test_dataloader = smoke_model.get_dataloader(True)
+        self.validate_dataloader = smoke_model.get_validate_test_dataloader()
 
         # Paths
         self.test_image_dir = Path(f"{self.base_dir}/Dataset/") / setTestValues("dataset") / "Test/images"
@@ -77,12 +80,14 @@ class Tester:
         self.model_name = setTestValues("model_name")
         self.start_profiler = setTestValues("start_profiler")
         self.record_trace = setTestValues("record_trace")
-
+        self.non_blocking = setTestValues("non_blocking")
         # quants
         self.static_quants = setTestValues("static_quant")
+        self.calibrate_full_set = setTestValues("calibrate_full_set")
         # pytorch only supports static quants on cpu
-        if(self.static_quants):
+        if(self.static_quants or setTestValues("CPU_inference")):
             self.device = "cpu"
+
 
     def count_parameters(self, model):
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -107,7 +112,7 @@ class Tester:
             profiler.start()
         test_dataloader = self.test_dataloader # change to dataloader
         # getting predictions
-        self.model.to(self.device, non_blocking=False)  # put model on cpu or gpu
+        self.model.to(self.device, non_blocking=self.non_blocking)  # put model on cpu or gpu
         # set model to evaluation mode
         self.model.eval()
         # Static quantization
@@ -116,15 +121,30 @@ class Tester:
         #print(self.model.backbone)
         # static quants
         if(self.static_quants):
+            print(f"Threads available: {torch.get_num_threads()}")
+            #torch.set_num_threads(torch.get_num_threads())
+            module_names = list(self.model.backbone.body.named_modules())
             self.model.backbone.body.qconfig = torch.ao.quantization.get_default_qconfig('x86')
-            #fused_model = torch.ao.quantization.fuse_modules(self.model.backbone.body, [['body.conv1', 'body.relu']])
+            layers_to_fuse = get_layers_to_fuse(module_names)
+            self.model.backbone.body = torch.ao.quantization.fuse_modules(self.model.backbone.body, layers_to_fuse)
 
-            prepped_model = torch.ao.quantization.prepare(self.model.backbone.body, inplace=False)
-            image_tensor, filename = next(iter(test_dataloader)) # get size for quant
-            prepped_model(image_tensor[0].unsqueeze(0))
+            self.model.backbone.body = torch.ao.quantization.prepare(self.model.backbone.body, inplace=False)
+            if(self.calibrate_full_set):
+                start_time = time.time()
+                for batch, (image_tensor, filename) in enumerate(self.validate_dataloader): # or self.test_dataloader
+                    print(f"Calibrating batch {batch} out of {len(self.validate_dataloader)}")
+                    image_tensors = torch.stack(
+                        [tensor.to(self.device, non_blocking=self.non_blocking) for tensor in image_tensor]
+                    )
+                    self.model.backbone.body(image_tensors)
+                end_time = time.time()
+                print(f"Calibration took: {end_time - start_time:.2f} seconds")
+            else:
+                image_tensor, filename = next(iter(self.validate_dataloader)) # quant calibration
+                self.model.backbone.body(image_tensor[0].unsqueeze(0))
 
 
-            self.model.backbone.body = torch.ao.quantization.convert(prepped_model)
+            self.model.backbone.body = torch.ao.quantization.convert(self.model.backbone.body)
 
 
         # Start timer
@@ -158,7 +178,7 @@ class Tester:
 
             # print("image:", image, "image_tensor", image_tensor, "filename", filename)
             filenames = list(files for files in filename)
-            image_tensors = list(tensor.to(self.device, non_blocking=False) for tensor in image_tensor)
+            image_tensors = list(tensor.to(self.device, non_blocking=self.non_blocking) for tensor in image_tensor)
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
 
