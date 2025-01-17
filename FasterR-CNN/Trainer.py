@@ -295,7 +295,7 @@ class Trainer:
         if(setTrainValues("save_at_end")):
             self.save_model()
         # wandb logging
-        self.save_model(True)
+
 
     # function displays metrics collected from training loop
     def display_results(self, cur_highest_vram, total_training_time,

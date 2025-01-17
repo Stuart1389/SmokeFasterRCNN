@@ -12,7 +12,7 @@ def setTrainValues(val_to_get):
         "model_name": "qat_csj_a100_am", # name of saved model
         "plotJSON_fname": "qat_csj_a100_am", # json filename
         "model_id": "44",
-        "save_at_end" : False,
+        "save_at_end" : True,
         # temp resnet101_2080_101,
 
         # use alternate model
@@ -49,7 +49,7 @@ def setTrainValues(val_to_get):
         # QUANT
         "quant_aware_training": True,
         "start_from_checkpoint": True,
-        "model_load_name": "qat_csj_a100",
+        "model_load_name": "transform_csj_a100",
     }
     # return value corresponding with val_to_get
     return train_values.get(val_to_get, None)

@@ -57,7 +57,8 @@ class SmokeModel:
 
         self.num_train_epochs = setTrainValues("EPOCHS")
 
-        self.load_path_train = Path("savedModels/" + setTrainValues("teacher_model_name"))
+        self.load_path_teacher = Path("savedModels/" + setTrainValues("teacher_model_name"))
+        self.load_path_train_checkpoint = Path("savedModels/" + setTrainValues("model_load_name"))
         self.load_path_test = Path("savedModels/" + setTestValues("model_name"))
         self.model_arch_path = model_arch_path = Path("savedModelsArch/")
 
@@ -80,13 +81,16 @@ class SmokeModel:
 
         # loading model weights if necessary
         if get_teacher:
-            saved_dir = Path(self.load_path_train) / f"{setTrainValues('teacher_model_name')}.pth"
+            saved_dir = Path(self.load_path_teacher) / f"{setTrainValues('teacher_model_name')}.pth"
+            print("Load teacher")
         elif testing:
             saved_dir = Path(self.load_path_test) / f"{setTestValues('model_name')}.pth"
+            print("Load model for testing")
         else:
-            saved_dir = Path(self.load_path_train) / f"{setTrainValues('model_load_name')}.pth"
+            print("Load from checkpoint")
+            saved_dir = Path(self.load_path_train_checkpoint) / f"{setTrainValues('model_load_name')}.pth"
 
-        if testing and not self.load_qat_model or get_teacher or self.start_from_checkpoint:
+        if testing and not self.load_qat_model or get_teacher:
             state_dict = torch.load(saved_dir, weights_only=True)
             self.model.load_state_dict(state_dict)
             return self.model
@@ -97,6 +101,10 @@ class SmokeModel:
                 print("Ensure load QAT model is disabled (GetValues.py) if not TESTING and a quant aware trained model\n")
                 sys.exit(1)
             return self.model, state_dict
+        elif self.start_from_checkpoint:
+            state_dict = torch.load(saved_dir, weights_only=True)
+            self.model.load_state_dict(state_dict)
+            return self.model, self.in_features, self.model.roi_heads.box_predictor
         else:
             return self.model, self.in_features, self.model.roi_heads.box_predictor
 
