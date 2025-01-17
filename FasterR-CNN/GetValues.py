@@ -8,7 +8,7 @@ def setTrainValues(val_to_get):
         "BATCH_SIZE": 2,
         "EPOCHS": 4,
         "PATIENCE": 4,
-        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "dataset": "Small data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
         "model_name": "qat_csj_a100_test", # name of saved model
         "plotJSON_fname": "qat_csj_a100_test", # json filename
         "model_id": "43",
@@ -24,7 +24,7 @@ def setTrainValues(val_to_get):
         "know_distil": False,
         "teacher_model_name": "transform_csj_a100",
 
-        "load_hd5f" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
+        "load_hd5f" : False, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
         "h5py_dir_save_name": "transform_csj_3_def", # file name for h5py file
         "h5py_dir_load_name": "test_file", #large_15_no_transform, transform_csj, large_1_transform, test_file
         # transform_csj_3_def, transform_csj_3_100, transform_csj_3_1
