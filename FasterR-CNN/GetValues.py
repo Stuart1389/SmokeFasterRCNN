@@ -5,12 +5,12 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 2,
-        "EPOCHS": 15,
+        "BATCH_SIZE": 8,
+        "EPOCHS": 1,
         "PATIENCE": 4,
-        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "qat_csj_a100", # name of saved model
-        "plotJSON_fname": "qat_csj_a100", # json filename
+        "dataset": "Small data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "model_name": "place_test", # name of saved model
+        "plotJSON_fname": "place_test", # json filename
         "model_id": "43",
         "save_at_end" : False,
         # temp resnet101_2080_101,
@@ -35,7 +35,7 @@ def setTrainValues(val_to_get):
         "logWB" : False,
 
         # PARAMETERS
-        "learning_rate": 0.001,
+        "learning_rate": 0.003,
         "momentum": 0.9,
         "weight_decay": 0.0005,
         "step_size": 3,
@@ -71,7 +71,7 @@ def setTestValues(val_to_get):
         "static_quant": True,
         "CPU_inference": True,
         "calibrate_full_set": False,
-        "load_QAT_model": True
+        "load_QAT_model": False
 
     }
 

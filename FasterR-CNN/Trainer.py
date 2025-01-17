@@ -183,7 +183,7 @@ class Trainer:
             self.model.backbone.body = torch.ao.quantization.fuse_modules(self.model.backbone.body,layers_to_fuse)
             # prepare requires train mode
             self.model.train()
-            self.model.backbone.body = torch.ao.quantization.prepare_qat(self.model.backbone.body, inplace=True)
+            self.model.backbone.body = torch.ao.quantization.prepare_qat(self.model.backbone.body, inplace=False)
 
         # !!TRAINING LOOP START!!
         for epoch in range(self.epochs):
