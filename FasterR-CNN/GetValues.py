@@ -9,8 +9,8 @@ def setTrainValues(val_to_get):
         "EPOCHS": 20,
         "PATIENCE": 5,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "resnet_34_fpnv2_L4", # name of saved model
-        "plotJSON_fname": "resnet_34_fpnv2_L4", # json filename
+        "model_name": "resnet_34_fpnv2_A100", # name of saved model
+        "plotJSON_fname": "resnet_34_fpnv2_A100", # json filename
         "model_id": "46",
         "save_at_end" : False,
         # temp resnet101_2080_101,
