@@ -87,7 +87,11 @@ class SmokeModel:
             self.model.load_state_dict(state_dict)
             return self.model
         elif self.load_qat_model:
-            state_dict = torch.load(saved_dir, weights_only=True)
+            try:
+                state_dict = torch.load(saved_dir, weights_only=True)
+            except AttributeError:
+                print("Ensure load QAT model is disabled (GetValues.py) if not TESTING and a quant aware trained model\n")
+
             return self.model, state_dict
         else:
             return self.model, self.in_features, self.model.roi_heads.box_predictor

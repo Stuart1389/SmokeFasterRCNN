@@ -1,3 +1,4 @@
+import copy
 import sys
 import torch
 import os
@@ -116,17 +117,25 @@ class Trainer:
 
 
     # function saves model parameters
-    def save_model(self, quant_convert_save = None):
-        if(quant_convert_save):
-            self.model.to('cpu')
-            self.model.backbone.body = torch.ao.quantization.convert(self.model.backbone.body, inplace=True)
+    def save_model(self, final_save = None):
+        state_dict = self.model.state_dict()
+        if(setTrainValues("quant_aware_training")):
+            # need to convert before saving but
+            # cant convert mid train
+            # so deep copy model and get its state_dict
+            temp_model = copy.deepcopy(self.model)
+            temp_model.to('cpu')
+            temp_model.backbone.body = torch.ao.quantization.convert(temp_model.backbone.body, inplace=True)
+            state_dict = temp_model.state_dict()
+            #self.model.to('cpu')
+            #self.model.backbone.body = torch.ao.quantization.convert(self.model.backbone.body, inplace=True)
         # Save model parameters
         # Setting name
         model_save_name = self.model_name + ".pth"
         model_save_path = self.save_path / model_save_name
         print(f"saving the model to: {model_save_path}")
         # save model parameters to file
-        torch.save(obj=self.model.state_dict(), f=model_save_path)
+        torch.save(obj=state_dict, f=model_save_path)
 
 
     # function defines training loop used to train model
@@ -234,7 +243,7 @@ class Trainer:
                 self.best_train_loss = current_train_loss
                 self.epochs_no_improve = 0
                 print(f"Validation loss improved to {self.best_val_loss:.4f}, saving model...")
-                self.save_model() # checkpointing epochs with positive loss values (and by that i mean lower)
+                self.save_model() # checkpointing epochs with lower loss values
             else:
                 self.epochs_no_improve += 1
                 print(f"No improvement in validation loss for {self.epochs_no_improve} epochs. Current best loss is {self.best_val_loss:.4f}")
@@ -285,7 +294,7 @@ class Trainer:
         if(setTrainValues("save_at_end")):
             self.save_model()
         # wandb logging
-        self.save_model(quant_convert_save=True)
+        self.save_model(True)
 
     # function displays metrics collected from training loop
     def display_results(self, cur_highest_vram, total_training_time,
