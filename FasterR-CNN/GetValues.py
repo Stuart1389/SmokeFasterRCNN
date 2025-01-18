@@ -6,18 +6,18 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 16,
-        "EPOCHS": 15,
-        "PATIENCE": 4,
+        "EPOCHS": 3,
+        "PATIENCE": 3,
         "dataset": "Large data cloud b", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "csj_cloud_A100", # name of saved model
-        "plotJSON_fname": "csj_cloud_A100", # json filename
-        "model_id": "46",
-        "save_at_end" : False,
+        "model_name": "csj_cloud_A100_ft", # name of saved model
+        "plotJSON_fname": "csj_cloud_A100_ft", # json filename
+        "model_id": "47",
+        "save_at_end" : True,
         # temp resnet101_2080_101,
 
         # use alternate model
         "alt_model": False,
-        "alt_model_backbone": "resnet34", #resnet18, resnet34, resnet50, resnet101, etc
+        "alt_model_backbone": "resnet101", #resnet18, resnet34, resnet50, resnet101, etc
         "fpnv2": True, # Sets alternate model to use fpnv2
 
         # Knowlege distillation, uses alt model
@@ -26,7 +26,7 @@ def setTrainValues(val_to_get):
 
         "load_hd5f" : False, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
         "h5py_dir_save_name": "transform_csj_3_def", # file name for h5py file
-        "h5py_dir_load_name": "transform_csj", #large_15_no_transform, transform_csj, large_1_transform, test_file
+        "h5py_dir_load_name": "test_file", #large_15_no_transform, transform_csj, large_1_transform, test_file
         # transform_csj_3_def, transform_csj_3_100, transform_csj_3_1
 
         # PROFILER
@@ -35,10 +35,10 @@ def setTrainValues(val_to_get):
         "logWB" : True,
 
         # PARAMETERS
-        "learning_rate": 0.003,
+        "learning_rate": 0.001 / 10,
         "momentum": 0.9,
         "weight_decay": 0.0005,
-        "step_size": 3,
+        "step_size": 1,
         "gamma": 0.01,
 
         # DATALOADER/TODEVICE/MIXED-PRECISSION
@@ -48,7 +48,7 @@ def setTrainValues(val_to_get):
 
         # QUANT
         "quant_aware_training": False,
-        "start_from_checkpoint": False,
+        "start_from_checkpoint": True,
         "model_load_name": "transform_csj_a100",
     }
     # return value corresponding with val_to_get
@@ -59,7 +59,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "resnet_34_fpnv2_A100", # name of model to test
+        "model_name": "csj_cloud_A100", # name of model to test
 
         # PROFILER
         "start_profiler": False,

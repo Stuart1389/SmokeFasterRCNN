@@ -119,8 +119,8 @@ class SmokeModel:
             fpn = torch.load(self.model_arch_path / "fpn.pth", weights_only=True)
             roi_heads = torch.load(self.model_arch_path / "roi.pth", weights_only=True)
             rpn = torch.load(self.model_arch_path / "rpn.pth", weights_only=True)
-            self.model = torchvision.models.detection.stus_resnet_fpnv2_builder(weights_backbone=None,#"DEFAULT"
-                                                                                trainable_backbone_layers=5,
+            self.model = torchvision.models.detection.stus_resnet_fpnv2_builder(weights_backbone="DEFAULT",#"DEFAULT"
+                                                                                trainable_backbone_layers=3,
                                                                                 roi_head_weights=roi_heads,
                                                                                 rpn_weights=rpn, fpn_weights=fpn,
                                                                                 model_backbone=self.model_backbone)
