@@ -86,7 +86,7 @@ class SmokeModel:
         elif testing:
             saved_dir = Path(self.load_path_test) / f"{setTestValues('model_name')}.pth"
             print("Load model for testing")
-        else:
+        elif self.start_from_checkpoint:
             print("Load from checkpoint")
             saved_dir = Path(self.load_path_train_checkpoint) / f"{setTrainValues('model_load_name')}.pth"
 

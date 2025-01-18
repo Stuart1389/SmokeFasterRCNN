@@ -5,7 +5,7 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 8,
+        "BATCH_SIZE": 12,
         "EPOCHS": 20,
         "PATIENCE": 5,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
@@ -59,7 +59,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "resnet_34_fpnv1_l4", # name of model to test
+        "model_name": "resnet_34_fpnv2_A100", # name of model to test
 
         # PROFILER
         "start_profiler": False,
