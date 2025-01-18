@@ -6,13 +6,13 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 16,
-        "EPOCHS": 3,
+        "EPOCHS": 6,
         "PATIENCE": 3,
-        "dataset": "Large data cloud b", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "csj_cloud_A100_ft", # name of saved model
-        "plotJSON_fname": "csj_cloud_A100_ft", # json filename
-        "model_id": "47",
-        "save_at_end" : True,
+        "dataset": "Large data cloud c", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "model_name": "csj_cloud_A100_ft_sm", # name of saved model
+        "plotJSON_fname": "csj_cloud_A100_ft_sm", # json filename
+        "model_id": "48",
+        "save_at_end" : False,
         # temp resnet101_2080_101,
 
         # use alternate model
@@ -38,7 +38,7 @@ def setTrainValues(val_to_get):
         "learning_rate": 0.001 / 10,
         "momentum": 0.9,
         "weight_decay": 0.0005,
-        "step_size": 1,
+        "step_size": 2,
         "gamma": 0.01,
 
         # DATALOADER/TODEVICE/MIXED-PRECISSION
@@ -59,7 +59,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "csj_cloud_A100", # name of model to test
+        "model_name": "csj_cloud_A100_ft", # name of model to test
 
         # PROFILER
         "start_profiler": False,

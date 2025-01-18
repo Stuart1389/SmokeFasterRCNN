@@ -14,7 +14,7 @@ from GetValues import checkColab, setTrainValues
 from torch.utils.data import Dataset
 from multiprocessing import Pool
 import time
-
+import sys
 
 ### !!IMAGE TRANSFORMATIONS!!
 # Albumentations library, can do transforms for image and bbox as one
@@ -128,6 +128,11 @@ class smokeDataset(torch.utils.data.Dataset):
     filename = img_path.stem # get filename
     if(idx < len(self.annotations)):
         annotation_path = self.annotations[idx] # return annotation at index
+        annotation_name = annotation_path.stem
+        if(filename != annotation_name):
+            print("Filename and annotation name don't match. Incorrect annotation will result in a poor model.")
+            print("See Dataset.py to disable")
+            sys.exit(1)
         #print(f"Image dtype: {image.dtype}")
         #Parse data and return to instance
         boxes, labels, labels_int = self.parse_xml(annotation_path)

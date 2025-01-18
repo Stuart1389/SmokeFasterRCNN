@@ -26,8 +26,8 @@ test_annot = os.path.join(test_dir, "annotations", "xmls")
 test_image = os.path.join(test_dir, "images")
 
 # split ratios (70/15/15)
-train_split = 0.8
-val_split = 0.2
+train_split = 0.4
+val_split = 0
 test_split = 0
 
 # function deletes files from dir
