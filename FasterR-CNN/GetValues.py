@@ -5,20 +5,20 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 12,
-        "EPOCHS": 20,
-        "PATIENCE": 5,
-        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "resnet_34_fpnv2_A100", # name of saved model
-        "plotJSON_fname": "resnet_34_fpnv2_A100", # json filename
+        "BATCH_SIZE": 16,
+        "EPOCHS": 15,
+        "PATIENCE": 4,
+        "dataset": "Large data cloud", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "model_name": "csj_cloud_A100", # name of saved model
+        "plotJSON_fname": "csj_cloud_A100", # json filename
         "model_id": "46",
         "save_at_end" : False,
         # temp resnet101_2080_101,
 
         # use alternate model
-        "alt_model": True,
+        "alt_model": False,
         "alt_model_backbone": "resnet34", #resnet18, resnet34, resnet50, resnet101, etc
-        "fpnv2": True, # Sets alternate model to use ehnhanced feature pyramid
+        "fpnv2": True, # Sets alternate model to use fpnv2
 
         # Knowlege distillation, uses alt model
         "know_distil": False,
@@ -35,7 +35,7 @@ def setTrainValues(val_to_get):
         "logWB" : True,
 
         # PARAMETERS
-        "learning_rate": 0.05,
+        "learning_rate": 0.003,
         "momentum": 0.9,
         "weight_decay": 0.0005,
         "step_size": 3,
