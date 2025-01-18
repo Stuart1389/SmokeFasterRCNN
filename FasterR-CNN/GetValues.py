@@ -35,10 +35,10 @@ def setTrainValues(val_to_get):
         "logWB" : True,
 
         # PARAMETERS
-        "learning_rate": 0.005,
+        "learning_rate": 0.05,
         "momentum": 0.9,
         "weight_decay": 0.0005,
-        "step_size": 4,
+        "step_size": 3,
         "gamma": 0.01,
 
         # DATALOADER/TODEVICE/MIXED-PRECISSION
