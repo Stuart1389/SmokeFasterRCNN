@@ -6,13 +6,13 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 16,
-        "EPOCHS": 5,
+        "EPOCHS": 15,
         "PATIENCE": 4,
         "dataset": "Large data c", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
         "model_name": "101_a100_v2", # name of saved model
         "plotJSON_fname": "101_a100_v2", # json filename
         "model_id": "49",
-        "save_at_end" : True,
+        "save_at_end" : False,
         # temp resnet101_2080_101,
 
         # use alternate model
