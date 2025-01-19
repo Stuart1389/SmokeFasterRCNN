@@ -16,7 +16,7 @@ def setTrainValues(val_to_get):
         # temp resnet101_2080_101,
 
         # use alternate model
-        "alt_model": True,
+        "alt_model": False,
         "alt_model_backbone": "resnet101", #resnet18, resnet34, resnet50, resnet101, etc
         "fpnv2": False, # Sets alternate model to use fpnv2
 
@@ -59,7 +59,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "101_a100_v2", # name of model to test
+        "model_name": "transform_csj_a100", # name of model to test
 
         # PROFILER
         "start_profiler": False,

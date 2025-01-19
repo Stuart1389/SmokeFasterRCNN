@@ -20,6 +20,7 @@ from torchvision.utils import draw_bounding_boxes
 import torch.ao.quantization as quantization
 import numpy as np
 from SmokeUtils import get_layers_to_fuse
+from torch.nn.utils import prune
 
 
 class Tester:
@@ -126,32 +127,86 @@ class Tester:
 
         # QUANTS!
         if(self.static_quants):
-            print(f"Threads available: {torch.get_num_threads()}")
-            #torch.set_num_threads(torch.get_num_threads())
-            module_names = list(self.model.backbone.body.named_modules())
-            self.model.backbone.body.qconfig = torch.ao.quantization.get_default_qconfig('x86')
-            layers_to_fuse = get_layers_to_fuse(module_names)
-            self.model.backbone.body = torch.ao.quantization.fuse_modules(self.model.backbone.body, layers_to_fuse)
-            self.model.backbone.body = torch.ao.quantization.prepare(self.model.backbone.body, inplace=False)
-            if(self.calibrate_full_set):
-                start_time = time.time()
-                for batch, (image_tensor, filename) in enumerate(self.validate_dataloader): # or self.test_dataloader
-                    print(f"Calibrating batch {batch} out of {len(self.validate_dataloader)}")
-                    image_tensors = torch.stack(
-                        [tensor.to(self.device, non_blocking=self.non_blocking) for tensor in image_tensor]
-                    )
-                    self.model.backbone.body(image_tensors)
-                end_time = time.time()
-                print(f"Calibration took: {end_time - start_time:.2f} seconds")
-            else:
-                image_tensor, filename = next(iter(self.validate_dataloader)) # quant calibration
-                self.model.backbone.body(image_tensor[0].unsqueeze(0))
+            self.quant_model()
 
-            self.model.backbone.body = torch.ao.quantization.convert(self.model.backbone.body)
-            if (setTestValues("load_QAT_model")):
-                # load quant aware state dict after converting model
-                self.model.load_state_dict(self.qat_state_dict)
+        params_to_prune_weights = []
+        params_to_prune = get_layers_to_fuse(list(self.model.backbone.body.named_modules()))
+        #for item in params_to_prune:
+            #params_to_prune_weights.append((item, 'weight'))
+        #print(params_to_prune)
+        pruning = True
 
+        if (pruning):
+            """
+            for name, module in self.model.backbone.body.named_modules():
+                # Check if the module has a weight parameter to prune
+                if hasattr(module, 'weight'):
+                    params_to_prune_weights.append((module, 'weight'))
+
+            #params_to_prune_weights = [
+                #(self.model.backbone.body.conv1, 'weight')
+            #]
+
+            prune.global_unstructured(
+                params_to_prune_weights,
+                pruning_method=prune.L1Unstructured,
+                amount=90
+            )
+
+            print(list(self.model.backbone.body.named_modules()))
+            prune.random_unstructured(self.model.backbone.body.layer4.0.conv1, name="weight", amount=0.3)
+            """
+            #print(self.model.backbone.body)
+            layers_to_prune = [
+                self.model.backbone.body.layer3[0].conv1,
+                self.model.backbone.body.layer3[0].conv2,
+                self.model.backbone.body.layer3[0].conv3,
+
+                self.model.backbone.body.layer3[1].conv1,
+                self.model.backbone.body.layer3[1].conv2,
+                self.model.backbone.body.layer3[1].conv3,
+
+                self.model.backbone.body.layer3[2].conv1,
+                self.model.backbone.body.layer3[2].conv2,
+                self.model.backbone.body.layer3[2].conv3,
+
+                self.model.backbone.body.layer4[0].conv1,
+                self.model.backbone.body.layer4[0].conv2,
+                self.model.backbone.body.layer4[0].conv3,
+
+                self.model.backbone.body.layer4[1].conv1,
+                self.model.backbone.body.layer4[1].conv2,
+                self.model.backbone.body.layer4[1].conv3,
+
+                self.model.backbone.body.layer4[2].conv1,
+                self.model.backbone.body.layer4[2].conv2,
+                self.model.backbone.body.layer4[2].conv3,
+            ]
+
+            # Apply unstructured pruning
+            prune_amount = 0.33  # Amount of weights to prune (30%)
+            for layer in layers_to_prune:
+                prune.l1_unstructured(layer, name="weight", amount=prune_amount)
+                with torch.no_grad():
+                    weight_tensor = layer.weight
+                    print("weight tensor", weight_tensor)
+                    sparse_weight = weight_tensor.to_sparse()
+                    print("sparese weight", sparse_weight)
+                    layer.weight = sparse_weight
+                    prune.remove(layer, name="weight")
+                    print("remove weight", layer.weight)
+
+
+
+
+
+            """
+            for layer in layers_to_prune:
+                with torch.no_grad():
+                    sparse_weights = layer.weight * layer.weight_mask  # Apply the pruning mask
+                    layer.weight = torch.nn.Parameter(layer.weight)  # Reassign with Parameter type
+                prune.remove(layer, "weight")  # Remove pruning hooks
+            """
 
 
         # Start timer
@@ -164,6 +219,34 @@ class Tester:
         self.get_results()
         if(self.start_profiler):
             profiler.stop()
+
+    def quant_model(self):
+        print(f"Threads available: {torch.get_num_threads()}")
+        # torch.set_num_threads(torch.get_num_threads())
+        module_names = list(self.model.backbone.body.named_modules())
+        self.model.backbone.body.qconfig = torch.ao.quantization.get_default_qconfig('x86')
+        layers_to_fuse = get_layers_to_fuse(module_names)
+        self.model.backbone.body = torch.ao.quantization.fuse_modules(self.model.backbone.body, layers_to_fuse)
+        self.model.backbone.body = torch.ao.quantization.prepare(self.model.backbone.body, inplace=False)
+        if (self.calibrate_full_set):
+            start_time = time.time()
+            for batch, (image_tensor, filename) in enumerate(self.validate_dataloader):  # or self.test_dataloader
+                print(f"Calibrating batch {batch} out of {len(self.validate_dataloader)}")
+                image_tensors = torch.stack(
+                    [tensor.to(self.device, non_blocking=self.non_blocking) for tensor in image_tensor]
+                )
+                self.model.backbone.body(image_tensors)
+            end_time = time.time()
+            print(f"Calibration took: {end_time - start_time:.2f} seconds")
+        else:
+            image_tensor, filename = next(iter(self.validate_dataloader))  # quant calibration
+            self.model.backbone.body(image_tensor[0].unsqueeze(0))
+
+        self.model.backbone.body = torch.ao.quantization.convert(self.model.backbone.body)
+        if (setTestValues("load_QAT_model")):
+            # load quant aware state dict after converting model
+            self.model.load_state_dict(self.qat_state_dict)
+
 
     # Transform images for model
     def get_transform(self):
