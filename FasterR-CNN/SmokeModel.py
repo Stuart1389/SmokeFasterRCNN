@@ -126,8 +126,8 @@ class SmokeModel:
                                                                                 model_backbone=self.model_backbone)
             self.model.rpn.anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
         else:
-            backbone = resnet_fpn_backbone(backbone_name=self.model_backbone, weights=None, trainable_layers=5)
-            self.model = FasterRCNN(backbone=backbone, num_classes=self.num_classes,
+            backbone = resnet_fpn_backbone(backbone_name=self.model_backbone, weights="DEFAULT", trainable_layers=3)
+            self.model = FasterRCNN(backbone=backbone, num_classes=2,
                                     rpn_anchor_generator=anchor_gen)
 
         # Set in features to whatever region of interest(ROI) expects

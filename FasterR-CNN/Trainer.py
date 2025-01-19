@@ -239,7 +239,9 @@ class Trainer:
             })
 
             # Early stopping implementation, at each epoch check for improvement in validation loss
-            if current_val_loss < self.best_val_loss:
+            if epoch == 0:
+                print("Warmup period")
+            elif current_val_loss < self.best_val_loss:
                 self.best_val_loss = current_val_loss
                 self.best_train_loss = current_train_loss
                 self.epochs_no_improve = 0

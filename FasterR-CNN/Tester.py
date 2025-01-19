@@ -32,7 +32,7 @@ class Tester:
         self.confidence_threshold = 0.5
         self.draw_highest_only = False # only draw bbox with highest score on plot
         self.plot_image = False # plot images
-        self.benchmark = True # measure how long it takes to make average prediction
+        self.benchmark = False # measure how long it takes to make average prediction
         self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
         self.draw_no_true_positive_only = False # only plot images with no true positives
 

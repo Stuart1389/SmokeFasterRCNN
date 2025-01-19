@@ -6,17 +6,17 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 16,
-        "EPOCHS": 6,
-        "PATIENCE": 3,
-        "dataset": "Large data cloud c", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "csj_cloud_A100_ft_sm", # name of saved model
-        "plotJSON_fname": "csj_cloud_A100_ft_sm", # json filename
-        "model_id": "48",
-        "save_at_end" : False,
+        "EPOCHS": 5,
+        "PATIENCE": 4,
+        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "model_name": "101_a100_v2", # name of saved model
+        "plotJSON_fname": "101_a100_v2", # json filename
+        "model_id": "49",
+        "save_at_end" : True,
         # temp resnet101_2080_101,
 
         # use alternate model
-        "alt_model": False,
+        "alt_model": True,
         "alt_model_backbone": "resnet101", #resnet18, resnet34, resnet50, resnet101, etc
         "fpnv2": True, # Sets alternate model to use fpnv2
 
@@ -35,10 +35,10 @@ def setTrainValues(val_to_get):
         "logWB" : True,
 
         # PARAMETERS
-        "learning_rate": 0.001 / 10,
+        "learning_rate": 0.003,
         "momentum": 0.9,
         "weight_decay": 0.0005,
-        "step_size": 2,
+        "step_size": 3,
         "gamma": 0.01,
 
         # DATALOADER/TODEVICE/MIXED-PRECISSION
@@ -48,7 +48,7 @@ def setTrainValues(val_to_get):
 
         # QUANT
         "quant_aware_training": False,
-        "start_from_checkpoint": True,
+        "start_from_checkpoint": False,
         "model_load_name": "transform_csj_a100",
     }
     # return value corresponding with val_to_get
@@ -58,8 +58,8 @@ def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
         "BATCH_SIZE": 4,
-        "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "csj_cloud_A100_ft", # name of model to test
+        "dataset": "Small data", # "Small data" OR "Large data"
+        "model_name": "101_a100_v1", # name of model to test
 
         # PROFILER
         "start_profiler": False,
