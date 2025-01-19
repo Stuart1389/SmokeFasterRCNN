@@ -8,17 +8,17 @@ def setTrainValues(val_to_get):
         "BATCH_SIZE": 16,
         "EPOCHS": 15,
         "PATIENCE": 4,
-        "dataset": "Large data c", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "101_a100_v2", # name of saved model
-        "plotJSON_fname": "101_a100_v2", # json filename
-        "model_id": "49",
+        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "model_name": "101_a100_v1", # name of saved model
+        "plotJSON_fname": "101_a100_v1", # json filename
+        "model_id": "50",
         "save_at_end" : False,
         # temp resnet101_2080_101,
 
         # use alternate model
         "alt_model": True,
         "alt_model_backbone": "resnet101", #resnet18, resnet34, resnet50, resnet101, etc
-        "fpnv2": True, # Sets alternate model to use fpnv2
+        "fpnv2": False, # Sets alternate model to use fpnv2
 
         # Knowlege distillation, uses alt model
         "know_distil": False,
@@ -58,8 +58,8 @@ def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
         "BATCH_SIZE": 4,
-        "dataset": "Small data", # "Small data" OR "Large data"
-        "model_name": "101_a100_v1", # name of model to test
+        "dataset": "Large data", # "Small data" OR "Large data"
+        "model_name": "101_a100_v2", # name of model to test
 
         # PROFILER
         "start_profiler": False,
