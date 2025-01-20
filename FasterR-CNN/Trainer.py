@@ -22,7 +22,6 @@ from torch.profiler import profile, schedule, tensorboard_trace_handler
 from AdaptStudentFeatures import AdaptFeatures
 from torch.amp import GradScaler, autocast
 from SmokeUtils import get_layers_to_fuse
-from apex.contrib.sparsity import ASP
 
 current_dir = os.getcwd()
 # add libr as source
@@ -87,9 +86,6 @@ class Trainer:
             momentum=self.momentum, # speeds up optimization, decrease time to convergence
             weight_decay=self.weight_decay # tries to prevent larger weights, to prevent overfitting
         )
-
-        ASP.prune_trained_model(self.model.backbone.body, self.optimizer)
-        print("end_asp")
 
         # Scheduler starts at higher learning rate and slows down during training
         # Trying to get to convergence quicker without overshooting

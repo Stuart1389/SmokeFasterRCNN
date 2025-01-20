@@ -23,6 +23,7 @@ from SmokeUtils import get_layers_to_fuse
 from torch.nn.utils import prune
 from torch.ao.pruning import WeightNormSparsifier
 from torch.sparse import to_sparse_semi_structured, SparseSemiStructuredTensor
+from simplify import simplify
 
 #DELETE
 import collections
@@ -32,6 +33,7 @@ import torch.utils.benchmark as benchmark
 from torch import nn
 from torch.sparse import to_sparse_semi_structured, SparseSemiStructuredTensor
 from torch.ao.pruning import WeightNormSparsifier
+import torch_pruning as tp
 # force CUTLASS use if cuSPARSELt is not available
 SparseSemiStructuredTensor._FORCE_CUTLASS = True
 
@@ -142,64 +144,11 @@ class Tester:
             self.quant_model()
 
 
-        test_unstruct_pruning = True
         #self.model = self.model.cuda().half()
-        if (test_unstruct_pruning):
-
-            #example of unstructured pruning layers
-            #most of the tools for improving pruned inference
-            #are not built for cnns
-            #this will not improve inference, its mainly for research
-
-            #self.model = self.model.cuda().half()
-
-            layers_to_prune = [
-                self.model.backbone.body.layer3[0].conv1,
-                self.model.backbone.body.layer3[0].conv2,
-                self.model.backbone.body.layer3[0].conv3,
-                self.model.backbone.body.layer3[1].conv1,
-                self.model.backbone.body.layer3[1].conv2,
-                self.model.backbone.body.layer3[1].conv3,
-                self.model.backbone.body.layer3[2].conv1,
-                self.model.backbone.body.layer3[2].conv2,
-                self.model.backbone.body.layer3[2].conv3,
-                self.model.backbone.body.layer4[0].conv1,
-                self.model.backbone.body.layer4[0].conv2,
-                self.model.backbone.body.layer4[0].conv3,
-                self.model.backbone.body.layer4[1].conv1,
-                self.model.backbone.body.layer4[1].conv2,
-                self.model.backbone.body.layer4[1].conv3,
-                self.model.backbone.body.layer4[2].conv1,
-                self.model.backbone.body.layer4[2].conv2,
-                self.model.backbone.body.layer4[2].conv3,
-            ]
-            """
-            prune_amount = 0.9  # prune percentage
-
-            for module in layers_to_prune:
-                prune.ln_structured(module, name="weight", amount=prune_amount, dim=0, n=2)
-                prune.remove(module, "weight")
-            """
+        if(setTestValues("prune_model")):
+            self.prune_model()
 
 
-
-                # copy the new pruned weights created above to temp model
-
-
-            prune_amount = 0.33  # prune percentage
-            """
-            for layer in layers_to_prune:
-                prune.l1_unstructured(layer, name="weight", amount=prune_amount)
-                with torch.no_grad():
-                    weight_tensor = layer.weight
-                    print("weight tensor", weight_tensor)
-                    sparse_weight = weight_tensor.to_sparse()
-                    print("sparse weight", sparse_weight)
-                    layer.weight = sparse_weight
-                    prune.remove(layer, name="weight")
-                    print("remove weight", layer.weight)
-        
-            """
 
         # Start timer
         self.start_time = time.time()
@@ -211,6 +160,101 @@ class Tester:
         self.get_results()
         if(self.start_profiler):
             profiler.stop()
+
+
+    def prune_model(self):
+        """
+        pruning in pytorch is very experimental benefits are limited, most performance gains
+        are achieves through experimental libraries e.g. nvidia apex, tensort
+        pytorch has articles on 2:4 sparsity but this isnt really applicable to conv
+        and has a bunch of constraints
+
+        _________________________________________
+        list of conv layers in resnet 50 common to use middle layers, e.g. 3
+        """
+        layers_to_prune = [
+            self.model.backbone.body.layer1[0].conv1,
+            self.model.backbone.body.layer1[0].conv2,
+            self.model.backbone.body.layer1[0].conv3,
+            self.model.backbone.body.layer1[1].conv1,
+            self.model.backbone.body.layer1[1].conv2,
+            self.model.backbone.body.layer1[1].conv3,
+            self.model.backbone.body.layer1[2].conv1,
+            self.model.backbone.body.layer1[2].conv2,
+            self.model.backbone.body.layer1[2].conv3,
+
+            self.model.backbone.body.layer2[0].conv1,
+            self.model.backbone.body.layer2[0].conv2,
+            self.model.backbone.body.layer2[0].conv3,
+            self.model.backbone.body.layer2[1].conv1,
+            self.model.backbone.body.layer2[1].conv2,
+            self.model.backbone.body.layer2[1].conv3,
+            self.model.backbone.body.layer2[2].conv1,
+            self.model.backbone.body.layer2[2].conv2,
+            self.model.backbone.body.layer2[2].conv3,
+
+            self.model.backbone.body.layer3[0].conv1,
+            self.model.backbone.body.layer3[0].conv2,
+            self.model.backbone.body.layer3[0].conv3,
+            self.model.backbone.body.layer3[1].conv1,
+            self.model.backbone.body.layer3[1].conv2,
+            self.model.backbone.body.layer3[1].conv3,
+            self.model.backbone.body.layer3[2].conv1,
+            self.model.backbone.body.layer3[2].conv2,
+            self.model.backbone.body.layer3[2].conv3,
+
+            self.model.backbone.body.layer4[0].conv1,
+            self.model.backbone.body.layer4[0].conv2,
+            self.model.backbone.body.layer4[0].conv3,
+            self.model.backbone.body.layer4[1].conv1,
+            self.model.backbone.body.layer4[1].conv2,
+            self.model.backbone.body.layer4[1].conv3,
+            self.model.backbone.body.layer4[2].conv1,
+            self.model.backbone.body.layer4[2].conv2,
+            self.model.backbone.body.layer4[2].conv3,
+        ]
+
+        for module in layers_to_prune:
+            prune_amount = setTestValues("prune_amount")  # Fraction of weights to prune
+
+            # Apply pruning
+            prune.l1_unstructured(module, name="weight", amount=prune_amount)
+
+            # Convert the dense weight tensor to a sparse COO tensor
+            with torch.no_grad():
+                weight_tensor = module.weight  # This is the pruned dense tensor
+                print("Dense weight tensor:", weight_tensor)
+
+
+                module.weight = self.get_coo_tensor(weight_tensor)
+                prune.remove(module, name="weight")
+                print("Sparse weight tensor:", module.weight)
+
+    def get_coo_tensor(self, weight_tensor):
+        # Extract non-zero elements and their indices
+        indices = torch.nonzero(weight_tensor, as_tuple=True)  # Coordinates of non-zero elements
+        values = weight_tensor[indices]  # Non-zero values
+        size = weight_tensor.size()  # Shape of the tensor
+
+        # Create the sparse COO tensor
+
+        sparse_weight = torch.sparse_coo_tensor(
+            indices=torch.stack(indices),  # Stack indices to form a [2, N] tensor
+            values=values,
+            size=size,
+            dtype=weight_tensor.dtype,
+            device=weight_tensor.device
+        )
+        return sparse_weight
+
+
+
+
+    def unstructured_prune(self):
+        print("dd")
+
+    def structured_prune(self):
+        print("dd")
 
     def quant_model(self):
         print(f"Threads available: {torch.get_num_threads()}")

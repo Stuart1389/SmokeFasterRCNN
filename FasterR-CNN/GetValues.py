@@ -5,7 +5,7 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 16,
+        "BATCH_SIZE": 2,
         "EPOCHS": 1,
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
@@ -73,9 +73,14 @@ def setTestValues(val_to_get):
         "static_quant": False,
         "CPU_inference": False, # force cpu inference even if cuda is available
         "calibrate_full_set": False,
-        "load_QAT_model": False
+        "load_QAT_model": False,
 
-    }
+        #Pruning
+        "prune_model": True,
+        "structured": True, # or unstructured, uses l1/l2 loss to minimize effects
+        "prune_amount": 0.9,
+
+    } # self.model = self.model.cuda().half()
 
     # return value corresponding with val_to_get
     return test_values.get(val_to_get, None)
