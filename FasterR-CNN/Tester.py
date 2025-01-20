@@ -21,7 +21,20 @@ import torch.ao.quantization as quantization
 import numpy as np
 from SmokeUtils import get_layers_to_fuse
 from torch.nn.utils import prune
+from torch.ao.pruning import WeightNormSparsifier
+from torch.sparse import to_sparse_semi_structured, SparseSemiStructuredTensor
 
+#DELETE
+import collections
+import numpy as np
+import torch
+import torch.utils.benchmark as benchmark
+from torch import nn
+from torch.sparse import to_sparse_semi_structured, SparseSemiStructuredTensor
+from torch.ao.pruning import WeightNormSparsifier
+
+# force CUTLASS use if cuSPARSELt is not available
+SparseSemiStructuredTensor._FORCE_CUTLASS = True
 
 class Tester:
     #Constructor
@@ -185,6 +198,42 @@ class Tester:
 
             # Apply unstructured pruning
             prune_amount = 0.33  # Amount of weights to prune (30%)
+            sparsifier = WeightNormSparsifier(
+                # apply sparsity to all blocks
+                sparsity_level=1.0,
+                # shape of 4 elemens is a block
+                sparse_block_shape=(1, 4),
+                # two zeros for every block of 4
+                zeros_per_block=2
+            )
+
+            sparse_config = [
+                {"tensor_fqn": f"{fqn}.weight"}
+                for fqn, module in self.model.backbone.body.named_modules()
+                if isinstance(module, nn.Conv2d) and "layer" in fqn
+            ]
+
+            sparsifier.prepare(self.model.backbone.body, sparse_config)
+
+            self.model = self.model.cuda().half()
+
+            for fqn, module in self.model.named_modules():
+                if isinstance(module, nn.Conv2d) and "layer" in fqn:
+                    weight = module.weight.data
+                    original_shape = weight.shape  # Save the original shape
+
+                    # Reshape the 4D weight tensor into 2D
+                    reshaped_weight = weight.view(original_shape[0], -1)
+
+                    # Apply the sparsification
+                    sparse_weight = to_sparse_semi_structured(reshaped_weight)
+
+                    # Reshape back to the original 4D shape
+                    sparse_weight_4d = sparse_weight.to_dense().view(original_shape)
+
+                    # Update the module's weight directly
+                    module.weight.data = sparse_weight_4d
+            """
             for layer in layers_to_prune:
                 prune.l1_unstructured(layer, name="weight", amount=prune_amount)
                 with torch.no_grad():
@@ -195,7 +244,7 @@ class Tester:
                     layer.weight = sparse_weight
                     prune.remove(layer, name="weight")
                     print("remove weight", layer.weight)
-
+            """
 
 
 
@@ -269,6 +318,10 @@ class Tester:
             # print("image:", image, "image_tensor", image_tensor, "filename", filename)
             filenames = list(files for files in filename)
             image_tensors = list(tensor.to(self.device, non_blocking=self.non_blocking) for tensor in image_tensor)
+            #sparse
+            for idx in range(len(image_tensors)):
+                image_tensors[idx] = image_tensors[idx].half()
+
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
 
