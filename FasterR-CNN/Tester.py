@@ -32,7 +32,6 @@ import torch.utils.benchmark as benchmark
 from torch import nn
 from torch.sparse import to_sparse_semi_structured, SparseSemiStructuredTensor
 from torch.ao.pruning import WeightNormSparsifier
-
 # force CUTLASS use if cuSPARSELt is not available
 SparseSemiStructuredTensor._FORCE_CUTLASS = True
 
@@ -148,53 +147,8 @@ class Tester:
             #params_to_prune_weights.append((item, 'weight'))
         #print(params_to_prune)
         pruning = True
-
+        self.model = self.model.cuda().half()
         if (pruning):
-            """
-            for name, module in self.model.backbone.body.named_modules():
-                # Check if the module has a weight parameter to prune
-                if hasattr(module, 'weight'):
-                    params_to_prune_weights.append((module, 'weight'))
-
-            #params_to_prune_weights = [
-                #(self.model.backbone.body.conv1, 'weight')
-            #]
-
-            prune.global_unstructured(
-                params_to_prune_weights,
-                pruning_method=prune.L1Unstructured,
-                amount=90
-            )
-
-            print(list(self.model.backbone.body.named_modules()))
-            prune.random_unstructured(self.model.backbone.body.layer4.0.conv1, name="weight", amount=0.3)
-            """
-            #print(self.model.backbone.body)
-            layers_to_prune = [
-                self.model.backbone.body.layer3[0].conv1,
-                self.model.backbone.body.layer3[0].conv2,
-                self.model.backbone.body.layer3[0].conv3,
-
-                self.model.backbone.body.layer3[1].conv1,
-                self.model.backbone.body.layer3[1].conv2,
-                self.model.backbone.body.layer3[1].conv3,
-
-                self.model.backbone.body.layer3[2].conv1,
-                self.model.backbone.body.layer3[2].conv2,
-                self.model.backbone.body.layer3[2].conv3,
-
-                self.model.backbone.body.layer4[0].conv1,
-                self.model.backbone.body.layer4[0].conv2,
-                self.model.backbone.body.layer4[0].conv3,
-
-                self.model.backbone.body.layer4[1].conv1,
-                self.model.backbone.body.layer4[1].conv2,
-                self.model.backbone.body.layer4[1].conv3,
-
-                self.model.backbone.body.layer4[2].conv1,
-                self.model.backbone.body.layer4[2].conv2,
-                self.model.backbone.body.layer4[2].conv3,
-            ]
 
             # Apply unstructured pruning
             prune_amount = 0.33  # Amount of weights to prune (30%)
@@ -220,6 +174,8 @@ class Tester:
             for fqn, module in self.model.named_modules():
                 if isinstance(module, nn.Conv2d) and "layer" in fqn:
                     weight = module.weight.data
+                    print(weight)
+                    print(weight.shape)
                     original_shape = weight.shape  # Save the original shape
 
                     # Reshape the 4D weight tensor into 2D
@@ -233,29 +189,6 @@ class Tester:
 
                     # Update the module's weight directly
                     module.weight.data = sparse_weight_4d
-            """
-            for layer in layers_to_prune:
-                prune.l1_unstructured(layer, name="weight", amount=prune_amount)
-                with torch.no_grad():
-                    weight_tensor = layer.weight
-                    print("weight tensor", weight_tensor)
-                    sparse_weight = weight_tensor.to_sparse()
-                    print("sparese weight", sparse_weight)
-                    layer.weight = sparse_weight
-                    prune.remove(layer, name="weight")
-                    print("remove weight", layer.weight)
-            """
-
-
-
-
-            """
-            for layer in layers_to_prune:
-                with torch.no_grad():
-                    sparse_weights = layer.weight * layer.weight_mask  # Apply the pruning mask
-                    layer.weight = torch.nn.Parameter(layer.weight)  # Reassign with Parameter type
-                prune.remove(layer, "weight")  # Remove pruning hooks
-            """
 
 
         # Start timer

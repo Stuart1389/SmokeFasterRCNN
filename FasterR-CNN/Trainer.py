@@ -23,7 +23,6 @@ from AdaptStudentFeatures import AdaptFeatures
 from torch.amp import GradScaler, autocast
 from SmokeUtils import get_layers_to_fuse
 
-
 current_dir = os.getcwd()
 # add libr as source
 relative_path = os.path.join(current_dir, '..', 'Libr')
