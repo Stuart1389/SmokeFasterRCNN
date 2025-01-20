@@ -4,7 +4,7 @@ import os
 import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
-
+import copy
 import matplotlib
 import matplotlib.pyplot as plt
 import torch
@@ -141,55 +141,65 @@ class Tester:
         if(self.static_quants):
             self.quant_model()
 
-        params_to_prune_weights = []
-        params_to_prune = get_layers_to_fuse(list(self.model.backbone.body.named_modules()))
-        #for item in params_to_prune:
-            #params_to_prune_weights.append((item, 'weight'))
-        #print(params_to_prune)
-        pruning = True
-        self.model = self.model.cuda().half()
-        if (pruning):
 
-            # Apply unstructured pruning
-            prune_amount = 0.33  # Amount of weights to prune (30%)
-            sparsifier = WeightNormSparsifier(
-                # apply sparsity to all blocks
-                sparsity_level=1.0,
-                # shape of 4 elemens is a block
-                sparse_block_shape=(1, 4),
-                # two zeros for every block of 4
-                zeros_per_block=2
-            )
+        test_unstruct_pruning = True
+        #self.model = self.model.cuda().half()
+        if (test_unstruct_pruning):
 
-            sparse_config = [
-                {"tensor_fqn": f"{fqn}.weight"}
-                for fqn, module in self.model.backbone.body.named_modules()
-                if isinstance(module, nn.Conv2d) and "layer" in fqn
+            #example of unstructured pruning layers
+            #most of the tools for improving pruned inference
+            #are not built for cnns
+            #this will not improve inference, its mainly for research
+
+            #self.model = self.model.cuda().half()
+
+            layers_to_prune = [
+                self.model.backbone.body.layer3[0].conv1,
+                self.model.backbone.body.layer3[0].conv2,
+                self.model.backbone.body.layer3[0].conv3,
+                self.model.backbone.body.layer3[1].conv1,
+                self.model.backbone.body.layer3[1].conv2,
+                self.model.backbone.body.layer3[1].conv3,
+                self.model.backbone.body.layer3[2].conv1,
+                self.model.backbone.body.layer3[2].conv2,
+                self.model.backbone.body.layer3[2].conv3,
+                self.model.backbone.body.layer4[0].conv1,
+                self.model.backbone.body.layer4[0].conv2,
+                self.model.backbone.body.layer4[0].conv3,
+                self.model.backbone.body.layer4[1].conv1,
+                self.model.backbone.body.layer4[1].conv2,
+                self.model.backbone.body.layer4[1].conv3,
+                self.model.backbone.body.layer4[2].conv1,
+                self.model.backbone.body.layer4[2].conv2,
+                self.model.backbone.body.layer4[2].conv3,
             ]
+            """
+            prune_amount = 0.9  # prune percentage
 
-            sparsifier.prepare(self.model.backbone.body, sparse_config)
+            for module in layers_to_prune:
+                prune.ln_structured(module, name="weight", amount=prune_amount, dim=0, n=2)
+                prune.remove(module, "weight")
+            """
 
-            self.model = self.model.cuda().half()
 
-            for fqn, module in self.model.named_modules():
-                if isinstance(module, nn.Conv2d) and "layer" in fqn:
-                    weight = module.weight.data
-                    print(weight)
-                    print(weight.shape)
-                    original_shape = weight.shape  # Save the original shape
 
-                    # Reshape the 4D weight tensor into 2D
-                    reshaped_weight = weight.view(original_shape[0], -1)
+                # copy the new pruned weights created above to temp model
 
-                    # Apply the sparsification
-                    sparse_weight = to_sparse_semi_structured(reshaped_weight)
 
-                    # Reshape back to the original 4D shape
-                    sparse_weight_4d = sparse_weight.to_dense().view(original_shape)
-
-                    # Update the module's weight directly
-                    module.weight.data = sparse_weight_4d
-
+            prune_amount = 0.33  # prune percentage
+            """
+            for layer in layers_to_prune:
+                prune.l1_unstructured(layer, name="weight", amount=prune_amount)
+                with torch.no_grad():
+                    weight_tensor = layer.weight
+                    print("weight tensor", weight_tensor)
+                    sparse_weight = weight_tensor.to_sparse()
+                    print("sparse weight", sparse_weight)
+                    layer.weight = sparse_weight
+                    prune.remove(layer, name="weight")
+                    print("remove weight", layer.weight)
+        
+            """
 
         # Start timer
         self.start_time = time.time()
@@ -252,8 +262,8 @@ class Tester:
             filenames = list(files for files in filename)
             image_tensors = list(tensor.to(self.device, non_blocking=self.non_blocking) for tensor in image_tensor)
             #sparse
-            for idx in range(len(image_tensors)):
-                image_tensors[idx] = image_tensors[idx].half()
+            #for idx in range(len(image_tensors)):
+                #image_tensors[idx] = image_tensors[idx].half()
 
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
