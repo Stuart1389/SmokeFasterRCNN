@@ -84,7 +84,7 @@ def setTestValues(val_to_get):
         "tensor_type": "coo",
 
         # Upscale
-        "upscale_image": True,
+        "upscale_image": False,
         "upscale_value": 2, # image * upscale_value
 
 

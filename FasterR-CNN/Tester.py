@@ -46,7 +46,7 @@ class Tester:
         # scores over this will be counted towards mAP/precission/recall and will be displayed if plot
         self.confidence_threshold = 0.5
         self.draw_highest_only = False # only draw bbox with highest score on plot
-        self.plot_image = False # plot images
+        self.plot_image = True # plot images
         self.benchmark = False # measure how long it takes to make average prediction
         self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
         self.draw_no_true_positive_only = False # only plot images with no true positives
@@ -303,55 +303,95 @@ class Tester:
         formatted_tensors = list(torch.unbind(upscale_outputs, dim=0))
         return formatted_tensors
 
+    def split_image(self, input_tensor):
+        split_tensors = []
+
+        for tensor in input_tensor:
+            _, H, W = tensor.shape
+
+            H_mid, W_mid = H // 2, W // 2
+
+            # Split the tensor into 4 parts
+            part1 = tensor[:, :H_mid, :W_mid]  # Top left
+            part2 = tensor[:, :H_mid, W_mid:]  # Top right
+            part3 = tensor[:, H_mid:, :W_mid]  # Bot left
+            part4 = tensor[:, H_mid:, W_mid:]  # Bot right
+
+            #batch = torch.stack([part1, part2, part3, part4], dim=0)
+            #print("batch_shape",batch.shape)
+            split_tensors.append([part1, part2, part3, part4])
+
+        #result = torch.cat(batches, dim=0)
+        return split_tensors
+
+    def int_prediction(self, image_tensor, outputs, filenames):
+        temp_index = 1
+        # parallel processing after getting model predictions, might aswell
+        futures = []
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            for image_tensor, prediction, filename in zip(image_tensor, outputs, filenames):
+                # print(f"{temp_index}! - pred:", prediction, filename)
+                # temp_index += 1
+                futures.append(executor.submit(self.process_predictions, image_tensor, prediction, filename))
+                # self.process_predictions(image_tensor, prediction, filename)
+        # print("outputs", outputs)
+        concurrent.futures.wait(futures)
+
     # !!GETTING PREDICTION!!
     @torch.inference_mode()
     def get_predictions(self, image_tensor, filename):
+        print("image tensor type", type(image_tensor))
         with torch.profiler.record_function("TESTING"):
             if(setTestValues("upscale_image")):
                 image_tensor = self.upscale_images(image_tensor)
 
+            image_tensor_split = self.split_image(image_tensor)
+            print("image tensor type after", type(image_tensor))
             # print("image:", image, "image_tensor", image_tensor, "filename", filename)
             filenames = list(files for files in filename)
             image_tensors = list(tensor.to(self.device, non_blocking=self.non_blocking) for tensor in image_tensor)
-            #for tensor in image_tensors:
-                #print(tensor.shape)
+            combined_outputs = []
+            for item in image_tensor_split:
+                item = list(tensor.to(self.device, non_blocking=self.non_blocking) for tensor in item)
 
+                # half precission
+                if self.half_precission:
+                    image_tensors = [tensor.cuda().half() for tensor in image_tensors]
 
-            # half precission
-            if self.half_precission:
-                image_tensors = [tensor.cuda().half() for tensor in image_tensors]
+                if torch.cuda.is_available():
+                    torch.cuda.synchronize()
 
-            if torch.cuda.is_available():
-                torch.cuda.synchronize()
+                with torch.no_grad():
+                    # benchmarking
+                    if self.benchmark == True:
+                        # start torch.utils.benchmark
+                        # will run the below code a second time to measure performance
+                        timer = benchmark.Timer(
+                            stmt="model(image_tensors)",  # specify code to be benchmarked
+                            globals={"image_tensors": image_tensors, "model": self.model}  # pass x and model to be used by benchmark
+                        )
 
-            with torch.no_grad():
-                # benchmarking
-                if self.benchmark == True:
-                    # start torch.utils.benchmark
-                    # will run the below code a second time to measure performance
-                    timer = benchmark.Timer(
-                        stmt="model(image_tensors)",  # specify code to be benchmarked
-                        globals={"image_tensors": image_tensors, "model": self.model}  # pass x and model to be used by benchmark
-                    )
+                        # record time taken
+                        time_taken = timer.timeit(3) # run code n times, gives average = time taken / n
+                        time_taken_ind = time_taken.mean / self.batch_size
+                        print(f"Prediction time taken: {time_taken_ind:.4f} seconds")
+                        self.benchmark_times.append(time_taken_ind)
+                    #outputs = self.model(image_tensors)
+                    outputs, _, _, _, _, _ = self.model(item)
+                    # Accumulate outputs
+                    temp_combined = {
+                        'boxes': torch.empty((0, 4), device='cuda:0'),
+                        'labels': torch.empty((0,), dtype=torch.int64, device='cuda:0'),
+                        'scores': torch.empty((0,), device='cuda:0')
+                    }
+                    print(outputs)
+                    for output in outputs:
+                        temp_combined['boxes'] = torch.cat((temp_combined['boxes'], output['boxes']), dim=0)
+                        temp_combined['labels'] = torch.cat((temp_combined['labels'], output['labels']), dim=0)
+                        temp_combined['scores'] = torch.cat((temp_combined['scores'], output['scores']), dim=0)
+                    combined_outputs.append(temp_combined)
 
-                    # record time taken
-                    time_taken = timer.timeit(3) # run code n times, gives average = time taken / n
-                    time_taken_ind = time_taken.mean / self.batch_size
-                    print(f"Prediction time taken: {time_taken_ind:.4f} seconds")
-                    self.benchmark_times.append(time_taken_ind)
-                #outputs = self.model(image_tensors)
-                outputs, _, _, _, _, _ = self.model(image_tensors)
-            temp_index = 1
-            # parallel processing after getting model predictions, might aswell
-            futures = []
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                for image_tensor, prediction, filename in zip(image_tensor, outputs, filenames):
-                    #print(f"{temp_index}! - pred:", prediction, filename)
-                    #temp_index += 1
-                    futures.append(executor.submit(self.process_predictions, image_tensor, prediction, filename))
-                    #self.process_predictions(image_tensor, prediction, filename)
-            #print("outputs", outputs)
-            concurrent.futures.wait(futures)
+            self.int_prediction(image_tensor, combined_outputs, filename)
 
     def process_predictions(self, image_tensor, predictions, filename):
         global total_tp, total_fp, total_fn
