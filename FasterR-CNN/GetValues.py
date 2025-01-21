@@ -58,7 +58,7 @@ def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
         "BATCH_SIZE": 4,
-        "dataset": "Small data", # "Small data" OR "Large data"
+        "dataset": "Large data", # "Small data" OR "Large data"
         "model_name": "transform_csj_a100", # name of model to test
 
         # PROFILER
@@ -75,10 +75,18 @@ def setTestValues(val_to_get):
         "calibrate_full_set": False,
         "load_QAT_model": False,
 
+        "half_precission": False, # float 16
+
         #Pruning
-        "prune_model": True,
-        "structured": True, # or unstructured, uses l1/l2 loss to minimize effects
-        "prune_amount": 0.9,
+        "prune_model": False,
+        "unstructured": False, # or unstructured, uses l1/l2 to minimize effects
+        "prune_amount": 0.1,
+        "tensor_type": "coo",
+
+        # Upscale
+        "upscale_image": True,
+        "upscale_value": 2, # image * upscale_value
+
 
     } # self.model = self.model.cuda().half()
 

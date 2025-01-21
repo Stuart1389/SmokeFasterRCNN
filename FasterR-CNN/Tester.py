@@ -24,6 +24,7 @@ from torch.nn.utils import prune
 from torch.ao.pruning import WeightNormSparsifier
 from torch.sparse import to_sparse_semi_structured, SparseSemiStructuredTensor
 from simplify import simplify
+from super_image import PanModel
 
 #DELETE
 import collections
@@ -34,7 +35,6 @@ from torch import nn
 from torch.sparse import to_sparse_semi_structured, SparseSemiStructuredTensor
 from torch.ao.pruning import WeightNormSparsifier
 import torch_pruning as tp
-# force CUTLASS use if cuSPARSELt is not available
 SparseSemiStructuredTensor._FORCE_CUTLASS = True
 
 class Tester:
@@ -106,6 +106,7 @@ class Tester:
         # pytorch only supports static quants on cpu
         if(self.static_quants or setTestValues("CPU_inference")):
             self.device = "cpu"
+        self.half_precission = setTestValues("half_precission")
 
 
     def count_parameters(self, model):
@@ -134,6 +135,10 @@ class Tester:
         self.model.to(self.device, non_blocking=self.non_blocking)  # put model on cpu or gpu
         # set model to evaluation mode
         self.model.eval()
+        #fp16
+        if(self.half_precission):
+            self.model = self.model.cuda().half()
+
         # Static quantization
         #print(self.model)
         #print(self.model.backbone.body)
@@ -142,7 +147,6 @@ class Tester:
         # QUANTS!
         if(self.static_quants):
             self.quant_model()
-
 
         #self.model = self.model.cuda().half()
         if(setTestValues("prune_model")):
@@ -164,35 +168,18 @@ class Tester:
 
     def prune_model(self):
         """
-        pruning in pytorch is very experimental benefits are limited, most performance gains
-        are achieves through experimental libraries e.g. nvidia apex, tensort
+        pruning in pytorch is very experimental, benefits are limited, most performance gains
+        are achieved through  libraries e.g. nvidia apex, tensort.
         pytorch has articles on 2:4 sparsity but this isnt really applicable to conv
-        and has a bunch of constraints
+        and has a bunch of constraints, based on what ive found during development
+        pruning can be quite good for vision transformers but isnt very beneficial for cnns
 
         _________________________________________
         list of conv layers in resnet 50 common to use middle layers, e.g. 3
+        conv layers dont benefit much from current sparsity implementations unfortunately
         """
+        #print(self.model.backbone.body)
         layers_to_prune = [
-            self.model.backbone.body.layer1[0].conv1,
-            self.model.backbone.body.layer1[0].conv2,
-            self.model.backbone.body.layer1[0].conv3,
-            self.model.backbone.body.layer1[1].conv1,
-            self.model.backbone.body.layer1[1].conv2,
-            self.model.backbone.body.layer1[1].conv3,
-            self.model.backbone.body.layer1[2].conv1,
-            self.model.backbone.body.layer1[2].conv2,
-            self.model.backbone.body.layer1[2].conv3,
-
-            self.model.backbone.body.layer2[0].conv1,
-            self.model.backbone.body.layer2[0].conv2,
-            self.model.backbone.body.layer2[0].conv3,
-            self.model.backbone.body.layer2[1].conv1,
-            self.model.backbone.body.layer2[1].conv2,
-            self.model.backbone.body.layer2[1].conv3,
-            self.model.backbone.body.layer2[2].conv1,
-            self.model.backbone.body.layer2[2].conv2,
-            self.model.backbone.body.layer2[2].conv3,
-
             self.model.backbone.body.layer3[0].conv1,
             self.model.backbone.body.layer3[0].conv2,
             self.model.backbone.body.layer3[0].conv3,
@@ -212,49 +199,59 @@ class Tester:
             self.model.backbone.body.layer4[2].conv1,
             self.model.backbone.body.layer4[2].conv2,
             self.model.backbone.body.layer4[2].conv3,
+
         ]
 
+        tensor_type = setTestValues("tensor_type")
+        prune_amount = setTestValues("prune_amount")
+
         for module in layers_to_prune:
-            prune_amount = setTestValues("prune_amount")  # Fraction of weights to prune
+            if(setTestValues("unstructured")):
+                prune.l1_unstructured(module, name="weight", amount=prune_amount)
+            else:
+                # dim 0 = filters/output channels, dim 1 = input channels
+                # n = norm, n=1 - l1, n=2 - l2
+                prune.ln_structured(module, name="weight", amount=prune_amount, dim=0, n=1)
 
-            # Apply pruning
-            prune.l1_unstructured(module, name="weight", amount=prune_amount)
-
-            # Convert the dense weight tensor to a sparse COO tensor
             with torch.no_grad():
-                weight_tensor = module.weight  # This is the pruned dense tensor
+                weight_tensor = module.weight
                 print("Dense weight tensor:", weight_tensor)
 
+                if(tensor_type == "coo"):
+                    indices = torch.nonzero(weight_tensor, as_tuple=True)  # coords
+                    values = weight_tensor[indices]  # value
+                    size = weight_tensor.size()  # getting shape
 
-                module.weight = self.get_coo_tensor(weight_tensor)
-                prune.remove(module, name="weight")
-                print("Sparse weight tensor:", module.weight)
+                    # converting to coo tensor
+                    sparse_weight = torch.sparse_coo_tensor(
+                        indices=torch.stack(indices),
+                        values=values,
+                        size=size,
+                        dtype=weight_tensor.dtype,
+                        device=weight_tensor.device
+                    )
+                elif tensor_type == "csr": # compressed sparse row tensor, better if there are more rows than columns
+                    # get values other than 0
+                    indices = torch.nonzero(weight_tensor, as_tuple=False)
+                    # csr is built using rows and cols
+                    rows, cols = indices[:, 0], indices[:, 1]
+                    values = weight_tensor[rows, cols]
+                    size = weight_tensor.size()
+                    crow_indices = torch.zeros(size[0] + 1, dtype=torch.int32, device=weight_tensor.device)
+                    crow_indices[1:] = torch.cumsum(torch.bincount(rows, minlength=size[0]), dim=0)
 
-    def get_coo_tensor(self, weight_tensor):
-        # Extract non-zero elements and their indices
-        indices = torch.nonzero(weight_tensor, as_tuple=True)  # Coordinates of non-zero elements
-        values = weight_tensor[indices]  # Non-zero values
-        size = weight_tensor.size()  # Shape of the tensor
+                    # create compressed sparse row tensor
+                    sparse_weight = torch.sparse_csr_tensor(
+                        crow_indices=crow_indices,
+                        col_indices=cols,
+                        values=values,
+                        size=size,
+                        dtype=weight_tensor.dtype,
+                        device=weight_tensor.device
+                    )
 
-        # Create the sparse COO tensor
-
-        sparse_weight = torch.sparse_coo_tensor(
-            indices=torch.stack(indices),  # Stack indices to form a [2, N] tensor
-            values=values,
-            size=size,
-            dtype=weight_tensor.dtype,
-            device=weight_tensor.device
-        )
-        return sparse_weight
-
-
-
-
-    def unstructured_prune(self):
-        print("dd")
-
-    def structured_prune(self):
-        print("dd")
+                prune.remove(module, name="weight") # remove hooks
+                print("Sparse weight tensor:", sparse_weight)
 
     def quant_model(self):
         print(f"Threads available: {torch.get_num_threads()}")
@@ -297,17 +294,32 @@ class Tester:
         avg_time = total_time / len(benchmark_times)  # get average
         return avg_time
 
+    def upscale_images(self, image_tensors):
+        combined_tensor = torch.stack(image_tensors, dim=0).to(self.device)
+        upscale_model = PanModel.from_pretrained('eugenesiow/pan-bam', scale=setTestValues("upscale_value"))
+        upscale_model.to(self.device)
+        upscale_outputs = upscale_model(combined_tensor)
+        # undo stack for faster rcnn input
+        formatted_tensors = list(torch.unbind(upscale_outputs, dim=0))
+        return formatted_tensors
+
     # !!GETTING PREDICTION!!
     @torch.inference_mode()
     def get_predictions(self, image_tensor, filename):
         with torch.profiler.record_function("TESTING"):
+            if(setTestValues("upscale_image")):
+                image_tensor = self.upscale_images(image_tensor)
 
             # print("image:", image, "image_tensor", image_tensor, "filename", filename)
             filenames = list(files for files in filename)
             image_tensors = list(tensor.to(self.device, non_blocking=self.non_blocking) for tensor in image_tensor)
-            #sparse
-            #for idx in range(len(image_tensors)):
-                #image_tensors[idx] = image_tensors[idx].half()
+            #for tensor in image_tensors:
+                #print(tensor.shape)
+
+
+            # half precission
+            if self.half_precission:
+                image_tensors = [tensor.cuda().half() for tensor in image_tensors]
 
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
@@ -494,6 +506,10 @@ class Tester:
     # Function parse xml for ground truths (copied from Dataset class)
     # and get area of ground truth to assign each a size (small, medium, large)
     def parse_xml(self, annotation_path, get_area=False):
+        upscale_value = 1
+        if(setTestValues("upscale_image")):
+            # bring ground truth in line with upscaled image
+            upscale_value = setTestValues("upscale_value")
         # Parsing XML file for each image to find bounding boxes
         tree = ET.parse(annotation_path)
         root = tree.getroot()
@@ -503,10 +519,10 @@ class Tester:
         areas = []
         for obj in root.findall("object"):
             xml_box = obj.find("bndbox")
-            xmin = float(xml_box.find("xmin").text)
-            ymin = float(xml_box.find("ymin").text)
-            xmax = float(xml_box.find("xmax").text)
-            ymax = float(xml_box.find("ymax").text)
+            xmin = float(xml_box.find("xmin").text) * upscale_value
+            ymin = float(xml_box.find("ymin").text) * upscale_value
+            xmax = float(xml_box.find("xmax").text) * upscale_value
+            ymax = float(xml_box.find("ymax").text) * upscale_value
 
             if xmin >= xmax or ymin >= ymax:
                 print(f"Invalid area/box coordinates: ({xmin}, {ymin}), ({xmax}, {ymax})")
