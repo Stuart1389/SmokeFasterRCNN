@@ -189,17 +189,6 @@ class Tester:
             self.model.backbone.body.layer3[2].conv1,
             self.model.backbone.body.layer3[2].conv2,
             self.model.backbone.body.layer3[2].conv3,
-
-            self.model.backbone.body.layer4[0].conv1,
-            self.model.backbone.body.layer4[0].conv2,
-            self.model.backbone.body.layer4[0].conv3,
-            self.model.backbone.body.layer4[1].conv1,
-            self.model.backbone.body.layer4[1].conv2,
-            self.model.backbone.body.layer4[1].conv3,
-            self.model.backbone.body.layer4[2].conv1,
-            self.model.backbone.body.layer4[2].conv2,
-            self.model.backbone.body.layer4[2].conv3,
-
         ]
 
         tensor_type = setTestValues("tensor_type")
@@ -211,7 +200,7 @@ class Tester:
             else:
                 # dim 0 = filters/output channels, dim 1 = input channels
                 # n = norm, n=1 - l1, n=2 - l2
-                prune.ln_structured(module, name="weight", amount=prune_amount, dim=0, n=1)
+                prune.ln_structured(module, name="weight", amount=prune_amount, dim=1, n=1)
 
             with torch.no_grad():
                 weight_tensor = module.weight

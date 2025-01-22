@@ -6,19 +6,19 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 2,
-        "EPOCHS": 1,
-        "PATIENCE": 4,
+        "EPOCHS": 20,
+        "PATIENCE": 5,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "test_asp", # name of saved model
-        "plotJSON_fname": "test_asp", # json filename
-        "model_id": "50",
+        "model_name": "101_ltm_2080_v2", # name of saved model
+        "plotJSON_fname": "101_ltm_2080_v2", # json filename
+        "model_id": "52",
         "save_at_end" : False,
         # temp resnet101_2080_101,
 
         # use alternate model
         "alt_model": False,
         "alt_model_backbone": "resnet101", #resnet18, resnet34, resnet50, resnet101, etc
-        "fpnv2": False, # Sets alternate model to use fpnv2
+        "fpnv2": True, # Sets alternate model to use fpnv2
 
         # Knowlege distillation, uses alt model
         "know_distil": False,
@@ -26,19 +26,19 @@ def setTrainValues(val_to_get):
 
         "load_hd5f" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
         "h5py_dir_save_name": "transform_csj_3_def", # file name for h5py file
-        "h5py_dir_load_name": "test_file", #large_15_no_transform, transform_csj, large_1_transform, test_file
+        "h5py_dir_load_name": "transform_csj", #large_15_no_transform, transform_csj, large_1_transform, test_file
         # transform_csj_3_def, transform_csj_3_100, transform_csj_3_1
 
         # PROFILER
         "start_profiler" : False,
         "record_trace" : False,
-        "logWB" : False,
+        "logWB" : True,
 
         # PARAMETERS
-        "learning_rate": 0.003,
+        "learning_rate": 0.005,
         "momentum": 0.9,
-        "weight_decay": 0.0005,
-        "step_size": 3,
+        "weight_decay": 0.0001,
+        "step_size": 4,
         "gamma": 0.01,
 
         # DATALOADER/TODEVICE/MIXED-PRECISSION
@@ -78,15 +78,15 @@ def setTestValues(val_to_get):
         "half_precission": False, # float 16
 
         #Pruning
-        "prune_model": False,
-        "unstructured": False, # or unstructured, uses l1/l2 to minimize effects
-        "prune_amount": 0.1,
-        "tensor_type": "coo",
+        "prune_model": True,
+        "unstructured": True, # or unstructured, uses l1/l2 to minimize effects
+        "prune_amount": 0.3,
+        "tensor_type": "csr",
 
         # Upscale
-        "upscale_image": True,
+        "upscale_image": False,
         "upscale_value": 4, # image * upscale_value
-        "split_images": True
+        "split_images": False
 
 
     } # self.model = self.model.cuda().half()
