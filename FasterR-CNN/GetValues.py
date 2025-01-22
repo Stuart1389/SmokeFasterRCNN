@@ -84,8 +84,9 @@ def setTestValues(val_to_get):
         "tensor_type": "coo",
 
         # Upscale
-        "upscale_image": False,
-        "upscale_value": 2, # image * upscale_value
+        "upscale_image": True,
+        "upscale_value": 4, # image * upscale_value
+        "split_images": True
 
 
     } # self.model = self.model.cuda().half()
