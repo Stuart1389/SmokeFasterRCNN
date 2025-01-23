@@ -29,25 +29,26 @@ class SmokeUpscale:
         upscale_model = PanModel.from_pretrained('eugenesiow/pan-bam', scale=setTrainValues("upscale_value"))
         upscale_model.to(self.device)
         upscale_outputs = upscale_model(combined_tensor)
-        # undo stack for faster rcnn input
         formatted_tensors = list(torch.unbind(upscale_outputs, dim=0))
         return formatted_tensors
 
     def save_upscaled_images(self, image_tensor, filename, save_dir):
         os.makedirs(save_dir, exist_ok=True)
-        save_path = save_dir / f"{filename}.png"
-        print("image_tensor: ", image_tensor, "filename: ", filename, "save dir:", save_dir, "save path: ", save_path)
-        torchvision.utils.save_image(image_tensor, save_path)
+        save_path = save_dir / f"{filename}.jpeg"
+        #print("image_tensor: ", image_tensor, "filename: ", filename, "save dir:", save_dir, "save path: ", save_path)
+        torchvision.utils.save_image(image_tensor, save_path, "jpeg")
 
 
 
     def upscale_loop(self):
         for batch, (image_tensors, filenames) in enumerate(self.train_dataloader):
+            print(f"Processing batch: {batch} of {len(self.train_dataloader)}")
             upscaled_images = self.upscale_images(image_tensors)
             for tensor, filename in zip(upscaled_images, filenames):
                 self.save_upscaled_images(tensor, filename, self.train_dir)
 
         for batch, (image_tensors, _) in enumerate(self.validate_dataloader):
+            print(f"Processing batch: {batch} of {len(self.validate_dataloader)}")
             upscaled_images = self.upscale_images(image_tensors)
             for tensor, filename in zip(upscaled_images, filenames):
                 self.save_upscaled_images(tensor, filename, self.val_dir)

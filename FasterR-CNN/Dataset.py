@@ -86,7 +86,7 @@ class smokeDataset(torch.utils.data.Dataset):
 
   def parse_xml(self, annotation_path, testing = False):
       upscale_value = 1
-      if(setTrainValues("upscale_image")):
+      if(setTrainValues("upscale_image") or setTrainValues("upscale_bbox")):
           upscale_value = setTrainValues("upscale_value")
       # Parsing xml files for each image to find bbox
       tree = ET.parse(annotation_path)

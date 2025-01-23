@@ -296,7 +296,7 @@ class Tester:
         split_tensors = []
 
         for tensor in input_tensor:
-            _, H, W = tensor.shape
+            _, H, W = tensor.shape # c, w, h
 
             H_mid, W_mid = H // 2, W // 2
 

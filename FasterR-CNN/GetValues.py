@@ -7,8 +7,8 @@ def setTrainValues(val_to_get):
     train_values = {
         "BATCH_SIZE": 1,
         "EPOCHS": 1,
-        "PATIENCE": 3,
-        "dataset": "Small data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "PATIENCE": 1,
+        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
         "model_name": "test_up", # name of saved model
         "plotJSON_fname": "test_up", # json filename
         "model_id": "52",
@@ -53,6 +53,8 @@ def setTrainValues(val_to_get):
 
         # UPSCALE
         "upscale_image": False,
+        # only needed when using previously upscaled images with original bbox
+        "upscale_bbox": False,
         "upscale_value": 2,
         # SmokeUpscale can be used to upscale images before training
         "upscale_dataset_save_name": "Large data upscale",
@@ -96,7 +98,7 @@ def setTestValues(val_to_get):
 
         # Upscale
         "upscale_image": False,
-        "upscale_value": 4, # image * upscale_value
+        "upscale_value": 2, # image * upscale_value
         "split_images": False
 
 
