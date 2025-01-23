@@ -4,7 +4,7 @@ from torch import nn, Tensor
 import torch
 import torch.ao.quantization as quantization
 
-# for static quants
+# modified layer getter class to qork with quants
 class SmokeIntermediateLayerGetter(nn.ModuleDict):
     _version = 2
     __annotations__ = {

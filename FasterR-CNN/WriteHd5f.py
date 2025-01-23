@@ -29,7 +29,7 @@ class WriteHd5f:
         self.read_from_file(self.write_validate_path)
 
         # chunking
-        self.chunk_size = 50
+        self.chunk_size = 300
 
     def read_from_file(self, file_path):
         with h5py.File(file_path, 'r') as file:
@@ -51,7 +51,7 @@ class WriteHd5f:
 
     def write_to_file(self, dataloader, dir_write_path, file_write_path):
         dir_write_path.mkdir(parents=True, exist_ok=True)
-        chunk_size = 1
+        chunk_size = 20
         # get dataset information
         total_samples = len(dataloader.dataset)
         #get image dimensions from a image from dataset, all images need to be same size

@@ -77,6 +77,7 @@ class smokeDataset(torch.utils.data.Dataset):
     #self.loaded_images = [np.array(Image.open(img_path)) for img_path in self.images]
     self.transform = transform
     self.testing = testing
+    self.return_filenames = setTrainValues("return_filenames")
     self.empty_image = None
 
 
@@ -84,38 +85,41 @@ class smokeDataset(torch.utils.data.Dataset):
     # Constructor END
 
   def parse_xml(self, annotation_path, testing = False):
-          # Parsing xml files for each image to find bbox
-          tree = ET.parse(annotation_path)
-          root = tree.getroot()
+      upscale_value = 1
+      if(setTrainValues("upscale_image")):
+          upscale_value = setTrainValues("upscale_value")
+      # Parsing xml files for each image to find bbox
+      tree = ET.parse(annotation_path)
+      root = tree.getroot()
 
-          # getting bounding boxes from xml file
-          boxes = []
-          areas = []
-          for obj in root.findall("object"):
-              xml_box = obj.find("bndbox")
-              xmin = float(xml_box.find("xmin").text)
-              ymin = float(xml_box.find("ymin").text)
-              xmax = float(xml_box.find("xmax").text)
-              ymax = float(xml_box.find("ymax").text)
-              boxes.append([xmin, ymin, xmax, ymax])
+      # getting bounding boxes from xml file
+      boxes = []
+      areas = []
+      for obj in root.findall("object"):
+          xml_box = obj.find("bndbox")
+          xmin = float(xml_box.find("xmin").text) * upscale_value
+          ymin = float(xml_box.find("ymin").text) * upscale_value
+          xmax = float(xml_box.find("xmax").text) * upscale_value
+          ymax = float(xml_box.find("ymax").text) * upscale_value
+          boxes.append([xmin, ymin, xmax, ymax])
 
-          #Dataset has only background and smoke
-          labels = [] # label name aka "smoke"
-          labels_int = [] #label id aka 1
-          class_to_idx = {"smoke": 1} # dictionary if "smoke" return 1
-          for obj in root.findall("object"):
-              label = obj.find("name").text # find name in xml
-              labels.append(label)
-              labels_int.append(class_to_idx[label])
-              #boxes.append(class_to_idx[label])
-              #boxes.append(label)
+      #Dataset has only background and smoke
+      labels = [] # label name aka "smoke"
+      labels_int = [] #label id aka 1
+      class_to_idx = {"smoke": 1} # dictionary if "smoke" return 1
+      for obj in root.findall("object"):
+          label = obj.find("name").text # find name in xml
+          labels.append(label)
+          labels_int.append(class_to_idx[label])
+          #boxes.append(class_to_idx[label])
+          #boxes.append(label)
 
-          #boxes.append([xmin, ymin, xmax, ymax, label])
+      #boxes.append([xmin, ymin, xmax, ymax, label])
 
-          #print(f"Boxes: {boxes}")
-          #print(f"labels: {label}")
-          #print(f"Labels: {labels}, Labels_int {labels_int}")
-          return boxes, labels, labels_int
+      #print(f"Boxes: {boxes}")
+      #print(f"labels: {label}")
+      #print(f"Labels: {labels}, Labels_int {labels_int}")
+      return boxes, labels, labels_int
 
 
   def __len__(self):
@@ -157,7 +161,7 @@ class smokeDataset(torch.utils.data.Dataset):
     image = image.astype(np.float32)
 
     # this is transformations for training and validation
-    if (self.transform and not self.testing):
+    if (self.transform and not self.testing and not self.return_filenames):
         """
         # Created seperate labels list cause kept getting empty when i printed label and bbox
         because bbox was out of bounds because crop made image smaller,
@@ -209,6 +213,11 @@ class smokeDataset(torch.utils.data.Dataset):
                 f"Key: {key}, Type: {type(value)}, Tensor dtype: {value.dtype if isinstance(value, torch.Tensor) else 'N/A'}, Shape: {value.shape if isinstance(value, torch.Tensor) else 'N/A'}")
         """
         return image, target
+    if(self.return_filenames):
+        self.transform = transform_test
+        transformed = self.transform(image=image)
+        image_tensor = transformed['image']
+        return image_tensor, filename
 
     if (self.transform and self.testing):
         transformed = self.transform(image=image)

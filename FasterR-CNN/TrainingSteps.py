@@ -15,6 +15,7 @@ from coco_eval import CocoEvaluator
 from coco_utils import get_coco_api_from_dataset
 import wandb
 from GetValues import setTrainValues
+from super_image import PanModel
 
 def get_iou_type(model):
     model_without_ddp = model
@@ -47,6 +48,14 @@ def make_all_params_trainable(cur_debugging):
     for param in cur_debugging.parameters():
         param.requires_grad = True
 
+def upscale_images(device, image_tensors):
+    combined_tensor = torch.stack(image_tensors, dim=0).to(device)
+    upscale_model = PanModel.from_pretrained('eugenesiow/pan-bam', scale=setTrainValues("upscale_value"))
+    upscale_model.to(device)
+    upscale_outputs = upscale_model(combined_tensor)
+    # undo stack for faster rcnn input
+    formatted_tensors = list(torch.unbind(upscale_outputs, dim=0))
+    return formatted_tensors
 
 def train_step(model, optimizer, data_loader, device, epoch, iteration, print_freq,
                scaler=None, profiler=None):
@@ -69,9 +78,6 @@ def train_step(model, optimizer, data_loader, device, epoch, iteration, print_fr
         nonlocal active_neurons
         feature_map_sizes.append(output.shape)  # Store the shape of the output tensor (feature map size)
         active_neurons += output.numel()
-
-
-
 
     model.train()
     hooks = []
@@ -109,6 +115,8 @@ def train_step(model, optimizer, data_loader, device, epoch, iteration, print_fr
         )
 
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
+        if(setTrainValues("upscale_image")):
+            images = upscale_images(device, images)
         images = list(image.to(device, non_blocking=non_blocking) for image in images)
         targets = [{k: v.to(device, non_blocking=non_blocking) if isinstance(v, torch.Tensor) else v for k, v in t.items()} for t in targets]
 
