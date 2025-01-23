@@ -1,3 +1,4 @@
+import torchvision.utils
 from super_image import PanModel, ImageLoader
 import os
 import numpy as np
@@ -20,8 +21,8 @@ class SmokeUpscale:
 
         self.base_dir = checkColab()
         self.dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTrainValues("upscale_dataset_save_name"))
-        self.train_dir = str(self.dataset_dir) + "/Train/images"
-        self.val_dir = str(self.dataset_dir) + "/Validate/images"
+        self.train_dir = Path(str(self.dataset_dir) + "/Train/images")
+        self.val_dir = Path(str(self.dataset_dir) + "/Validate/images")
 
     def upscale_images(self, image_tensors):
         combined_tensor = torch.stack(image_tensors, dim=0).to(self.device)
@@ -33,15 +34,11 @@ class SmokeUpscale:
         return formatted_tensors
 
     def save_upscaled_images(self, image_tensor, filename, save_dir):
-        print("image_tensor: ", image_tensor, "filename: ", filename, "save dir:" , save_dir)
         os.makedirs(save_dir, exist_ok=True)
-        #move to cpu or cry
-        image_tensor = image_tensor.cpu().detach()
-        image_tensor = image_tensor.permute(1, 2, 0)
-        image_array = (image_tensor.numpy() * 255).astype(np.uint8)
-        image = Image.fromarray(image_array)
-        save_path = os.path.join(save_dir, filename)
-        image.save(save_path)
+        save_path = save_dir / f"{filename}.png"
+        print("image_tensor: ", image_tensor, "filename: ", filename, "save dir:", save_dir, "save path: ", save_path)
+        torchvision.utils.save_image(image_tensor, save_path)
+
 
 
     def upscale_loop(self):
