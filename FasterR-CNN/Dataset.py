@@ -74,6 +74,8 @@ class smokeDataset(torch.utils.data.Dataset):
         self.images += sorted(list(Path(str(main_dir) + "/images/").glob("*.jpg")))
         #print(self.images)
         self.annotations = sorted(list(Path(str(main_dir) + "/annotations/xmls").glob("*.xml")))
+        #print(self.images)
+        #print(self.annotations)
     #self.loaded_images = [np.array(Image.open(img_path)) for img_path in self.images]
     self.transform = transform
     self.testing = testing
@@ -130,11 +132,13 @@ class smokeDataset(torch.utils.data.Dataset):
     # Return items from dataset
     img_path = self.images[idx] # return image at index
     filename = img_path.stem # get filename
+    #print("filename", filename)
     if(idx < len(self.annotations)):
         annotation_path = self.annotations[idx] # return annotation at index
         annotation_name = annotation_path.stem
+        #print("annotation_name",annotation_name)
         if(filename != annotation_name):
-            print("Filename and annotation name don't match. Incorrect annotation will result in a poor model.")
+            print(f"Filename {filename} and annotation name {annotation_name} don't match. Incorrect annotation will result in a poor model.")
             print("See Dataset.py to disable")
             sys.exit(1)
         #print(f"Image dtype: {image.dtype}")

@@ -7,11 +7,11 @@ def setTrainValues(val_to_get):
     train_values = {
         "BATCH_SIZE": 1,
         "EPOCHS": 1,
-        "PATIENCE": 1,
-        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "test_up", # name of saved model
-        "plotJSON_fname": "test_up", # json filename
-        "model_id": "52",
+        "PATIENCE": 3,
+        "dataset": "Large data upscale", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "model_name": "upscaled_transform_csj_a100", # name of saved model
+        "plotJSON_fname": "upscaled_transform_csj_a100", # json filename
+        "model_id": "99",
         "save_at_end" : False,
         # temp resnet101_2080_101,
 
@@ -35,15 +35,15 @@ def setTrainValues(val_to_get):
         "logWB" : False,
 
         # PARAMETERS
-        "learning_rate": 0.003,
+        "learning_rate": 0.003 / 10,
         "momentum": 0.9,
         "weight_decay": 0.0005,
-        "step_size": 3,
+        "step_size": 2,
         "gamma": 0.01,
 
         # DATALOADER/TODEVICE/MIXED-PRECISSION
-        "non_blocking": False,
-        "pinned_memory": False,
+        "non_blocking": True,
+        "pinned_memory": True,
         "amp_mixed_precission": False,
 
         # QUANT
@@ -54,14 +54,14 @@ def setTrainValues(val_to_get):
         # UPSCALE
         "upscale_image": False,
         # only needed when using previously upscaled images with original bbox
-        "upscale_bbox": False,
+        "upscale_bbox": True,
         "upscale_value": 2,
         # SmokeUpscale can be used to upscale images before training
         "upscale_dataset_save_name": "Large data upscale",
 
         # Misc
         #e.g. when using dataloader to upscale and filenames are needed
-        "return_filenames": True,
+        "return_filenames": False,
     }
     # return value corresponding with val_to_get
     # filenames will be returned INSTEAD of TARGETS

@@ -200,6 +200,7 @@ class Trainer:
                         self.model, self.optimizer, self.train_dataloader, self.device, epoch, self.cur_train_iteration, print_freq=10, scaler=self.scalar
                     )
                 self.lr_scheduler.step()
+
             with torch.profiler.record_function("VALIDATING"):
             # VALIDATION STEP
                 _, validate_loss_it_dict, validate_loss_dict, self.cur_val_iteration = validate_step(

@@ -41,17 +41,20 @@ class SmokeUpscale:
 
 
     def upscale_loop(self):
+        """
         for batch, (image_tensors, filenames) in enumerate(self.train_dataloader):
             print(f"Processing batch: {batch} of {len(self.train_dataloader)}")
             upscaled_images = self.upscale_images(image_tensors)
             for tensor, filename in zip(upscaled_images, filenames):
                 self.save_upscaled_images(tensor, filename, self.train_dir)
+        """
 
-        for batch, (image_tensors, _) in enumerate(self.validate_dataloader):
+        for batch, (image_tensors, filenames) in enumerate(self.validate_dataloader):
             print(f"Processing batch: {batch} of {len(self.validate_dataloader)}")
             upscaled_images = self.upscale_images(image_tensors)
             for tensor, filename in zip(upscaled_images, filenames):
                 self.save_upscaled_images(tensor, filename, self.val_dir)
+
 
 if __name__ == '__main__':
     smoke_upcale = SmokeUpscale()
