@@ -5,13 +5,13 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 1,
-        "EPOCHS": 1,
+        "BATCH_SIZE": 16,
+        "EPOCHS": 9,
         "PATIENCE": 3,
         "dataset": "Large data upscale", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
         "model_name": "upscaled_transform_csj_a100", # name of saved model
         "plotJSON_fname": "upscaled_transform_csj_a100", # json filename
-        "model_id": "99",
+        "model_id": "49",
         "save_at_end" : False,
         # temp resnet101_2080_101,
 
@@ -32,13 +32,13 @@ def setTrainValues(val_to_get):
         # PROFILER
         "start_profiler" : False,
         "record_trace" : False,
-        "logWB" : False,
+        "logWB" : True,
 
         # PARAMETERS
         "learning_rate": 0.003 / 10,
         "momentum": 0.9,
         "weight_decay": 0.0005,
-        "step_size": 2,
+        "step_size": 3,
         "gamma": 0.01,
 
         # DATALOADER/TODEVICE/MIXED-PRECISSION
@@ -48,7 +48,7 @@ def setTrainValues(val_to_get):
 
         # QUANT
         "quant_aware_training": False,
-        "start_from_checkpoint": False,
+        "start_from_checkpoint": True,
         "model_load_name": "transform_csj_a100",
 
         # UPSCALE
