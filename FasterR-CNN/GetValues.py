@@ -6,12 +6,12 @@ def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
         "BATCH_SIZE": 16,
-        "EPOCHS": 9,
-        "PATIENCE": 3,
+        "EPOCHS": 15,
+        "PATIENCE": 4,
         "dataset": "Large data upscale", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "upscaled_transform_csj_a100", # name of saved model
-        "plotJSON_fname": "upscaled_transform_csj_a100", # json filename
-        "model_id": "49",
+        "model_name": "upscaled_a100", # name of saved model
+        "plotJSON_fname": "upscaled_a100", # json filename
+        "model_id": "50",
         "save_at_end" : False,
         # temp resnet101_2080_101,
 
@@ -35,7 +35,7 @@ def setTrainValues(val_to_get):
         "logWB" : True,
 
         # PARAMETERS
-        "learning_rate": 0.003 / 10,
+        "learning_rate": 0.003,
         "momentum": 0.9,
         "weight_decay": 0.0005,
         "step_size": 3,
@@ -48,7 +48,7 @@ def setTrainValues(val_to_get):
 
         # QUANT
         "quant_aware_training": False,
-        "start_from_checkpoint": True,
+        "start_from_checkpoint": False,
         "model_load_name": "transform_csj_a100",
 
         # UPSCALE
@@ -72,7 +72,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "101_ltm_2080_v2", # name of model to test
+        "model_name": "upscaled_transform_csj_a100", # name of model to test
 
         # PROFILER
         "start_profiler": False,
@@ -92,14 +92,14 @@ def setTestValues(val_to_get):
 
         #Pruning
         "prune_model": False,
-        "unstructured": True, # or unstructured, uses l1/l2 to minimize effects
+        "unstructured": False, # or unstructured, uses l1/l2 to minimize effects
         "prune_amount": 0.3,
         "tensor_type": "csr",
 
         # Upscale
-        "upscale_image": False,
+        "upscale_image": True,
         "upscale_value": 2, # image * upscale_value
-        "split_images": False
+        "split_images": True
 
 
     } # self.model = self.model.cuda().half()
