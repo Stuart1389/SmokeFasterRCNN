@@ -118,6 +118,10 @@ def train_step(model, optimizer, data_loader, device, epoch, iteration, print_fr
         if(setTrainValues("upscale_image")):
             images = upscale_images(device, images)
         images = list(image.to(device, non_blocking=non_blocking) for image in images)
+
+        if(setTrainValues("half_precission")):
+            images = [tensor.cuda().half() for tensor in images]
+
         targets = [{k: v.to(device, non_blocking=non_blocking) if isinstance(v, torch.Tensor) else v for k, v in t.items()} for t in targets]
 
         with torch.amp.autocast('cuda', enabled=scaler is not None):
@@ -237,6 +241,8 @@ def validate_step(model, data_loader, device, epoch, iteration, scaler=None, pro
 
     for images, targets in metric_logger.log_every(data_loader, 10, header):
         images = list(img.to(device, non_blocking=non_blocking) for img in images)
+        if(setTrainValues("half_precission")):
+            images = [tensor.cuda().half() for tensor in images]
 
         targets = [ # targets to get validation loss
             {k: (v.to(device, non_blocking=non_blocking) if isinstance(v, torch.Tensor) else v) for k, v in t.items()}

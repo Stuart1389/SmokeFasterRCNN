@@ -44,10 +44,10 @@ class Tester:
         # Initialising instanced variables
         self.base_dir = checkColab()
         # scores over this will be counted towards mAP/precission/recall and will be displayed if plot
-        self.confidence_threshold = 0.5
+        self.confidence_threshold = 0.3
         self.draw_highest_only = False # only draw bbox with highest score on plot
         self.plot_image = False # plot images
-        self.benchmark = True # measure how long it takes to make average prediction
+        self.benchmark = False # measure how long it takes to make average prediction
         self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
         self.draw_no_true_positive_only = False # only plot images with no true positives
 
@@ -740,6 +740,7 @@ class Tester:
     # !!VISUALISATIONS!!
     def display_prediction(self, filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics):
         if (self.plot_image):
+            print("SHAMAMAMAMAN")
                 #matplotlib.use('Agg')
             # !!! DISPLAYING PREDICTIONS THROUGH MATPLOT LIB !!!
             filtered_boxes_tensor = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)

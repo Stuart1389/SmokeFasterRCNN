@@ -8,17 +8,17 @@ def setTrainValues(val_to_get):
         "BATCH_SIZE": 16,
         "EPOCHS": 15,
         "PATIENCE": 4,
-        "dataset": "Large data upscale", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "upscaled_a100", # name of saved model
-        "plotJSON_fname": "upscaled_a100", # json filename
-        "model_id": "50",
+        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "model_name": "half_precission_a100", # name of saved model
+        "plotJSON_fname": "half_precission_a100", # json filename
+        "model_id": "51",
         "save_at_end" : False,
         # temp resnet101_2080_101,
 
         # use alternate model
         "alt_model": False,
-        "alt_model_backbone": "resnet101", #resnet18, resnet34, resnet50, resnet101, etc
-        "fpnv2": True, # Sets alternate model to use fpnv2
+        "alt_model_backbone": "resnet34", #resnet18, resnet34, resnet50, resnet101, etc
+        "fpnv2": False, # Sets alternate model to use fpnv2
 
         # Knowlege distillation, uses alt model
         "know_distil": False,
@@ -45,6 +45,7 @@ def setTrainValues(val_to_get):
         "non_blocking": True,
         "pinned_memory": True,
         "amp_mixed_precission": False,
+        "half_precission": True,
 
         # QUANT
         "quant_aware_training": False,
@@ -54,7 +55,7 @@ def setTrainValues(val_to_get):
         # UPSCALE
         "upscale_image": False,
         # only needed when using previously upscaled images with original bbox
-        "upscale_bbox": True,
+        "upscale_bbox": False,
         "upscale_value": 2,
         # SmokeUpscale can be used to upscale images before training
         "upscale_dataset_save_name": "Large data upscale",
@@ -71,8 +72,8 @@ def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
         "BATCH_SIZE": 4,
-        "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "upscaled_transform_csj_a100", # name of model to test
+        "dataset": "Small data", # "Small data" OR "Large data"
+        "model_name": "test_model", # name of model to test
 
         # PROFILER
         "start_profiler": False,
@@ -97,9 +98,9 @@ def setTestValues(val_to_get):
         "tensor_type": "csr",
 
         # Upscale
-        "upscale_image": True,
+        "upscale_image": False,
         "upscale_value": 2, # image * upscale_value
-        "split_images": True
+        "split_images": False
 
 
     } # self.model = self.model.cuda().half()
@@ -186,6 +187,71 @@ def setTrainValues(val_to_get):
     # return value corresponding with val_to_get
     return train_values.get(val_to_get, None)
 
+def setTrainValues(val_to_get):
+    # Creating dictionary with values
+    train_values = {
+        "BATCH_SIZE": 2,
+        "EPOCHS": 15,
+        "PATIENCE": 4,
+        "dataset": "Small data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "model_name": "test_model", # name of saved model
+        "plotJSON_fname": "test_model", # json filename
+        "model_id": "50",
+        "save_at_end" : False,
+        # temp resnet101_2080_101,
+
+        # use alternate model
+        "alt_model": True,
+        "alt_model_backbone": "resnet34", #resnet18, resnet34, resnet50, resnet101, etc
+        "fpnv2": False, # Sets alternate model to use fpnv2
+
+        # Knowlege distillation, uses alt model
+        "know_distil": False,
+        "teacher_model_name": "transform_csj_a100",
+
+        "load_hd5f" : False, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
+        "h5py_dir_save_name": "transform_csj_c_20", # file name for h5py file
+        "h5py_dir_load_name": "test_file", #large_15_no_transform, transform_csj, large_1_transform, test_file
+        # transform_csj_3_def, transform_csj_3_100, transform_csj_3_1, transform_csj_c_20
+
+        # PROFILER
+        "start_profiler" : False,
+        "record_trace" : False,
+        "logWB" : False,
+
+        # PARAMETERS
+        "learning_rate": 0.001,
+        "momentum": 0.9,
+        "weight_decay": 0.0005,
+        "step_size": 4,
+        "gamma": 0.01,
+
+        # DATALOADER/TODEVICE/MIXED-PRECISSION
+        "non_blocking": True,
+        "pinned_memory": True,
+        "amp_mixed_precission": False,
+        "half_precission": True,
+
+        # QUANT
+        "quant_aware_training": False,
+        "start_from_checkpoint": False,
+        "model_load_name": "transform_csj_a100",
+
+        # UPSCALE
+        "upscale_image": False,
+        # only needed when using previously upscaled images with original bbox
+        "upscale_bbox": False,
+        "upscale_value": 2,
+        # SmokeUpscale can be used to upscale images before training
+        "upscale_dataset_save_name": "Large data upscale",
+
+        # Misc
+        #e.g. when using dataloader to upscale and filenames are needed
+        "return_filenames": False,
+    }
+    # return value corresponding with val_to_get
+    # filenames will be returned INSTEAD of TARGETS
+    return train_values.get(val_to_get, None)
 
 
 """

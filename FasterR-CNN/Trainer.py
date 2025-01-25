@@ -56,6 +56,9 @@ class Trainer:
         self.cur_val_iteration = 0
         self.know_distil = setTrainValues("know_distil")
 
+        if (setTrainValues("half_precission")):
+            self.model = self.model.cuda().half()
+
         # profiler
         self.start_profiler = setTrainValues("start_profiler")
         self.record_trace = setTrainValues("record_trace")
