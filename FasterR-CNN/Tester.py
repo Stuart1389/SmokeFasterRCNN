@@ -31,6 +31,7 @@ import collections
 import numpy as np
 import torch
 import torch.utils.benchmark as benchmark
+import shutil
 from torch import nn
 from torch.sparse import to_sparse_semi_structured, SparseSemiStructuredTensor
 from torch.ao.pruning import WeightNormSparsifier
@@ -44,9 +45,10 @@ class Tester:
         # Initialising instanced variables
         self.base_dir = checkColab()
         # scores over this will be counted towards mAP/precission/recall and will be displayed if plot
-        self.confidence_threshold = 0.3
+        self.confidence_threshold = 0.5
         self.draw_highest_only = False # only draw bbox with highest score on plot
         self.plot_image = False # plot images
+        self.save_plots = True # save plots to model folder
         self.benchmark = False # measure how long it takes to make average prediction
         self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
         self.draw_no_true_positive_only = False # only plot images with no true positives
@@ -108,9 +110,9 @@ class Tester:
             self.device = "cpu"
         self.half_precission = setTestValues("half_precission")
 
-
     def count_parameters(self, model):
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
 
     # !!START TESTING CHAIN!!
     # function starts testing images
@@ -152,6 +154,11 @@ class Tester:
         if(setTestValues("prune_model")):
             self.prune_model()
 
+        # delete currently saved plots in model folder
+        # and create new dir for plots
+        if(self.save_plots):
+            self.make_plot_dir()
+
 
 
         # Start timer
@@ -165,6 +172,12 @@ class Tester:
         if(self.start_profiler):
             profiler.stop()
 
+    def make_plot_dir(self):
+        self.plot_save_path = self.save_path / "plots"
+        print("Plot save path:", self.plot_save_path)
+        if(self.plot_save_path.exists()):
+            shutil.rmtree(self.plot_save_path)
+        self.plot_save_path.mkdir(exist_ok=False)
 
     def prune_model(self):
         """
@@ -494,10 +507,10 @@ class Tester:
         if (self.draw_no_true_positive_only):
             if (metrics["TP"] == 0):
                 # call function to display image with overlayed bboxes
-                self.display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics)
+                self.display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics, filename)
         else:
             # call function to display image with overlayed bboxes
-            self.display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics)
+            self.display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics, filename)
 
     # function for each image gets the number of true positive, false positive, etc
     def get_image_val(self, pred_score, pred_box, ground_truth, confidence_threshold, ap_value,
@@ -738,9 +751,8 @@ class Tester:
 
 
     # !!VISUALISATIONS!!
-    def display_prediction(self, filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics):
-        if (self.plot_image):
-            print("SHAMAMAMAMAN")
+    def display_prediction(self, filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics, filename):
+        if (self.plot_image or self.save_plots):
                 #matplotlib.use('Agg')
             # !!! DISPLAYING PREDICTIONS THROUGH MATPLOT LIB !!!
             filtered_boxes_tensor = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)
@@ -772,9 +784,16 @@ class Tester:
                 time.sleep(2)
             plt.figure(figsize=(12, 12))
             plt.imshow(output_image.permute(1, 2, 0))
+            print(filename)
             plt.axis('off')
-            plt.show()
-            matplotlib.pyplot.close()
+            if(self.plot_image):
+                plt.show()
+            if(self.save_plots):
+                # this only happens for one image
+                plot_save_path = self.plot_save_path / filename
+                plt.savefig(plot_save_path)
+
+            #matplotlib.pyplot.close()
 
     # starting chain to display results
     def get_results(self):

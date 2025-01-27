@@ -342,27 +342,29 @@ class SmokeModel:
         self.model.to(self.device)
 
         # Create dummy tensor
-        dummy_input = torch.randn(1, 3, 224, 224).to(self.device)
+        #dummy_input = torch.randn(1, 3, 224, 224).to(self.device)
 
         # pass through model and print summary
-        summary(self.model.backbone.body, input_size=(3, 224, 224), device=str(self.device))
+        #summary(self.model.backbone.body, input_size=(3, 224, 224), device=str(self.device))
 
         #print(self.model.backbone)
         #print(self.model.roi_heads)
         #print(self.model.rpn)
+        self.prnt_model_c()
 
 
     def prnt_model_c(self):
         # Print general model settings
-        print("General model settings:")
-        print(f"Number of classes: {self.model.roi_heads.box_predictor.cls_score.out_features}")
-        print(f"Backbone: {self.model.backbone}")
+        #print("General model settings:")
+        #print(f"Number of classes: {self.model.roi_heads.box_predictor.cls_score.out_features}")
+        #print(f"Backbone: {self.model.backbone}")
         print(f"RPN Anchor Generator: {self.model.rpn.anchor_generator}")
 
         # Print settings for the Region Proposal Network (RPN)
         print("\nRPN settings:")
-        print(f"Anchor sizes: {self.model.rpn.anchor_generator.sizes}")
-        print(f"Aspect ratios: {self.model.rpn.anchor_generator.aspect_ratios}")
+        #print(f"Anchor sizes: {self.model.rpn.anchor_generator.sizes}")
+        #print(f"Aspect ratios: {self.model.rpn.anchor_generator.aspect_ratios}")
+        print(f"RPN: {self.model.rpn}")
 
 
         # Print settings for the RoI Heads (Region of Interest)
@@ -392,11 +394,11 @@ if __name__ == '__main__':
     model = SmokeModel(force_default=True)
     model.main()
     model.get_model(know_distil=False)
-    #model.checkModel()
+    model.checkModel()
 
     print("\n-----------------------------------------------------\n")
 
     modelS = SmokeModel()
     modelS.main()
     modelS.get_model(know_distil=True)
-    #modelS.checkModel()
+    modelS.checkModel()
