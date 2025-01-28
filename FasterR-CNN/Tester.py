@@ -25,6 +25,9 @@ from torch.ao.pruning import WeightNormSparsifier
 from torch.sparse import to_sparse_semi_structured, SparseSemiStructuredTensor
 from simplify import simplify
 from super_image import PanModel
+from multiprocessing import Pool
+import matplotlib.patches as mpatches
+
 
 #DELETE
 import collections
@@ -47,7 +50,7 @@ class Tester:
         # scores over this will be counted towards mAP/precission/recall and will be displayed if plot
         self.confidence_threshold = 0.5
         self.draw_highest_only = False # only draw bbox with highest score on plot
-        self.plot_image = False # plot images
+        self.plot_image = True # plot images
         self.save_plots = True # save plots to model folder
         self.benchmark = False # measure how long it takes to make average prediction
         self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
@@ -337,7 +340,6 @@ class Tester:
 
 
     def int_prediction(self, image_tensor, outputs, filenames):
-        temp_index = 1
         # parallel processing after getting model predictions, might aswell
         futures = []
         with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -348,6 +350,24 @@ class Tester:
                 # self.process_predictions(image_tensor, prediction, filename)
         # print("outputs", outputs)
         concurrent.futures.wait(futures)
+
+        if(self.plot_image or self.save_plots):
+            # plt not thread safe, originally used multiprocess but it caused a bunch of overhead
+            image_vls = [future.result() for future in futures]
+
+            for result in image_vls:
+                filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics, filename = result
+                if (self.draw_no_true_positive_only):
+                    if (metrics["TP"] == 0):
+                        # call function to display image with overlayed bboxes
+                        self.display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth,
+                                                metrics,
+                                                filename)
+                else:
+                    # call function to display image with overlayed bboxes
+                    self.display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth,
+                                            metrics,
+                                            filename)
 
     def get_model_outputs(self, tensor_list, full_image_tensors = None):
         image_tensors = list(tensor.to(self.device, non_blocking=self.non_blocking) for tensor in tensor_list)
@@ -449,7 +469,8 @@ class Tester:
         for label, score, box in zip(predictions["labels"], predictions["scores"], predictions["boxes"]):
             if score >= self.confidence_threshold:
                 filtered_labels.append(f"Smoke: {score:.3f}")
-                filtered_boxes.append(box.long())
+                # move to cpu to correctly display predictions with plotlib
+                filtered_boxes.append(box.long().to("cpu"))
                 filtered_scores.append(score)
 
         # annotation path for ground truth using test_annot_dir
@@ -503,14 +524,7 @@ class Tester:
         print(f"predicted: {predicted}, Ground truth: {ground_truth}")
         self.map_metricGlobalA.update([predicted], [ground_truth])
         self.map_metricGlobalB.update([predicted], [ground_truth])
-
-        if (self.draw_no_true_positive_only):
-            if (metrics["TP"] == 0):
-                # call function to display image with overlayed bboxes
-                self.display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics, filename)
-        else:
-            # call function to display image with overlayed bboxes
-            self.display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics, filename)
+        return filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics, filename
 
     # function for each image gets the number of true positive, false positive, etc
     def get_image_val(self, pred_score, pred_box, ground_truth, confidence_threshold, ap_value,
@@ -751,49 +765,77 @@ class Tester:
 
 
     # !!VISUALISATIONS!!
-    def display_prediction(self, filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics, filename):
-        if (self.plot_image or self.save_plots):
-                #matplotlib.use('Agg')
-            # !!! DISPLAYING PREDICTIONS THROUGH MATPLOT LIB !!!
-            filtered_boxes_tensor = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)
-            # Get prediction with highest score and draw only that if draw_only_highest is true
-            if filtered_scores and self.draw_highest_only:
-                max_score_idx = filtered_scores.index(max(filtered_scores))  # get index pos of highest score
-                highest_score_box = filtered_boxes_tensor[max_score_idx].unsqueeze(0)  # Add batch dimension
-                highest_score_label = [filtered_labels[max_score_idx]]  # get highest value using index pos
-
-                # Draw highest scoring bbox in red
-                output_image = draw_bounding_boxes(image, highest_score_box, highest_score_label, colors="red")
+    def get_bbox_colours(self, filtered_labels, filtered_boxes, ground_truth):
+        n_iou = {"boxes": [], "label": []}
+        m_iou = {"boxes": [], "label": []}
+        h_iou = {"boxes": [], "label": []}
+        for label, box in zip(filtered_labels, filtered_boxes):
+            iou_matrix = box_iou(box.unsqueeze(0), ground_truth["boxes"])
+            if(iou_matrix < 0.3):
+                n_iou["label"].append(label)
+                n_iou["boxes"].append(box)
+            elif(iou_matrix > 0.3 and iou_matrix < 0.5):
+                m_iou["label"].append(label)
+                m_iou["boxes"].append(box)
             else:
-                # Draw all predicted bbox in red
-                output_image = draw_bounding_boxes(image, filtered_boxes_tensor, filtered_labels, colors="red")
+                h_iou["label"].append(label)
+                h_iou["boxes"].append(box)
 
-            # Convert filtered boxes to a tensor
-            filtered_boxes = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)
-            print("output labels", filtered_labels)
+        return n_iou, m_iou, h_iou
+    def display_prediction(self, filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics, filename):
+        if(not self.plot_image):
+            matplotlib.use('Agg')
+        # !!! DISPLAYING PREDICTIONS THROUGH MATPLOT LIB !!!
+        # get iou to set bbox colours
+        if(len(filtered_boxes) > 0):
+            n_iou, m_iou, h_iou = self.get_bbox_colours(filtered_labels, filtered_boxes, ground_truth)
+        #filtered_boxes_tensor = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)
+        n_iou["boxes"] = torch.stack(n_iou["boxes"]) if n_iou["boxes"] else torch.empty((0, 4), dtype=torch.long)
+        m_iou["boxes"] = torch.stack(m_iou["boxes"]) if m_iou["boxes"] else torch.empty((0, 4), dtype=torch.long)
+        h_iou["boxes"] = torch.stack(h_iou["boxes"]) if h_iou["boxes"] else torch.empty((0, 4), dtype=torch.long)
+        # Get prediction with highest score and draw only that if draw_only_highest is true
+        if filtered_scores and self.draw_highest_only:
+            max_score_idx = filtered_scores.index(max(filtered_scores))  # get index pos of highest score
+            highest_score_box = filtered_boxes_tensor[max_score_idx].unsqueeze(0)  # Add batch dimension
+            highest_score_label = [filtered_labels[max_score_idx]]  # get highest value using index pos
+            # Draw highest scoring bbox in red
+            output_image = draw_bounding_boxes(image, highest_score_box, highest_score_label, colors="red")
+        else:
+            # Draw all predicted bbox in red
+            output_image = draw_bounding_boxes(image, n_iou["boxes"], n_iou["label"], colors="yellow")
+            output_image = draw_bounding_boxes(output_image, m_iou["boxes"], m_iou["label"], colors="orange")
+            output_image = draw_bounding_boxes(output_image, h_iou["boxes"], h_iou["label"], colors="red")
 
-            # convert ground truth boxes to tensor
-            ground_truth_boxes = [bbox.clone().detach() for bbox in ground_truth['boxes']]
+        # Convert filtered boxes to a tensor
+        #filtered_boxes = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)
+        #print("output labels", filtered_labels)
 
-            # draw ground truth bbox over predicted bbox over image
-            output_image = draw_bounding_boxes(output_image, torch.stack(ground_truth_boxes),
-                                               ["Ground Truth"] * len(ground_truth_boxes), colors="blue")
+        # convert ground truth boxes to tensor
+        ground_truth_boxes = [bbox.clone().detach() for bbox in ground_truth['boxes']]
 
-            # registry increased ide.rest.api.request.per.minute to 100
-            if (self.plot_image):
-                time.sleep(2)
-            plt.figure(figsize=(12, 12))
-            plt.imshow(output_image.permute(1, 2, 0))
-            print(filename)
-            plt.axis('off')
-            if(self.plot_image):
-                plt.show()
-            if(self.save_plots):
-                # this only happens for one image
-                plot_save_path = self.plot_save_path / filename
-                plt.savefig(plot_save_path)
+        # draw ground truth bbox over predicted bbox over image
+        output_image = draw_bounding_boxes(output_image, torch.stack(ground_truth_boxes),
+                                           ["Ground Truth"] * len(ground_truth_boxes), colors="blue")
+        # registry increased ide.rest.api.request.per.minute to 100
+        plt.figure(figsize=(12, 12))
+        plt.imshow(output_image.permute(1, 2, 0))
+        #print(filename)
+        plt.axis('off')
 
-            #matplotlib.pyplot.close()
+        # creating legend
+        y_patch = mpatches.Patch(color='yellow', label=f'{len(n_iou["boxes"])} mAP < 0.3')
+        o_patch = mpatches.Patch(color='orange', label=f'{len(m_iou["boxes"])} mAP > 0.3 | < 0.5')
+        r_patch = mpatches.Patch(color='red', label=f'{len(h_iou["boxes"])} mAP > 0.5')
+        b_patch = mpatches.Patch(color='blue', label='Ground truth')
+        plt.legend(handles=[y_patch, o_patch, r_patch, b_patch], loc='lower left', fontsize=10)
+
+        if (self.save_plots):
+            plot_save_path = self.plot_save_path / filename
+            plt.savefig(plot_save_path, bbox_inches="tight")
+        if(self.plot_image):
+            plt.show()
+
+        matplotlib.pyplot.close()
 
     # starting chain to display results
     def get_results(self):
