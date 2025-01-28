@@ -72,7 +72,7 @@ def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
         "BATCH_SIZE": 4,
-        "dataset": "Small data", # "Small data" OR "Large data"
+        "dataset": "Large data", # "Small data" OR "Large data"
         "model_name": "transform_csj_a100", # name of model to test
 
         # PROFILER

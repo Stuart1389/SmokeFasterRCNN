@@ -765,12 +765,12 @@ class Tester:
 
 
     # !!VISUALISATIONS!!
-    def get_bbox_colours(self, filtered_labels, filtered_boxes, ground_truth):
-        n_iou = {"boxes": [], "label": []}
-        m_iou = {"boxes": [], "label": []}
-        h_iou = {"boxes": [], "label": []}
+    def get_bbox_colours(self, filtered_labels, filtered_boxes, ground_truth, n_iou, m_iou, h_iou):
         for label, box in zip(filtered_labels, filtered_boxes):
             iou_matrix = box_iou(box.unsqueeze(0), ground_truth["boxes"])
+            # if more than 1 ground truth then this will return multiple values
+            # use highest
+            iou_matrix = torch.max(iou_matrix)
             if(iou_matrix < 0.3):
                 n_iou["label"].append(label)
                 n_iou["boxes"].append(box)
@@ -787,8 +787,11 @@ class Tester:
             matplotlib.use('Agg')
         # !!! DISPLAYING PREDICTIONS THROUGH MATPLOT LIB !!!
         # get iou to set bbox colours
+        n_iou = {"boxes": [], "label": []}
+        m_iou = {"boxes": [], "label": []}
+        h_iou = {"boxes": [], "label": []}
         if(len(filtered_boxes) > 0):
-            n_iou, m_iou, h_iou = self.get_bbox_colours(filtered_labels, filtered_boxes, ground_truth)
+            n_iou, m_iou, h_iou = self.get_bbox_colours(filtered_labels, filtered_boxes, ground_truth, n_iou, m_iou, h_iou)
         #filtered_boxes_tensor = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)
         n_iou["boxes"] = torch.stack(n_iou["boxes"]) if n_iou["boxes"] else torch.empty((0, 4), dtype=torch.long)
         m_iou["boxes"] = torch.stack(m_iou["boxes"]) if m_iou["boxes"] else torch.empty((0, 4), dtype=torch.long)
@@ -802,9 +805,9 @@ class Tester:
             output_image = draw_bounding_boxes(image, highest_score_box, highest_score_label, colors="red")
         else:
             # Draw all predicted bbox in red
-            output_image = draw_bounding_boxes(image, n_iou["boxes"], n_iou["label"], colors="yellow")
-            output_image = draw_bounding_boxes(output_image, m_iou["boxes"], m_iou["label"], colors="orange")
-            output_image = draw_bounding_boxes(output_image, h_iou["boxes"], h_iou["label"], colors="red")
+            output_image = draw_bounding_boxes(image, n_iou["boxes"], n_iou["label"], colors="red")
+            output_image = draw_bounding_boxes(output_image, m_iou["boxes"], m_iou["label"], colors="yellow")
+            output_image = draw_bounding_boxes(output_image, h_iou["boxes"], h_iou["label"], colors="green")
 
         # Convert filtered boxes to a tensor
         #filtered_boxes = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)
@@ -823,11 +826,11 @@ class Tester:
         plt.axis('off')
 
         # creating legend
-        y_patch = mpatches.Patch(color='yellow', label=f'{len(n_iou["boxes"])} mAP < 0.3')
-        o_patch = mpatches.Patch(color='orange', label=f'{len(m_iou["boxes"])} mAP > 0.3 | < 0.5')
-        r_patch = mpatches.Patch(color='red', label=f'{len(h_iou["boxes"])} mAP > 0.5')
+        r_patch = mpatches.Patch(color='red', label=f'{len(n_iou["boxes"])} mAP < 0.3/False positive')
+        y_patch = mpatches.Patch(color='yellow', label=f'{len(m_iou["boxes"])} mAP > 0.3 | < 0.5/Ok detection')
+        g_patch = mpatches.Patch(color='green', label=f'{len(h_iou["boxes"])} mAP > 0.5/Good detection')
         b_patch = mpatches.Patch(color='blue', label='Ground truth')
-        plt.legend(handles=[y_patch, o_patch, r_patch, b_patch], loc='lower left', fontsize=10)
+        plt.legend(handles=[r_patch, y_patch, g_patch, b_patch], loc='lower left', fontsize=10)
 
         if (self.save_plots):
             plot_save_path = self.plot_save_path / filename
