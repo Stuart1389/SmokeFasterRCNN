@@ -27,6 +27,7 @@ from simplify import simplify
 from super_image import PanModel
 from multiprocessing import Pool
 import matplotlib.patches as mpatches
+import torchvision.transforms.functional as F
 
 
 #DELETE
@@ -51,7 +52,7 @@ class Tester:
         self.confidence_threshold = 0.5
         self.draw_highest_only = False # only draw bbox with highest score on plot
         self.plot_image = True # plot images
-        self.save_plots = True # save plots to model folder
+        self.save_plots = False # save plots to model folder
         self.benchmark = False # measure how long it takes to make average prediction
         self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
         self.draw_no_true_positive_only = False # only plot images with no true positives
@@ -325,9 +326,38 @@ class Tester:
             #batch = torch.stack([part1, part2, part3, part4], dim=0)
             #print("batch_shape",batch.shape)
             split_tensors.append([part1, part2, part3, part4])
-
         #result = torch.cat(batches, dim=0)
         return split_tensors
+
+    def display_split_images(self, split_images, pred_dict):
+        part1, part2, part3, part4 = split_images
+        # display split parts in matplotlib
+        fig, axs = plt.subplots(2, 2, figsize=(10, 10))
+
+        for i, part in enumerate([part1, part2, part3, part4]):
+            boxes_over_thresh = []
+            labels_over_thresh = []
+            scores_over_thresh = []
+            for box, label, score in zip(pred_dict[i]["boxes"], pred_dict[i]["labels"], pred_dict[i]["scores"]):
+                if(score > self.confidence_threshold):
+                    print("score",score)
+                    boxes_over_thresh.append(box)
+                    label_over_thresh.append(label)
+                    scores_over_thresh.append(score)
+
+            labels_str = ["Smoke" if label.item() == 1 else str(label.item()) for label in labels_over_thresh]
+            boxes_tensor = torch.stack(boxes_over_thresh) if boxes_over_thresh else torch.empty((0, 4))
+            output_image = draw_bounding_boxes(part, boxes_tensor, labels_str,
+                                               colors="red")
+
+            row, col = i // 2, i % 2
+            output_image_np = F.to_pil_image(output_image).convert("RGB")
+            axs[row, col].imshow(output_image_np)
+            axs[row, col].axis('off')
+            axs[row, col].set_title(f'Part {i + 1}')
+
+        plt.tight_layout()
+        plt.show()
 
     def adjust_boxes(self, boxes, offset_x, offset_y):
         # move bbox based on position in split
@@ -418,16 +448,28 @@ class Tester:
                     'labels': torch.empty((0,), dtype=torch.int64, device='cuda:0'),
                     'scores': torch.empty((0,), device='cuda:0')
                 }
+
+                vis_split = []
                 #print(outputs)
                 i = 0
                 for output in outputs:
+                    # combined dict for using with the single combined image
                     offset_x, offset_y = offsets[i]
                     adjusted_boxes = self.adjust_boxes(output['boxes'], offset_x, offset_y)
                     temp_combined['boxes'] = torch.cat((temp_combined['boxes'], adjusted_boxes), dim=0)
                     temp_combined['labels'] = torch.cat((temp_combined['labels'], output['labels']), dim=0)
                     temp_combined['scores'] = torch.cat((temp_combined['scores'], output['scores']), dim=0)
-                    i += 1
-                return temp_combined
+
+                    # split dicts for visualising split images
+                    vis_split.append({
+                        'boxes': output['boxes'],
+                        'labels': output['labels'],
+                        'scores': output['scores']
+                    })
+                    # tells us what part of the split we're on
+                    i+=1
+
+                return temp_combined, vis_split
             else:
                 return  outputs
 
@@ -450,7 +492,9 @@ class Tester:
             #combined_outputs.append(temp_combined)
             if(setTestValues("split_images")):
                 for item in image_tensor_split:
-                    combined_outputs.append(self.get_model_outputs(item, image_tensor))
+                    temp_combined, vis_split = self.get_model_outputs(item, image_tensor)
+                    self.display_split_images(item, vis_split)
+                    combined_outputs.append(temp_combined)
             else:
                 combined_outputs = self.get_model_outputs(image_tensor)
 

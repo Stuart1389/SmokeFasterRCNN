@@ -72,7 +72,7 @@ def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
         "BATCH_SIZE": 4,
-        "dataset": "Large data", # "Small data" OR "Large data"
+        "dataset": "Small data", # "Small data" OR "Large data"
         "model_name": "transform_csj_a100", # name of model to test
 
         # PROFILER
@@ -100,7 +100,7 @@ def setTestValues(val_to_get):
         # Upscale
         "upscale_image": False,
         "upscale_value": 2, # image * upscale_value
-        "split_images": False
+        "split_images": True
 
 
     } # self.model = self.model.cuda().half()
