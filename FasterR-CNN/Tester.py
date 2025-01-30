@@ -51,9 +51,12 @@ class Tester:
         # scores over this will be counted towards mAP/precission/recall and will be displayed if plot
         self.confidence_threshold = 0.5
         self.draw_highest_only = False # only draw bbox with highest score on plot
-        self.plot_image = True # plot images
-        self.save_plots = False # save plots to model folder
+        self.plot_image = False # plot images
+        self.save_plots = True # save plots to model folder/plots
+        self.plot_ground_truth = True # whether to plot ground truth
         self.benchmark = False # measure how long it takes to make average prediction
+        self.plot_split_images = False # if using partitioned/split images, whether to display each split
+        self.save_split_image_plots = True
         self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
         self.draw_no_true_positive_only = False # only plot images with no true positives
 
@@ -113,6 +116,7 @@ class Tester:
         if(self.static_quants or setTestValues("CPU_inference")):
             self.device = "cpu"
         self.half_precission = setTestValues("half_precission")
+        self.cur_split = 0
 
     def count_parameters(self, model):
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -163,6 +167,9 @@ class Tester:
         if(self.save_plots):
             self.make_plot_dir()
 
+        if(self.save_split_image_plots):
+            self.make_plot_dir(True)
+
 
 
         # Start timer
@@ -176,12 +183,17 @@ class Tester:
         if(self.start_profiler):
             profiler.stop()
 
-    def make_plot_dir(self):
+    def make_plot_dir(self, split_images = False):
         self.plot_save_path = self.save_path / "plots"
-        print("Plot save path:", self.plot_save_path)
-        if(self.plot_save_path.exists()):
-            shutil.rmtree(self.plot_save_path)
-        self.plot_save_path.mkdir(exist_ok=False)
+        self.split_plot_save_path = self.save_path / "split_plots"
+        if (split_images):
+            save_path = self.split_plot_save_path
+        else:
+            save_path = self.plot_save_path
+        print("Plot save path:", save_path)
+        if(save_path.exists()):
+            shutil.rmtree(save_path)
+        save_path.mkdir(exist_ok=False)
 
     def prune_model(self):
         """
@@ -329,7 +341,7 @@ class Tester:
         #result = torch.cat(batches, dim=0)
         return split_tensors
 
-    def display_split_images(self, split_images, pred_dict):
+    def display_split_images(self, split_images, pred_dict, filename):
         part1, part2, part3, part4 = split_images
         # display split parts in matplotlib
         fig, axs = plt.subplots(2, 2, figsize=(10, 10))
@@ -342,7 +354,7 @@ class Tester:
                 if(score > self.confidence_threshold):
                     print("score",score)
                     boxes_over_thresh.append(box)
-                    label_over_thresh.append(label)
+                    labels_over_thresh.append(label)
                     scores_over_thresh.append(score)
 
             labels_str = ["Smoke" if label.item() == 1 else str(label.item()) for label in labels_over_thresh]
@@ -357,7 +369,11 @@ class Tester:
             axs[row, col].set_title(f'Part {i + 1}')
 
         plt.tight_layout()
-        plt.show()
+        if (self.save_split_image_plots):
+            plot_save_path = self.split_plot_save_path / filename
+            plt.savefig(plot_save_path, bbox_inches="tight")
+        if(self.plot_split_images):
+            plt.show()
 
     def adjust_boxes(self, boxes, offset_x, offset_y):
         # move bbox based on position in split
@@ -460,6 +476,8 @@ class Tester:
                     temp_combined['labels'] = torch.cat((temp_combined['labels'], output['labels']), dim=0)
                     temp_combined['scores'] = torch.cat((temp_combined['scores'], output['scores']), dim=0)
 
+                    temp_combined = self.merge_touching_boxes(temp_combined)
+
                     # split dicts for visualising split images
                     vis_split.append({
                         'boxes': output['boxes'],
@@ -473,6 +491,63 @@ class Tester:
             else:
                 return  outputs
 
+    def merge_touching_boxes(self, temp_combined, tolerance=5):
+        """ Merges bounding boxes that touch or nearly touch at split boundaries. """
+        boxes, labels, scores = temp_combined['boxes'], temp_combined['labels'], temp_combined['scores']
+
+        if boxes.shape[0] == 0:
+            return temp_combined
+
+        merged_boxes = []
+        merged_labels = []
+        merged_scores = []
+        used = torch.zeros(boxes.shape[0], dtype=torch.bool, device=boxes.device)
+
+        for i in range(len(boxes)):
+            if used[i]:  # Skip already merged boxes
+                continue
+            x1, y1, x2, y2 = boxes[i]
+            label = labels[i]
+            score = scores[i]
+
+            for j in range(i + 1, len(boxes)):
+                if used[j] or labels[j] != label:
+                    continue
+
+                x1_j, y1_j, x2_j, y2_j = boxes[j]
+
+                # Check if touching horizontally or vertically
+
+                horizontally_touching = (
+                                                abs(x2 - x1_j) <= tolerance or abs(x2_j - x1) <= tolerance
+                                        ) and (y1 < y2_j and y2 > y1_j)  # Ensure vertical overlap
+
+
+                vertically_touching = (
+                                              abs(y2 - y1_j) <= tolerance or abs(y2_j - y1) <= tolerance
+                                      ) and (x1 < x2_j and x2 > x1_j)  # Ensure horizontal overlap
+
+                if horizontally_touching or vertically_touching:
+                #if vertically_touching:
+                    # Merge boxes
+                    x1 = min(x1, x1_j)
+                    y1 = min(y1, y1_j)
+                    x2 = max(x2, x2_j)
+                    y2 = max(y2, y2_j)
+
+                    score = max(score, scores[j])  # Keep highest confidence
+                    used[j] = True  # Mark merged box
+
+            merged_boxes.append([x1, y1, x2, y2])
+            merged_labels.append(label)
+            merged_scores.append(score)
+
+        # Convert back to tensor
+        temp_combined['boxes'] = torch.tensor(merged_boxes, device=boxes.device)
+        temp_combined['labels'] = torch.tensor(merged_labels, dtype=torch.int64, device=boxes.device)
+        temp_combined['scores'] = torch.tensor(merged_scores, device=boxes.device)
+
+        return temp_combined
 
     # !!GETTING PREDICTION!!
     @torch.inference_mode()
@@ -493,7 +568,10 @@ class Tester:
             if(setTestValues("split_images")):
                 for item in image_tensor_split:
                     temp_combined, vis_split = self.get_model_outputs(item, image_tensor)
-                    self.display_split_images(item, vis_split)
+                    if(self.plot_split_images or self.save_split_image_plots):
+                        split_filename = f"split{self.cur_split}"
+                        self.display_split_images(item, vis_split, split_filename)
+                        self.cur_split += 1
                     combined_outputs.append(temp_combined)
             else:
                 combined_outputs = self.get_model_outputs(image_tensor)
@@ -861,8 +939,9 @@ class Tester:
         ground_truth_boxes = [bbox.clone().detach() for bbox in ground_truth['boxes']]
 
         # draw ground truth bbox over predicted bbox over image
-        output_image = draw_bounding_boxes(output_image, torch.stack(ground_truth_boxes),
-                                           ["Ground Truth"] * len(ground_truth_boxes), colors="blue")
+        if(self.plot_ground_truth):
+            output_image = draw_bounding_boxes(output_image, torch.stack(ground_truth_boxes),
+                                               ["Ground Truth"] * len(ground_truth_boxes), colors="blue")
         # registry increased ide.rest.api.request.per.minute to 100
         plt.figure(figsize=(12, 12))
         plt.imshow(output_image.permute(1, 2, 0))
