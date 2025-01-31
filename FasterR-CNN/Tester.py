@@ -52,13 +52,16 @@ class Tester:
         self.confidence_threshold = 0.5
         self.draw_highest_only = False # only draw bbox with highest score on plot
         self.plot_image = False # plot images
-        self.save_plots = True # save plots to model folder/plots
+        self.save_plots = False # save plots to model folder/plots
         self.plot_ground_truth = True # whether to plot ground truth
-        self.benchmark = False # measure how long it takes to make average prediction
-        self.plot_split_images = False # if using partitioned/split images, whether to display each split
-        self.save_split_image_plots = True
+        self.benchmark = True # measure how long it takes to make average prediction
         self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
         self.draw_no_true_positive_only = False # only plot images with no true positives
+
+        #SPLIT IMAGE
+        self.plot_split_images = False # if using partitioned/split images, whether to display each split
+        self.save_split_image_plots = False
+        self.combine_bboxes = False # combine touching bbox predictions when splitting image
 
         # device agnostic code
         self.device = "cuda" if torch.cuda.is_available() else "cpu" # device agnostic
@@ -116,7 +119,6 @@ class Tester:
         if(self.static_quants or setTestValues("CPU_inference")):
             self.device = "cpu"
         self.half_precission = setTestValues("half_precission")
-        self.cur_split = 0
 
     def count_parameters(self, model):
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -476,7 +478,8 @@ class Tester:
                     temp_combined['labels'] = torch.cat((temp_combined['labels'], output['labels']), dim=0)
                     temp_combined['scores'] = torch.cat((temp_combined['scores'], output['scores']), dim=0)
 
-                    temp_combined = self.merge_touching_boxes(temp_combined)
+                    if(self.combine_bboxes):
+                        temp_combined = self.merge_touching_boxes(temp_combined)
 
                     # split dicts for visualising split images
                     vis_split.append({
@@ -491,9 +494,13 @@ class Tester:
             else:
                 return  outputs
 
-    def merge_touching_boxes(self, temp_combined, tolerance=5):
-        """ Merges bounding boxes that touch or nearly touch at split boundaries. """
+    def merge_touching_boxes(self, temp_combined, tolerance=4):
         boxes, labels, scores = temp_combined['boxes'], temp_combined['labels'], temp_combined['scores']
+        # bool indexing to get bboxes with score higher than threshold
+        score_thresh = scores > self.confidence_threshold
+        boxes, labels, scores = boxes[score_thresh], labels[score_thresh], scores[score_thresh]
+
+        # only use boxes where temp_combined['scores'] > self.confidence_threshold
 
         if boxes.shape[0] == 0:
             return temp_combined
@@ -516,33 +523,32 @@ class Tester:
 
                 x1_j, y1_j, x2_j, y2_j = boxes[j]
 
-                # Check if touching horizontally or vertically
+                # Check if bbox edge is within tol
 
                 horizontally_touching = (
-                                                abs(x2 - x1_j) <= tolerance or abs(x2_j - x1) <= tolerance
-                                        ) and (y1 < y2_j and y2 > y1_j)  # Ensure vertical overlap
-
-
+                        (abs(x2 - x1_j) <= tolerance or abs(x2_j - x1) <= tolerance)
+                        and (y1 < y2_j and y2 > y1_j)
+                )
                 vertically_touching = (
-                                              abs(y2 - y1_j) <= tolerance or abs(y2_j - y1) <= tolerance
-                                      ) and (x1 < x2_j and x2 > x1_j)  # Ensure horizontal overlap
-
+                        (abs(y2 - y1_j) <= tolerance or abs(y2_j - y1) <= tolerance)
+                        and (x1 < x2_j and x2 > x1_j)
+                )
+                # Merge boxes
                 if horizontally_touching or vertically_touching:
-                #if vertically_touching:
-                    # Merge boxes
                     x1 = min(x1, x1_j)
                     y1 = min(y1, y1_j)
                     x2 = max(x2, x2_j)
                     y2 = max(y2, y2_j)
 
-                    score = max(score, scores[j])  # Keep highest confidence
-                    used[j] = True  # Mark merged box
+                    # sets box score to higherst val
+                    score = max(score, scores[j])
+                    # dont merge boxes multiple times
+                    used[j] = True
 
             merged_boxes.append([x1, y1, x2, y2])
             merged_labels.append(label)
             merged_scores.append(score)
 
-        # Convert back to tensor
         temp_combined['boxes'] = torch.tensor(merged_boxes, device=boxes.device)
         temp_combined['labels'] = torch.tensor(merged_labels, dtype=torch.int64, device=boxes.device)
         temp_combined['scores'] = torch.tensor(merged_scores, device=boxes.device)
@@ -566,12 +572,10 @@ class Tester:
             combined_outputs = []
             #combined_outputs.append(temp_combined)
             if(setTestValues("split_images")):
-                for item in image_tensor_split:
+                for item, fname in zip(image_tensor_split, filename):
                     temp_combined, vis_split = self.get_model_outputs(item, image_tensor)
                     if(self.plot_split_images or self.save_split_image_plots):
-                        split_filename = f"split{self.cur_split}"
-                        self.display_split_images(item, vis_split, split_filename)
-                        self.cur_split += 1
+                        self.display_split_images(item, vis_split, fname)
                     combined_outputs.append(temp_combined)
             else:
                 combined_outputs = self.get_model_outputs(image_tensor)

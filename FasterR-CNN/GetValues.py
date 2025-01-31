@@ -98,7 +98,7 @@ def setTestValues(val_to_get):
         "tensor_type": "csr",
 
         # Upscale
-        "upscale_image": False,
+        "upscale_image": True,
         "upscale_value": 2, # image * upscale_value
         "split_images": True
 
