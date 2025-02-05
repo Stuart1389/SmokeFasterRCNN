@@ -49,13 +49,13 @@ class Tester:
         # Initialising instanced variables
         self.base_dir = checkColab()
         # scores over this will be counted towards mAP/precission/recall and will be displayed if plot
-        self.confidence_threshold = 0
+        self.confidence_threshold = 0.5
         self.benchmark = True # measure how long it takes to make average prediction
         self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
 
         #PLOT MAIN IMAGE
         self.draw_highest_only = False # only draw bbox with highest score on plot
-        self.plot_image = True # plot images
+        self.plot_image = False # plot images
         self.save_plots = False # save plots to model folder/plots
         self.plot_ground_truth = True # whether to plot ground truth
         self.draw_no_true_positive_only = False # only plot images with no true positives

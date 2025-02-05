@@ -9,8 +9,8 @@ def setTrainValues(val_to_get):
         "EPOCHS": 15,
         "PATIENCE": 5,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "transform_csj_ma_a100", # name of saved model
-        "plotJSON_fname": "transform_csj_ma_a100", # json filename
+        "model_name": "transform_csj_ma_5s_a100", # name of saved model
+        "plotJSON_fname": "transform_csj_ma_5s_a100", # json filename
         "model_id": "56",
         "save_at_end" : False,
         # temp resnet101_2080_101,
@@ -76,8 +76,8 @@ def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
         "BATCH_SIZE": 4,
-        "dataset": "Small data", # "Small data" OR "Large data"
-        "model_name": "test_file", # name of model to test
+        "dataset": "Large data", # "Small data" OR "Large data"
+        "model_name": "transform_csj_multi_anchor_a100", # name of model to test
 
         # PROFILER
         "start_profiler": False,
