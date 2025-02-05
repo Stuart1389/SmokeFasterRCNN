@@ -20,7 +20,7 @@ import sys
 # Albumentations library, can do transforms for image and bbox as one
 # pascal_voc is format (xmin, ymin, xmax, ymax) we're using for bounding box coords
 transform_train = A.Compose([
-    #A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
+    A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
     #A.PadIfNeeded(min_height=640, min_width=480),
     #A.RandomBrightnessContrast(p=0.4),
     #A.RandomContrast(p=0.5),
@@ -33,23 +33,26 @@ transform_train = A.Compose([
     # A.HorizontalFlip(p=0.5),
 
     #A.BBoxSafeRandomCrop(erosion_rate=0, p=0.5),
-    #A.RandomScale(scale_limit=0.3, p=0.5),
+    #A.RandomScale(scale_limit=0.7, p=0.5),
     #A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=0.5),
 
 
     #A.Resize(height=480, width=640),
+    A.Resize(height=224, width=224),
 
     ToTensorV2()
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))
 
 transform_validate = A.Compose([
-    #A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
+    A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
+    A.Resize(height=224, width=224),
     #A.ToGray(p=1.0),
     ToTensorV2()
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))
 
 transform_test = A.Compose([
-    #A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
+    A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
+    A.Resize(height=224, width=224),
     #A.ToGray(p=1.0),
     ToTensorV2()
 ])
@@ -159,8 +162,8 @@ class smokeDataset(torch.utils.data.Dataset):
     #Convert to float32 for model
     # normalize the image to [0, 1] if it is not already in float format
 
-    if image.dtype == np.uint8:
-      image = image / 255.0
+    #if image.dtype == np.uint8:
+      #image = image / 255.0
 
     image = image.astype(np.float32)
 
@@ -224,6 +227,10 @@ class smokeDataset(torch.utils.data.Dataset):
         return image_tensor, filename
 
     if (self.transform and self.testing):
+        #transformed_bboxes = transformed['bboxes']
+        #transformed_bboxes = torch.tensor(transformed_bboxes, dtype=torch.float32)
+
+
         transformed = self.transform(image=image)
         image_tensor = transformed['image']
         #print(image.dtype)

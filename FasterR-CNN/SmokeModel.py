@@ -6,13 +6,14 @@ import torchvision
 from torch.utils.data import DataLoader
 from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision.transforms import functional as F
+from torchvision.models.vgg import vgg16, vgg16_bn, vgg19_bn
 import Dataset
 import DatasetHd5f
 import time
 from EpochSampler import EpochSampler
 from GetValues import checkColab, setTrainValues, setTestValues
 from torch.profiler import profile, record_function, ProfilerActivity
-from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
+from torchvision.models.detection.backbone_utils import resnet_fpn_backbone, BackboneWithFPN, mobilenet_backbone
 from torchvision.models.detection import FasterRCNN
 from torchvision.models.detection.faster_rcnn import FastRCNNConvFCHead
 from torchvision.models.detection.rpn import AnchorGenerator, RPNHead
@@ -24,6 +25,7 @@ from torchsummary import summary
 from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
+from collections import OrderedDict
 
 
 
@@ -111,6 +113,7 @@ class SmokeModel:
     def model_builder(self):
         print(f"Model builder, Backbone: {self.model_backbone}, FpnV2: {self.fpnv2}")
         anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
+        #anchor_sizes = ((32,), (64,), (128,), (256,))
         aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
         anchor_gen = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
 
@@ -119,16 +122,48 @@ class SmokeModel:
             fpn = torch.load(self.model_arch_path / "fpn.pth", weights_only=True)
             roi_heads = torch.load(self.model_arch_path / "roi.pth", weights_only=True)
             rpn = torch.load(self.model_arch_path / "rpn.pth", weights_only=True)
+            body = torch.load(self.model_arch_path / "body.pth", weights_only=True)
             self.model = torchvision.models.detection.stus_resnet_fpnv2_builder(weights_backbone="DEFAULT",#"DEFAULT"
                                                                                 trainable_backbone_layers=3,
                                                                                 roi_head_weights=roi_heads,
-                                                                                rpn_weights=rpn, fpn_weights=fpn,
+                                                                                rpn_weights=rpn, fpn_weights=fpn, body_weights=body,
                                                                                 model_backbone=self.model_backbone)
             self.model.rpn.anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
         else:
-            backbone = resnet_fpn_backbone(backbone_name=self.model_backbone, weights="DEFAULT", trainable_layers=3)
+            """
+            Vgg16 = vgg16("DEFAULT")
+            features = Vgg16.features
+            print(Vgg16)
+            new_layers = OrderedDict({
+                'layer1': nn.Sequential(*features[:5]),  # Conv2d(64) -> MaxPool
+                'layer2': nn.Sequential(*features[5:10]),  # Conv2d(128) -> MaxPool
+                'layer3': nn.Sequential(*features[10:17]),  # Conv2d(256) -> MaxPool
+                'layer4': nn.Sequential(*features[17:24]),  # Conv2d(512) -> MaxPool
+                'layer5': nn.Sequential(*features[24:30])  # Conv2d(512) -> MaxPool
+            })
+            Vgg16 = nn.Sequential(new_layers)
+            return_layers = {'layer2': '0', 'layer3': '1', 'layer4': '2', 'layer5': '3'}
+            Vgg16.out_channels = 512
+            print(Vgg16)
+
+            in_channels_list = [128, 256, 512, 512]
+
+
+            out_channels = 256
+            for name, layer in Vgg16.named_children():
+                if name in ['layer1', 'layer2']:  # Adjust layer names as needed
+                    for param in layer.parameters():
+                        param.requires_grad = False
+
+            backbone = BackboneWithFPN(Vgg16, return_layers, in_channels_list, out_channels)
+            """
+            #backbone = resnet_fpn_backbone(backbone_name=self.model_backbone, weights="DEFAULT", trainable_layers=3)
+            #backbone = mobilenet_backbone(backbone_name=self.model_backbone, weights="DEFAULT", trainable_layers=3, fpn=True)
+
             self.model = FasterRCNN(backbone=backbone, num_classes=2,
                                     rpn_anchor_generator=anchor_gen)
+            body_weights = torch.load(self.model_arch_path / "body.pth", weights_only=True)
+            self.model.backbone.body.load_state_dict(body_weights, strict=False)
 
         # Set in features to whatever region of interest(ROI) expects
         self.in_features = self.model.roi_heads.box_predictor.cls_score.in_features
@@ -146,22 +181,28 @@ class SmokeModel:
 
 
     def model_default(self):
-        print("Default model Resnet50 FpnV2")
-        self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT",
-                                                                             trainable_backbone_layers=3)
+        if(setTrainValues("mobilenet")):
+            print("Default model Mobilenet FpnV3")
+            self.model = torchvision.models.detection.fasterrcnn_mobilenet_v3_large_fpn(weights="DEFAULT",
+                                                                                        trainable_backbone_layers=3)
+            # fpn takes 1 tuple per feature map, and uses 3 feature maps
+            anchor_sizes = ((128,), (256,), (512,))
+            #anchor_sizes = ((64,), (128,), (256,))
+        else:
+            print("Default model Resnet50 FpnV2")
+            self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT",
+                                                                                 trainable_backbone_layers=3)
+            # fpn takes 1 tuple per feature map, and uses 5 feature maps
+            anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
         # load faster-rcnn
-
-
         #self.init_model()
         #state_dict = self.model.state_dict()
         #filtered_state_dict = {k: v for k, v in state_dict.items() if not k.startswith("backbone.body")}
         #torch.save(filtered_state_dict, self.model_arch_path / "fpnv2.pth")
-
-
         # Modify anchor box, defaults in detection/faster_rcnn
         # ((32,), (64,), (128,), (256,), (512,)), ((0.5, 1.0, 2.0),) * len(anchor_sizes)
         # fpn takes 1 tuple per feature map, and has 5 feature maps
-        anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
+        #anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
         # anchor_sizes = ((8,), (32,), (128,), (256,), (512,))
         # anchor_sizes = ((16,), (32,), (64,), (128,), (256,))
         # anchor_sizes = ((8,), (16,), (32,), (64,), (128,))
@@ -186,6 +227,7 @@ class SmokeModel:
         rpn_weights = {}
         roi_weights = {}
         fpn_weights = {}
+        body_weights = {}
 
         for key, tensor in state_dict.items():
             print(key)
@@ -201,6 +243,9 @@ class SmokeModel:
                 # get fpn pre-trained weights
                 new_key = key.replace("backbone.fpn.", "")
                 fpn_weights[new_key] = tensor
+            elif key.startswith("backbone.body"):
+                new_key = key.replace("backbone.body.", "")
+                body_weights[new_key] = tensor
 
 
         # Save RPN weights
@@ -216,7 +261,11 @@ class SmokeModel:
         # Save ROI weights
         fpn_path = self.model_arch_path / "fpn.pth"
         torch.save(fpn_weights, fpn_path)
-        print(f"Saved ROI weights to {fpn_path}")
+        print(f"Saved FPN weights to {fpn_path}")
+
+        body_path = self.model_arch_path / "body.pth"
+        torch.save(body_weights, body_path)
+        print(f"Saved Body weights to {body_path}")
 
     # functions to get train, validate and test dataloaders
     def get_dataloader(self, testing = False):
@@ -347,7 +396,7 @@ class SmokeModel:
         # pass through model and print summary
         #summary(self.model.backbone.body, input_size=(3, 224, 224), device=str(self.device))
 
-        #print(self.model.backbone)
+        print(self.model.backbone)
         #print(self.model.roi_heads)
         #print(self.model.rpn)
         self.prnt_model_c()

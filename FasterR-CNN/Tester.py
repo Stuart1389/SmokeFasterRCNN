@@ -49,19 +49,30 @@ class Tester:
         # Initialising instanced variables
         self.base_dir = checkColab()
         # scores over this will be counted towards mAP/precission/recall and will be displayed if plot
-        self.confidence_threshold = 0.5
+        self.confidence_threshold = 0
+        self.benchmark = True # measure how long it takes to make average prediction
+        self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
+
+        #PLOT MAIN IMAGE
         self.draw_highest_only = False # only draw bbox with highest score on plot
         self.plot_image = False # plot images
         self.save_plots = False # save plots to model folder/plots
         self.plot_ground_truth = True # whether to plot ground truth
-        self.benchmark = True # measure how long it takes to make average prediction
-        self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
         self.draw_no_true_positive_only = False # only plot images with no true positives
 
         #SPLIT IMAGE
         self.plot_split_images = False # if using partitioned/split images, whether to display each split
         self.save_split_image_plots = False
-        self.combine_bboxes = False # combine touching bbox predictions when splitting image
+        self.combine_bboxes = False # merge touching bbox predictions when splitting image
+
+        # RESIZE / SCALE GROUND TRUTH
+        self.use_scale = True
+        self.scale_height = 224
+        self.scale_width = 224
+
+        if(self.use_scale == False):
+            self.scale_height = None
+            self.scale_width = None
 
         # device agnostic code
         self.device = "cuda" if torch.cuda.is_available() else "cpu" # device agnostic
@@ -494,7 +505,7 @@ class Tester:
             else:
                 return  outputs
 
-    def merge_touching_boxes(self, temp_combined, tolerance=4):
+    def merge_touching_boxes(self, temp_combined, tolerance=2):
         boxes, labels, scores = temp_combined['boxes'], temp_combined['labels'], temp_combined['scores']
         # bool indexing to get bboxes with score higher than threshold
         score_thresh = scores > self.confidence_threshold
@@ -730,22 +741,32 @@ class Tester:
     # and get area of ground truth to assign each a size (small, medium, large)
     def parse_xml(self, annotation_path, get_area=False):
         upscale_value = 1
+        scale_x, scale_y = 1, 1
+        if(self.use_scale):
+            scale_y = self.scale_height
+            scale_x = self.scale_width
         if(setTestValues("upscale_image")):
             # bring ground truth in line with upscaled image
             upscale_value = setTestValues("upscale_value")
         # Parsing XML file for each image to find bounding boxes
         tree = ET.parse(annotation_path)
         root = tree.getroot()
-
         # Extract bounding boxes
         boxes = []
         areas = []
-        for obj in root.findall("object"):
+        for obj, size in zip(root.findall("object"), root.findall("size")):
             xml_box = obj.find("bndbox")
-            xmin = float(xml_box.find("xmin").text) * upscale_value
-            ymin = float(xml_box.find("ymin").text) * upscale_value
-            xmax = float(xml_box.find("xmax").text) * upscale_value
-            ymax = float(xml_box.find("ymax").text) * upscale_value
+            image_height = float(size.find("height").text)
+            image_width = float(size.find("width").text)
+
+            if(self.scale_height != None and self.scale_width != None):
+                scale_x = self.scale_width / image_width
+                scale_y = self.scale_height / image_height
+
+            xmin = float(xml_box.find("xmin").text) * upscale_value * scale_x
+            ymin = float(xml_box.find("ymin").text) * upscale_value * scale_y
+            xmax = float(xml_box.find("xmax").text) * upscale_value * scale_x
+            ymax = float(xml_box.find("ymax").text) * upscale_value * scale_y
 
             if xmin >= xmax or ymin >= ymax:
                 print(f"Invalid area/box coordinates: ({xmin}, {ymin}), ({xmax}, {ymax})")

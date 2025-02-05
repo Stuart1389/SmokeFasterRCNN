@@ -5,28 +5,32 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 2,
+        "BATCH_SIZE": 8,
         "EPOCHS": 15,
         "PATIENCE": 5,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "resnet34_fpnv2_rcd_csj", # name of saved model
-        "plotJSON_fname": "resnet34_fpnv2_rcd_csj", # json filename
+        "model_name": "mobilenet_wd05_2080", # name of saved model
+        "plotJSON_fname": "mobilenet_wd05_2080", # json filename
         "model_id": "56",
         "save_at_end" : False,
         # temp resnet101_2080_101,
 
-        # use alternate model
+        # Default model settings
+        "mobilenet": True,
+
+        # Model builder settings
         "alt_model": False,
-        "alt_model_backbone": "resnet34", #resnet18, resnet34, resnet50, resnet101, etc
-        "fpnv2": True, # Sets alternate model to use fpnv2
+        "alt_model_backbone": "fasterrcnn_mobilenet_v3_large_fpn", #resnet18, resnet34, resnet50, resnet101, etc
+        "fpnv2": False, # Sets alternate model to use fpnv2
 
         # Knowlege distillation, uses alt model
         "know_distil": False,
         "teacher_model_name": "transform_csj_a100",
 
         "load_hd5f" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
-        "h5py_dir_save_name": "transform_csj_c_20", # file name for h5py file
-        "h5py_dir_load_name": "transform_csj", #large_15_no_transform, transform_csj, large_1_transform, test_file
+        "force_first_epoch" : True, #
+        "h5py_dir_save_name": "large_1_resize", # file name for h5py file
+        "h5py_dir_load_name": "large_1_resize", #large_15_no_transform, transform_csj, large_1_transform, test_file
         # transform_csj_3_def, transform_csj_3_100, transform_csj_3_1, transform_csj_c_20
 
         # PROFILER
@@ -35,10 +39,10 @@ def setTrainValues(val_to_get):
         "logWB" : True,
 
         # PARAMETERS
-        "learning_rate": 0.001,
+        "learning_rate": 0.004,
         "momentum": 0.9,
         "weight_decay": 0.0005,
-        "step_size": 4,
+        "step_size": 3,
         "gamma": 0.01,
 
         # DATALOADER/TODEVICE/MIXED-PRECISSION
@@ -73,7 +77,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "transform_csj_a100", # name of model to test
+        "model_name": "mobilenet_05lr_2080", # name of model to test
 
         # PROFILER
         "start_profiler": False,
@@ -89,7 +93,7 @@ def setTestValues(val_to_get):
         "calibrate_full_set": False,
         "load_QAT_model": False,
 
-        "half_precission": True, # float 16
+        "half_precission": False, # float 16
 
         #Pruning
         "prune_model": False,
@@ -98,9 +102,9 @@ def setTestValues(val_to_get):
         "tensor_type": "csr",
 
         # Upscale
-        "upscale_image": True,
+        "upscale_image": False,
         "upscale_value": 2, # image * upscale_value
-        "split_images": True
+        "split_images": False
 
 
     } # self.model = self.model.cuda().half()
