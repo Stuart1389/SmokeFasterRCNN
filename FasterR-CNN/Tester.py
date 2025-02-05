@@ -55,7 +55,7 @@ class Tester:
 
         #PLOT MAIN IMAGE
         self.draw_highest_only = False # only draw bbox with highest score on plot
-        self.plot_image = False # plot images
+        self.plot_image = True # plot images
         self.save_plots = False # save plots to model folder/plots
         self.plot_ground_truth = True # whether to plot ground truth
         self.draw_no_true_positive_only = False # only plot images with no true positives
@@ -66,7 +66,7 @@ class Tester:
         self.combine_bboxes = False # merge touching bbox predictions when splitting image
 
         # RESIZE / SCALE GROUND TRUTH
-        self.use_scale = True
+        self.use_scale = False
         self.scale_height = 224
         self.scale_width = 224
 

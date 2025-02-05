@@ -131,6 +131,7 @@ class SmokeModel:
             self.model.rpn.anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
         else:
             """
+            This "works", but used mobilenet since it works better with frcnn
             Vgg16 = vgg16("DEFAULT")
             features = Vgg16.features
             print(Vgg16)
@@ -186,14 +187,21 @@ class SmokeModel:
             self.model = torchvision.models.detection.fasterrcnn_mobilenet_v3_large_fpn(weights="DEFAULT",
                                                                                         trainable_backbone_layers=3)
             # fpn takes 1 tuple per feature map, and uses 3 feature maps
-            anchor_sizes = ((128,), (256,), (512,))
+            #anchor_sizes = ((128,), (256,), (512,))
             #anchor_sizes = ((64,), (128,), (256,))
         else:
+            # anchor gen
+            anchor_sizes = ((32, 64, 128, 256, 512),) * 5
+            aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
+
             print("Default model Resnet50 FpnV2")
             self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT",
-                                                                                 trainable_backbone_layers=3)
+                                                                                 trainable_backbone_layers=3,
+                                                                                 anchor_values=anchor_sizes,
+                                                                                 anchor_ratios=aspect_ratios)
             # fpn takes 1 tuple per feature map, and uses 5 feature maps
-            anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
+            #anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
+
         # load faster-rcnn
         #self.init_model()
         #state_dict = self.model.state_dict()
@@ -206,8 +214,11 @@ class SmokeModel:
         # anchor_sizes = ((8,), (32,), (128,), (256,), (512,))
         # anchor_sizes = ((16,), (32,), (64,), (128,), (256,))
         # anchor_sizes = ((8,), (16,), (32,), (64,), (128,))
-        aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
-        self.model.rpn.anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
+
+        #aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
+        #self.model.rpn.anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
+
+        print(self.model.rpn.anchor_generator.sizes)
 
         # Set in features to whatever region of interest(ROI) expects
         self.in_features = self.model.roi_heads.box_predictor.cls_score.in_features
