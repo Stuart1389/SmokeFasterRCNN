@@ -7,10 +7,10 @@ def setTrainValues(val_to_get):
     train_values = {
         "BATCH_SIZE": 16,
         "EPOCHS": 15,
-        "PATIENCE": 4,
+        "PATIENCE": 5,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "transform_csj_multi_anchor_a100", # name of saved model
-        "plotJSON_fname": "transform_csj_multi_anchor_a100", # json filename
+        "model_name": "transform_csj_ma_a100", # name of saved model
+        "plotJSON_fname": "transform_csj_ma_a100", # json filename
         "model_id": "56",
         "save_at_end" : False,
         # temp resnet101_2080_101,
@@ -42,7 +42,7 @@ def setTrainValues(val_to_get):
         "learning_rate": 0.003,
         "momentum": 0.9,
         "weight_decay": 0.0005,
-        "step_size": 3,
+        "step_size": 5,
         "gamma": 0.01,
 
         # DATALOADER/TODEVICE/MIXED-PRECISSION
