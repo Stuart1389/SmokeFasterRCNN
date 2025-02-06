@@ -190,11 +190,14 @@ class SmokeModel:
             #anchor_sizes = ((128,), (256,), (512,))
             #anchor_sizes = ((64,), (128,), (256,))
         else:
+            # temp leaving here
+            anchor_sizes = None
+            aspect_ratios = None
             # anchor gen
             #anchor_sizes = ((32, 64, 128, 256, 512),) * 5
             #anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
-            anchor_sizes = ((32, 64), (64, 128), (128, 256), (256, 512), (512, 1024,))
-            aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
+            #anchor_sizes = ((32, 64), (64, 128), (128, 256), (256, 512), (512, 1024,))
+            #aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
 
             print("Default model Resnet50 FpnV2")
             self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT",
