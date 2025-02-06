@@ -9,8 +9,8 @@ def setTrainValues(val_to_get):
         "EPOCHS": 15,
         "PATIENCE": 4,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "transform_csj_add_ancL_a100", # name of saved model
-        "plotJSON_fname": "transform_csj_add_ancL_a100", # json filename
+        "model_name": "transform_csj_add_anc_large_a100", # name of saved model
+        "plotJSON_fname": "transform_csj_add_anc_large_a100", # json filename
         "model_id": "56",
         "save_at_end" : False,
         # temp resnet101_2080_101,
