@@ -5,12 +5,12 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 2,
-        "EPOCHS": 20,
-        "PATIENCE": 5,
-        "dataset": "Large_large", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "transform_csj_ma_7s_5lra100", # name of saved model
-        "plotJSON_fname": "transform_csj_ma_7s_5lra100", # json filename
+        "BATCH_SIZE": 16,
+        "EPOCHS": 15,
+        "PATIENCE": 4,
+        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "model_name": "transform_csj_add_anc_a100", # name of saved model
+        "plotJSON_fname": "transform_csj_add_anc_a100", # json filename
         "model_id": "56",
         "save_at_end" : False,
         # temp resnet101_2080_101,
@@ -36,13 +36,13 @@ def setTrainValues(val_to_get):
         # PROFILER
         "start_profiler" : False,
         "record_trace" : False,
-        "logWB" : False,
+        "logWB" : True,
 
         # PARAMETERS
-        "learning_rate": 0.005,
+        "learning_rate": 0.003,
         "momentum": 0.9,
         "weight_decay": 0.0005,
-        "step_size": 7,
+        "step_size": 3,
         "gamma": 0.01,
 
         # DATALOADER/TODEVICE/MIXED-PRECISSION
@@ -77,7 +77,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "transform_csj_ma_5lr_a100", # name of model to test
+        "model_name": "transform_csj_ma_7s_a100", # name of model to test
 
         # PROFILER
         "start_profiler": False,
