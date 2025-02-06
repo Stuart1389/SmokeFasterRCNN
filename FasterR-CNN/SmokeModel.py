@@ -192,7 +192,8 @@ class SmokeModel:
         else:
             # anchor gen
             #anchor_sizes = ((32, 64, 128, 256, 512),) * 5
-            anchor_sizes = ((32, 64), (64, 128), (128, 256), (256, 512), (512, 1024,))
+            anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
+            #anchor_sizes = ((32, 64), (64, 128), (128, 256), (256, 512), (512, 1024,))
             aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
 
             print("Default model Resnet50 FpnV2")
