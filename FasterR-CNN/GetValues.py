@@ -8,9 +8,9 @@ def setTrainValues(val_to_get):
         "BATCH_SIZE": 16,
         "EPOCHS": 15,
         "PATIENCE": 4,
-        "dataset": "Large_medium", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "medium_only_a100", # name of saved model
-        "plotJSON_fname": "medium_only_a100", # json filename
+        "dataset": "Large_large", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "model_name": "large_only_a100", # name of saved model
+        "plotJSON_fname": "large_only_a100", # json filename
         "model_id": "56",
         "save_at_end" : False,
         # temp resnet101_2080_101,
