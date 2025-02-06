@@ -77,7 +77,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "transform_csj_anc_cw_a100", # name of model to test
+        "model_name": "small_only_a100", # name of model to test
 
         # PROFILER
         "start_profiler": False,
