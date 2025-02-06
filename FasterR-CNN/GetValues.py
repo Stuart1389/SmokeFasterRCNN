@@ -8,7 +8,7 @@ def setTrainValues(val_to_get):
         "BATCH_SIZE": 16,
         "EPOCHS": 20,
         "PATIENCE": 5,
-        "dataset": "Large_large", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
         "model_name": "transform_csj_ma_7s_a100", # name of saved model
         "plotJSON_fname": "transform_csj_ma_7s_a100", # json filename
         "model_id": "56",
