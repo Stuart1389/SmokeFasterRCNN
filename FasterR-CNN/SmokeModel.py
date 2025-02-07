@@ -204,6 +204,7 @@ class SmokeModel:
                                                                                  trainable_backbone_layers=3,
                                                                                  anchor_values=anchor_sizes,
                                                                                  anchor_ratios=aspect_ratios)
+
             # fpn takes 1 tuple per feature map, and uses 5 feature maps
             #anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
 

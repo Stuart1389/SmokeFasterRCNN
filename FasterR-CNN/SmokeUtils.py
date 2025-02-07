@@ -3,6 +3,10 @@ from typing import Any, Callable, Dict, Optional, Tuple, TypeVar, Union
 from torch import nn, Tensor
 import torch
 import torch.ao.quantization as quantization
+import matplotlib.pyplot as plt
+import cv2
+import numpy as np
+from GetValues import setTrainValues
 
 # modified layer getter class to qork with quants
 class SmokeIntermediateLayerGetter(nn.ModuleDict):
@@ -32,8 +36,11 @@ class SmokeIntermediateLayerGetter(nn.ModuleDict):
     def forward(self, x):
         x = self.quant(x)
         out = OrderedDict()
+        extracted_features = []
+        extracted_names = []
+
         for name, module in self.items():
-            # so pretty much if we try to quant when already quanted
+            # if we try to quant when already quanted
             # will throw error, so if module has a quant stub then dequant before
             # cant really use module since other layer types contain quant
             # resnet names their quant layers "quant" so better than just dequanting at specific layers
@@ -42,11 +49,37 @@ class SmokeIntermediateLayerGetter(nn.ModuleDict):
             if ("quant" in name):
                 x = self.dequant(x)
             x = module(x)
+            #print(self.return_layers)
             if name in self.return_layers:
                 out_name = self.return_layers[name]
                 out[out_name] = self.dequant(x)
-
+                #print(out[out_name].shape)
+                extracted_features.append(out[out_name])
+                extracted_names.append(name)
+        if(setTrainValues("plot_feature_maps")):
+            self.plt_feature_maps(extracted_features, extracted_names)
         return out
+
+    def plt_feature_maps(self, feature_map_list, layer_name_list):
+        pyramid = ["P2", "P3", "P4", "P5"]
+        num_maps = len(feature_map_list)
+        fig, axes = plt.subplots(1, num_maps, figsize=(5 * num_maps, 5))
+
+        if num_maps == 1:
+            axes = [axes]
+
+        for idx, (feature_map, layer_name) in enumerate(zip(feature_map_list, layer_name_list)):
+            feature_map = feature_map.detach().cpu().numpy()
+            channel_idx = 0 # set channel to plot
+            feature_map = feature_map[0, channel_idx, :, :]
+
+            ax = axes[idx]
+            im = ax.imshow(feature_map)
+            ax.set_title(f"Layer: {layer_name}, FPN {pyramid[idx]}")
+            fig.colorbar(im, ax=ax)
+
+        plt.tight_layout()
+        plt.show()
 
 def get_layers_to_fuse(module_names):
     """
