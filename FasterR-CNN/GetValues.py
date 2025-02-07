@@ -8,9 +8,9 @@ def setTrainValues(val_to_get):
         "BATCH_SIZE": 16,
         "EPOCHS": 15,
         "PATIENCE": 4,
-        "dataset": "Test as val b", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "test_as_val_nv_a100", # name of saved model
-        "plotJSON_fname": "test_as_val_nv_a100", # json filename
+        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "model_name": "test_as_val_ctl_a100", # name of saved model
+        "plotJSON_fname": "test_as_val_ctl_a100", # json filename
         "model_id": "56",
         "save_at_end" : False,
         # temp resnet101_2080_101,
@@ -79,7 +79,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "test_as_val_a100", # name of model to test
+        "model_name": "test_as_val_nv_a100", # name of model to test
 
         # PROFILER
         "start_profiler": False,
