@@ -49,7 +49,7 @@ class Tester:
         # Initialising instanced variables
         self.base_dir = checkColab()
         # scores over this will be counted towards mAP/precission/recall and will be displayed if plot
-        self.confidence_threshold = 0.3
+        self.confidence_threshold = 0.5
         self.benchmark = True # measure how long it takes to make average prediction
         self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
 
