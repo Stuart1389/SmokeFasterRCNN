@@ -55,30 +55,7 @@ class SmokeIntermediateLayerGetter(nn.ModuleDict):
                 #print(out[out_name].shape)
                 extracted_features.append(out[out_name])
                 extracted_names.append(name)
-        #if(setTrainValues("plot_feature_maps")):
-            #self.plt_feature_maps(extracted_features, extracted_names)
         return out
-
-    def plt_feature_maps(self, feature_map_list, layer_name_list):
-        pyramid = ["P2", "P3", "P4", "P5"]
-        num_maps = len(feature_map_list)
-        fig, axes = plt.subplots(1, num_maps, figsize=(5 * num_maps, 5))
-
-        if num_maps == 1:
-            axes = [axes]
-
-        for idx, (feature_map, layer_name) in enumerate(zip(feature_map_list, layer_name_list)):
-            feature_map = feature_map.detach().cpu().numpy()
-            channel_idx = 0 # set channel to plot
-            feature_map = feature_map[0, channel_idx, :, :]
-
-            ax = axes[idx]
-            im = ax.imshow(feature_map)
-            ax.set_title(f"Layer: {layer_name}, FPN {pyramid[idx]}")
-            fig.colorbar(im, ax=ax)
-
-        plt.tight_layout()
-        plt.show()
 
 def get_layers_to_fuse(module_names):
     """
