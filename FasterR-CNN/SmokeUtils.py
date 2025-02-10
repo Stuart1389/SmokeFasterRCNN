@@ -49,15 +49,14 @@ class SmokeIntermediateLayerGetter(nn.ModuleDict):
             if ("quant" in name):
                 x = self.dequant(x)
             x = module(x)
-            #print(self.return_layers)
             if name in self.return_layers:
                 out_name = self.return_layers[name]
                 out[out_name] = self.dequant(x)
                 #print(out[out_name].shape)
                 extracted_features.append(out[out_name])
                 extracted_names.append(name)
-        if(setTrainValues("plot_feature_maps")):
-            self.plt_feature_maps(extracted_features, extracted_names)
+        #if(setTrainValues("plot_feature_maps")):
+            #self.plt_feature_maps(extracted_features, extracted_names)
         return out
 
     def plt_feature_maps(self, feature_map_list, layer_name_list):

@@ -9,8 +9,8 @@ def setTrainValues(val_to_get):
         "EPOCHS": 6,
         "PATIENCE": 6,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "end_transform_local_2080", # name of saved model
-        "plotJSON_fname": "end_transform_local_2080", # json filename
+        "model_name": "test_file", # name of saved model
+        "plotJSON_fname": "test_file", # json filename
         "model_id": "56",
         "save_at_end" : True,
         # temp resnet101_2080_101,
@@ -30,13 +30,13 @@ def setTrainValues(val_to_get):
         "load_hd5f" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
         "force_first_epoch" : False, #
         "h5py_dir_save_name": "large_15_no_transform", # file name for h5py file
-        "h5py_dir_load_name": "transform_csj", #large_15_no_transform, transform_csj, large_1_transform, test_file
+        "h5py_dir_load_name": "test_file", #large_15_no_transform, transform_csj, large_1_transform, test_file
         # transform_csj_3_def, transform_csj_3_100, transform_csj_3_1, transform_csj_c_20
 
         # PROFILER
         "start_profiler" : False,
         "record_trace" : False,
-        "logWB" : True,
+        "logWB" : False,
 
         # PARAMETERS
         "learning_rate": 0.001,
@@ -68,7 +68,7 @@ def setTrainValues(val_to_get):
         #e.g. when using dataloader to upscale and filenames are needed
         "return_filenames": False,
 
-        "plot_feature_maps": False
+        "plot_feature_maps": True
     }
     # return value corresponding with val_to_get
     # filenames will be returned INSTEAD of TARGETS
@@ -79,7 +79,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Large data", # "Small data" OR "Large data"
-        "model_name": "003_lr_A100", # name of model to test
+        "model_name": "transform_csj_a100", # name of model to test
         "test_on_val": True, # test on validation instead of test set
 
         # PROFILER
