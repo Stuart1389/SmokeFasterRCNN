@@ -158,13 +158,13 @@ class SmokeModel:
 
             backbone = BackboneWithFPN(Vgg16, return_layers, in_channels_list, out_channels)
             """
-            #backbone = resnet_fpn_backbone(backbone_name=self.model_backbone, weights="DEFAULT", trainable_layers=3)
+            backbone = resnet_fpn_backbone(backbone_name=self.model_backbone, weights="DEFAULT", trainable_layers=3)
             #backbone = mobilenet_backbone(backbone_name=self.model_backbone, weights="DEFAULT", trainable_layers=3, fpn=True)
 
             self.model = FasterRCNN(backbone=backbone, num_classes=2,
                                     rpn_anchor_generator=anchor_gen)
-            body_weights = torch.load(self.model_arch_path / "body.pth", weights_only=True)
-            self.model.backbone.body.load_state_dict(body_weights, strict=False)
+            #body_weights = torch.load(self.model_arch_path / "body.pth", weights_only=True)
+            #self.model.backbone.body.load_state_dict(body_weights, strict=False)
 
         # Set in features to whatever region of interest(ROI) expects
         self.in_features = self.model.roi_heads.box_predictor.cls_score.in_features
@@ -308,7 +308,10 @@ class SmokeModel:
             val_dir = Dataset.smokeDataset(str(dataset_dir) + "/Validate", Dataset.transform_validate)
             train_sampler = None
             val_sampler = None
-        test_dir = Dataset.smokeDataset(str(test_dataset_dir) + "/Test", Dataset.transform_test, True)
+        if(setTestValues("test_on_val")):
+            test_dir = Dataset.smokeDataset(str(test_dataset_dir) + "/Validate", Dataset.transform_test, True)
+        else:
+            test_dir = Dataset.smokeDataset(str(test_dataset_dir) + "/Test", Dataset.transform_test, True)
 
         # Create dataloaders to iterate over dataset (batching)
         self.train_dataloader = DataLoader(

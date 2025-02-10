@@ -97,8 +97,12 @@ class Tester:
         self.validate_dataloader = smoke_model.get_validate_test_dataloader()
 
         # Paths
-        self.test_image_dir = Path(f"{self.base_dir}/Dataset/") / setTestValues("dataset") / "Test/images"
-        self.test_annot_dir = Path(f"{self.base_dir}/Dataset/") / setTestValues("dataset") / "Test/annotations/xmls"
+        if(setTestValues("test_on_val")):
+            self.test_image_dir = Path(f"{self.base_dir}/Dataset/") / setTestValues("dataset") / "Validate/images"
+            self.test_annot_dir = Path(f"{self.base_dir}/Dataset/") / setTestValues("dataset") / "Validate/annotations/xmls"
+        else:
+            self.test_image_dir = Path(f"{self.base_dir}/Dataset/") / setTestValues("dataset") / "Test/images"
+            self.test_annot_dir = Path(f"{self.base_dir}/Dataset/") / setTestValues("dataset") / "Test/annotations/xmls"
 
         # Metrics
         self.initialise_metrics()
