@@ -1,5 +1,6 @@
 ### Testing model predictions
 import os
+import sys
 #os.environ["OMP_NUM_THREADS"] = "8"
 import time
 import xml.etree.ElementTree as ET
@@ -28,6 +29,7 @@ from super_image import PanModel
 from multiprocessing import Pool
 import matplotlib.patches as mpatches
 import torchvision.transforms.functional as F
+from Logger import Logger
 
 
 #DELETE
@@ -50,20 +52,20 @@ class Tester:
         self.base_dir = checkColab()
         # scores over this will be counted towards mAP/precission/recall and will be displayed if plot
         self.confidence_threshold = 0.5
-        self.benchmark = True # measure how long it takes to make average prediction
+        self.benchmark = False # measure how long it takes to make average prediction
         self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
 
         #PLOT MAIN IMAGE
         self.draw_highest_only = False # only draw bbox with highest score on plot
-        self.plot_image = False # plot images
+        self.plot_image = True # plot images
         self.save_plots = False # save plots to model folder/plots
-        self.plot_ground_truth = True # whether to plot ground truth
+        self.plot_ground_truth = False # whether to plot ground truth
         self.draw_no_true_positive_only = False # only plot images with no true positives
 
         #SPLIT IMAGE
         self.plot_split_images = False # if using partitioned/split images, whether to display each split
         self.save_split_image_plots = False
-        self.combine_bboxes = False # merge touching bbox predictions when splitting image
+        self.combine_bboxes = True # merge touching bbox predictions when splitting image
 
         # RESIZE / SCALE GROUND TRUTH
         self.use_scale = False
@@ -122,7 +124,6 @@ class Tester:
         self.image_gt_size = self.get_ground_truth_size(self.test_image_dir, self.test_annot_dir)
         #print(self.image_gt_size)
 
-        self.cur_batch = None
         self.model_name = setTestValues("model_name")
         self.start_profiler = setTestValues("start_profiler")
         self.record_trace = setTestValues("record_trace")
@@ -142,6 +143,10 @@ class Tester:
     # !!START TESTING CHAIN!!
     # function starts testing images
     def test_dir(self):
+        log_filename = self.save_path / (setTestValues("model_name") + "_test.txt")
+        print(time.strftime("%Y-%m-%d_%H-%M-%S"))
+        sys.stdout = Logger(log_filename)
+
         profiler = torch.profiler.profile(
                 activities=[
                     torch.profiler.ProfilerActivity.CPU,
@@ -199,6 +204,9 @@ class Tester:
         self.get_results()
         if(self.start_profiler):
             profiler.stop()
+
+        sys.stdout.file.close()
+        sys.stdout = sys.__stdout__
 
     def make_plot_dir(self, split_images = False):
         self.plot_save_path = self.save_path / "plots"

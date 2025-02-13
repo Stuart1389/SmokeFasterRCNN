@@ -128,7 +128,7 @@ class SmokeModel:
                                                                                 roi_head_weights=roi_heads,
                                                                                 rpn_weights=rpn, fpn_weights=fpn, body_weights=body,
                                                                                 model_backbone=self.model_backbone)
-            self.model.rpn.anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
+            #self.model.rpn.anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
         else:
             """
             This "works", but used mobilenet since it works better with frcnn
@@ -163,8 +163,8 @@ class SmokeModel:
 
             self.model = FasterRCNN(backbone=backbone, num_classes=2,
                                     rpn_anchor_generator=anchor_gen)
-            #body_weights = torch.load(self.model_arch_path / "body.pth", weights_only=True)
-            #self.model.backbone.body.load_state_dict(body_weights, strict=False)
+            body_weights = torch.load(self.model_arch_path / "body.pth", weights_only=True)
+            self.model.backbone.body.load_state_dict(body_weights, strict=False)
 
         # Set in features to whatever region of interest(ROI) expects
         self.in_features = self.model.roi_heads.box_predictor.cls_score.in_features
@@ -188,7 +188,7 @@ class SmokeModel:
                                                                                         trainable_backbone_layers=3)
             # fpn takes 1 tuple per feature map, and uses 3 feature maps
             #anchor_sizes = ((128,), (256,), (512,))
-            #anchor_sizes = ((64,), (128,), (256,))
+            anchor_sizes = ((64,), (128,), (256,))
         else:
             # temp leaving here
             anchor_sizes = None
@@ -416,6 +416,7 @@ class SmokeModel:
         # pass through model and print summary
         #summary(self.model.backbone.body, input_size=(3, 224, 224), device=str(self.device))
 
+        print(f"type:{type(self.model.backbone)}")
         print(self.model.backbone)
         #print(self.model.roi_heads)
         #print(self.model.rpn)

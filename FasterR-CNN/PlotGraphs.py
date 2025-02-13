@@ -11,6 +11,7 @@ class PlotGraphs:
         # loss values init
         self.train_dict = train_dict
         self.validate_dict = validate_dict
+        print(type(self.train_dict))
         self.train_loss_it_vals = train_loss_it_vals
         self.validate_loss_it_vals = validate_loss_it_vals
 

@@ -50,6 +50,7 @@ class SmokeIntermediateLayerGetter(nn.ModuleDict):
                 x = self.dequant(x)
             x = module(x)
             if name in self.return_layers:
+                #print(self.return_layers)
                 out_name = self.return_layers[name]
                 out[out_name] = self.dequant(x)
                 #print(out[out_name].shape)

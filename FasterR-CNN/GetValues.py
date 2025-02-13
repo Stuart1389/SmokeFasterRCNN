@@ -5,14 +5,14 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 2,
-        "EPOCHS": 6,
-        "PATIENCE": 6,
+        "BATCH_SIZE": 12,
+        "EPOCHS": 1,
+        "PATIENCE": 1,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
         "model_name": "test_file", # name of saved model
         "plotJSON_fname": "test_file", # json filename
-        "model_id": "56",
-        "save_at_end" : True,
+        "model_id": "65B",
+        "save_at_end" : False,
         # temp resnet101_2080_101,
 
         # Default model settings
@@ -21,14 +21,14 @@ def setTrainValues(val_to_get):
         # Model builder settings
         "alt_model": False,
         "alt_model_backbone": "resnet101", #resnet18, resnet34, resnet50, resnet101, etc
-        "fpnv2": True, # Sets alternate model to use fpnv2
+        "fpnv2": False, # Sets alternate model to use fpnv2
 
         # Knowlege distillation, uses alt model
         "know_distil": False,
         "teacher_model_name": "transform_csj_a100",
 
         "load_hd5f" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
-        "force_first_epoch" : False, #
+        "force_first_epoch" : True, #
         "h5py_dir_save_name": "large_15_no_transform", # file name for h5py file
         "h5py_dir_load_name": "test_file", #large_15_no_transform, transform_csj, large_1_transform, test_file
         # transform_csj_3_def, transform_csj_3_100, transform_csj_3_1, transform_csj_c_20
@@ -41,8 +41,8 @@ def setTrainValues(val_to_get):
         # PARAMETERS
         "learning_rate": 0.001,
         "momentum": 0.9,
-        "weight_decay": 0.0005,
-        "step_size": 3,
+        "weight_decay": 0.0001,
+        "step_size": 4,
         "gamma": 0.01,
 
         # DATALOADER/TODEVICE/MIXED-PRECISSION
@@ -68,7 +68,7 @@ def setTrainValues(val_to_get):
         #e.g. when using dataloader to upscale and filenames are needed
         "return_filenames": False,
 
-        "plot_feature_maps": True
+        "plot_feature_maps": False
     }
     # return value corresponding with val_to_get
     # filenames will be returned INSTEAD of TARGETS
@@ -78,9 +78,9 @@ def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
         "BATCH_SIZE": 4,
-        "dataset": "Large data", # "Small data" OR "Large data"
+        "dataset": "Small data", # "Small data" OR "Large data"
         "model_name": "transform_csj_a100", # name of model to test
-        "test_on_val": True, # test on validation instead of test set
+        "test_on_val": False, # test on validation instead of test set
 
         # PROFILER
         "start_profiler": False,
@@ -107,7 +107,7 @@ def setTestValues(val_to_get):
         # Upscale
         "upscale_image": False,
         "upscale_value": 2, # image * upscale_value
-        "split_images": False
+        "split_images": True
 
 
     } # self.model = self.model.cuda().half()
