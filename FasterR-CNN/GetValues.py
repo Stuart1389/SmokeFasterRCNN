@@ -5,7 +5,7 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 12,
+        "BATCH_SIZE": 2,
         "EPOCHS": 1,
         "PATIENCE": 1,
         "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
@@ -68,7 +68,9 @@ def setTrainValues(val_to_get):
         #e.g. when using dataloader to upscale and filenames are needed
         "return_filenames": False,
 
-        "plot_feature_maps": False
+        "plot_feature_maps": False,
+        # start testing straight after training
+        "test_after_train": True
     }
     # return value corresponding with val_to_get
     # filenames will be returned INSTEAD of TARGETS
@@ -79,7 +81,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 4,
         "dataset": "Small data", # "Small data" OR "Large data"
-        "model_name": "transform_csj_a100", # name of model to test
+        "model_name": "test_file", # name of model to test
         "test_on_val": False, # test on validation instead of test set
 
         # PROFILER
@@ -107,7 +109,7 @@ def setTestValues(val_to_get):
         # Upscale
         "upscale_image": False,
         "upscale_value": 2, # image * upscale_value
-        "split_images": True
+        "split_images": False
 
 
     } # self.model = self.model.cuda().half()

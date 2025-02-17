@@ -103,3 +103,47 @@ def predictBbox():
     plt.imshow(output_image.permute(1, 2, 0))
     plt.axis('off')
     plt.show()
+
+    from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
+
+    def plot_scatter(self, train_area_dict, val_area_dict, test_area_dict):
+        fig, axs = plt.subplots(1, 3, figsize=(15, 5))  # Create a 1x3 grid of subplots
+
+        colors = {
+            "small_vals": 'blue',
+            "medium_vals": 'orange',
+            "large_vals": 'red'
+        }
+
+        for idx, (area_dict, title) in enumerate(zip([train_area_dict, val_area_dict, test_area_dict],
+                                                     ['Train Area Scatter', 'Validation Area Scatter',
+                                                      'Test Area Scatter'])):
+            for area, values in area_dict.items():
+                filtered_values = self.remove_outliers(values)
+                axs[idx].scatter(range(len(filtered_values)), filtered_values, color=colors[area], label=area)
+
+            axs[idx].set_title(title)
+            axs[idx].set_xlabel('Index')
+            axs[idx].set_ylabel('Area')
+            axs[idx].legend()
+
+            # Create inset
+            axins = inset_axes(axs[idx], width="30%", height="30%", loc="upper left")  # Adjust size and position
+            for area in ["small_vals", "medium_vals"]:  # Only plot small and medium values
+                if area in area_dict:
+                    filtered_values = self.remove_outliers(area_dict[area])
+                    axins.scatter(range(len(filtered_values)), filtered_values, color=colors[area], label=area)
+
+            axins.set_xlim(0, max(len(area_dict["small_vals"]), len(area_dict["medium_vals"])))  # Adjust x-axis
+            axins.set_ylim(min(min(area_dict["small_vals"], default=0), min(area_dict["medium_vals"], default=0)),
+                           max(max(area_dict["small_vals"], default=1),
+                               max(area_dict["medium_vals"], default=1)))  # Adjust y-axis
+
+            axins.set_xticks([])
+            axins.set_yticks([])
+            axins.set_title("Zoomed Inset", fontsize=10)
+
+            mark_inset(axs[idx], axins, loc1=2, loc2=4, fc="none", ec="black")  # Draw connecting lines
+
+        plt.tight_layout()
+        plt.show()

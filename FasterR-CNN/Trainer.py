@@ -1,5 +1,7 @@
 import copy
 import sys
+
+import Tester
 import torch
 import os
 import time
@@ -22,6 +24,7 @@ from torch.profiler import profile, schedule, tensorboard_trace_handler
 from AdaptStudentFeatures import AdaptFeatures
 from torch.amp import GradScaler, autocast
 from SmokeUtils import get_layers_to_fuse
+from Tester import Tester
 
 current_dir = os.getcwd()
 # add libr as source
@@ -301,6 +304,13 @@ class Trainer:
             self.save_model()
         # wandb logging
 
+        if (setTrainValues("test_after_train")):
+            # ensure vram is freed
+            if (self.device == "cuda"):
+                torch.cuda.empty_cache()
+            # evaluate model after training
+            tester = Tester()
+            tester.test_dir()
 
     # function displays metrics collected from training loop
     def display_results(self, cur_highest_vram, total_training_time,
@@ -423,13 +433,14 @@ def main():
     # Start training loop
     trainer.train_loop()
 
+
+
 if __name__ == '__main__':
     current_dir = os.getcwd()
     # add libr as source
     relative_path = os.path.join(current_dir, '..', 'Libr')
     sys.path.append(relative_path)
     main()
-
 
 
     # IoU - Measures overlap between 2 bounding boxes

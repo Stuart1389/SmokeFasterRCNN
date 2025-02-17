@@ -188,7 +188,7 @@ class SmokeModel:
                                                                                         trainable_backbone_layers=3)
             # fpn takes 1 tuple per feature map, and uses 3 feature maps
             #anchor_sizes = ((128,), (256,), (512,))
-            anchor_sizes = ((64,), (128,), (256,))
+            #anchor_sizes = ((64,), (128,), (256,))
         else:
             # temp leaving here
             anchor_sizes = None
