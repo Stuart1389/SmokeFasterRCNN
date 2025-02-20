@@ -20,7 +20,7 @@ import sys
 # Albumentations library, can do transforms for image and bbox as one
 # pascal_voc is format (xmin, ymin, xmax, ymax) we're using for bounding box coords
 transform_train = A.Compose([
-    A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
+    #A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
     #A.PadIfNeeded(min_height=640, min_width=480),
     #A.RandomBrightnessContrast(p=0.4),
     #A.RandomContrast(p=0.5),
@@ -28,14 +28,14 @@ transform_train = A.Compose([
     #A.Resize(height=480, width=640),
     # A.ToGray(p=1.0),
 
-    A.SafeRotate(limit=10, p=1, border_mode=cv2.BORDER_CONSTANT),
+    #A.SafeRotate(limit=10, p=1, border_mode=cv2.BORDER_CONSTANT),
     # A.GaussNoise(var_limit=(0.01, 0.005), p=1),
     #A.HorizontalFlip(p=1),
 
-    A.BBoxSafeRandomCrop(erosion_rate=0, p=1),
+    #A.BBoxSafeRandomCrop(erosion_rate=0, p=1),
     #A.RandomScale(scale_limit=0.7, p=1),
-    A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=1),
-    A.Resize(height=480, width=640),
+    #A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=1),
+    #A.Resize(height=480, width=640),
 
     #A.Resize(height=224, width=224),
 

@@ -57,15 +57,15 @@ class Tester:
 
         #PLOT MAIN IMAGE
         self.draw_highest_only = False # only draw bbox with highest score on plot
-        self.plot_image = True # plot images
+        self.plot_image = False # plot images
         self.save_plots = False # save plots to model folder/plots
-        self.plot_ground_truth = False # whether to plot ground truth
+        self.plot_ground_truth = True # whether to plot ground truth
         self.draw_no_true_positive_only = False # only plot images with no true positives
 
         #SPLIT IMAGE
         self.plot_split_images = False # if using partitioned/split images, whether to display each split
         self.save_split_image_plots = False
-        self.combine_bboxes = True # merge touching bbox predictions when splitting image
+        self.combine_bboxes = False # merge touching bbox predictions when splitting image
 
         # RESIZE / SCALE GROUND TRUTH
         self.use_scale = False
@@ -659,6 +659,8 @@ class Tester:
             self.total_fp[size] += metrics["FP"][size]
             self.total_fn[size] += metrics["FN"][size]
 
+        print("ground_truth b4", ground_truth)
+
         if gt_size == "small":
             self.map_metricSmallA.update([predicted], [ground_truth])
             self.map_metricSmallB.update([predicted], [ground_truth])
@@ -746,7 +748,6 @@ class Tester:
         self.map_metricMediumB = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
         self.map_metricLargeA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])
         self.map_metricLargeB = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
-        self.map_metricLocal = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
 
     # Need ground truths to calculate mAP
     # Function parse xml for ground truths (copied from Dataset class)
@@ -766,10 +767,13 @@ class Tester:
         # Extract bounding boxes
         boxes = []
         areas = []
-        for obj, size in zip(root.findall("object"), root.findall("size")):
+        size = root.find("size")
+        image_height = float(size.find("height").text)
+        image_width = float(size.find("width").text)
+        for obj in root.findall("object"):
             xml_box = obj.find("bndbox")
-            image_height = float(size.find("height").text)
-            image_width = float(size.find("width").text)
+            #print("xml_box", xml_box)
+
 
             if(self.scale_height != None and self.scale_width != None):
                 scale_x = self.scale_width / image_width
@@ -791,15 +795,22 @@ class Tester:
         # Extract labels
         labels = []
         class_to_idx = {"smoke": 1}  # dictionary, if "smoke" return 1
+        filename = root.find("filename").text
+        #print("Filename:", filename) # for debugging
         for obj in root.findall("object"):
             label = obj.find("name").text  # find name in xml
-            labels.append(class_to_idx.get(label, 0))  # 0 if the class isn't found in dictionary
+            bbox_c = obj.find("bndbox") # check if bbox exists
+
+            if(bbox_c is not None):
+                labels.append(class_to_idx.get(label, 0))  # 0 if the class isn't found in dictionary
 
         # Convert boxes and labels to tensors for torchmetrics
         ground_truth = {
             "boxes": torch.tensor(boxes, dtype=torch.float32),
             "labels": torch.tensor(labels, dtype=torch.int64),
         }
+        print(ground_truth)
+        print(len(ground_truth["boxes"]))
 
         # Some images have more than 1 ground truth, in that case only use that images AP for global
         if get_area:
