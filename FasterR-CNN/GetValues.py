@@ -9,8 +9,8 @@ def setTrainValues(val_to_get):
         "EPOCHS": 1,
         "PATIENCE": 4,
         "dataset": "Medium data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "trace_4_pin", # name of saved model
-        "plotJSON_fname": "trace_4_pin", # json filename
+        "model_name": "trace_3_no_pin", # name of saved model
+        "plotJSON_fname": "trace_3_no_pin", # json filename
         "model_id": "99",
         "save_at_end" : False,
         # temp resnet101_2080_101,
@@ -46,8 +46,8 @@ def setTrainValues(val_to_get):
         "gamma": 0.01,
 
         # DATALOADER/TODEVICE/MIXED-PRECISSION
-        "non_blocking": True,
-        "pinned_memory": True,
+        "non_blocking": False,
+        "pinned_memory": False,
         "amp_mixed_precission": False,
         "half_precission": False,
 
