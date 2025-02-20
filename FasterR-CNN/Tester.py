@@ -24,7 +24,7 @@ from SmokeUtils import get_layers_to_fuse
 from torch.nn.utils import prune
 from torch.ao.pruning import WeightNormSparsifier
 from torch.sparse import to_sparse_semi_structured, SparseSemiStructuredTensor
-from simplify import simplify
+#from simplify import simplify
 from super_image import PanModel
 from multiprocessing import Pool
 import matplotlib.patches as mpatches
