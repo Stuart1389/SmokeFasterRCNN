@@ -24,7 +24,7 @@ from torch.profiler import profile, schedule, tensorboard_trace_handler
 from AdaptStudentFeatures import AdaptFeatures
 from torch.amp import GradScaler, autocast
 from SmokeUtils import get_layers_to_fuse
-from Tester import Tester
+#from Tester import Tester
 
 current_dir = os.getcwd()
 # add libr as source

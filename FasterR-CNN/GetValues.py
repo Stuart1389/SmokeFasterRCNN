@@ -27,7 +27,7 @@ def setTrainValues(val_to_get):
         "know_distil": False,
         "teacher_model_name": "transform_csj_a100",
 
-        "load_hd5f" : False, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
+        "load_hd5f" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
         "force_first_epoch" : True, #
         "h5py_dir_save_name": "test_file", # file name for h5py file
         "h5py_dir_load_name": "test_file", #large_15_no_transform, transform_csj, large_1_transform, test_file
