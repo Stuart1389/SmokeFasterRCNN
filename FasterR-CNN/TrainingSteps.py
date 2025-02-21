@@ -117,8 +117,8 @@ def train_step(model, optimizer, data_loader, device, epoch, iteration, print_fr
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
         if(setTrainValues("upscale_image")):
             images = upscale_images(device, images)
-        with torch.profiler.record_function("MOVE_IMAGES"):
-            images = list(image.to(device, non_blocking=non_blocking) for image in images)
+        #with torch.profiler.record_function("MOVE_IMAGES"):
+        images = list(image.to(device, non_blocking=non_blocking) for image in images)
 
         if(setTrainValues("half_precission")):
             images = [tensor.cuda().half() for tensor in images]

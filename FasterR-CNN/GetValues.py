@@ -9,8 +9,8 @@ def setTrainValues(val_to_get):
         "EPOCHS": 1,
         "PATIENCE": 4,
         "dataset": "Medium data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "trace_7_pin_blocking", # name of saved model
-        "plotJSON_fname": "trace_7_pin_blocking", # json filename
+        "model_name": "trace_8_pin_blocking", # name of saved model
+        "plotJSON_fname": "trace_8_pin_blocking", # json filename
         "model_id": "99",
         "save_at_end" : False,
         # temp resnet101_2080_101,
