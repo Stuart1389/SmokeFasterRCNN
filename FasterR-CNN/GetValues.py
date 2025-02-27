@@ -5,13 +5,13 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 8,
-        "EPOCHS": 1,
-        "PATIENCE": 4,
-        "dataset": "Medium data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
-        "model_name": "trace_8_pin_blocking", # name of saved model
-        "plotJSON_fname": "trace_8_pin_blocking", # json filename
-        "model_id": "99",
+        "BATCH_SIZE": 4,
+        "EPOCHS": 3,
+        "PATIENCE": 3,
+        "dataset": "Large data", # "Small data" , "Medium data" OR "Large data", "Small data cloud"
+        "model_name": "amp_2080", # name of saved model
+        "plotJSON_fname": "amp_2080", # json filename
+        "model_id": "39B",
         "save_at_end" : False,
         # temp resnet101_2080_101,
 
@@ -27,28 +27,28 @@ def setTrainValues(val_to_get):
         "know_distil": False,
         "teacher_model_name": "transform_csj_a100",
 
-        "load_hd5f" : False, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
-        "force_first_epoch" : True, #
+        "load_hd5f" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
+        "force_first_epoch" : False, #
         "h5py_dir_save_name": "test_file", # file name for h5py file
-        "h5py_dir_load_name": "test_file", #large_15_no_transform, transform_csj, large_1_transform, test_file
+        "h5py_dir_load_name": "large_15_no_transform", #large_15_no_transform, transform_csj, large_1_transform, test_file
         # transform_csj_3_def, transform_csj_3_100, transform_csj_3_1, transform_csj_c_20
 
         # PROFILER
-        "start_profiler" : True,
-        "record_trace" : True,
-        "logWB" : False,
+        "start_profiler" : False,
+        "record_trace" : False,
+        "logWB" : True,
 
         # PARAMETERS
         "learning_rate": 0.001,
         "momentum": 0.9,
         "weight_decay": 0.0005,
         "step_size": 3,
-        "gamma": 0.01,
+        "gamma": 0.1,
 
         # DATALOADER/TODEVICE/MIXED-PRECISSION
-        "non_blocking": False,
+        "non_blocking": True,
         "pinned_memory": True,
-        "amp_mixed_precission": False,
+        "amp_mixed_precission": True,
         "half_precission": False,
 
         # QUANT

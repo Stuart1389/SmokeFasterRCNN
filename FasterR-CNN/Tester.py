@@ -58,8 +58,8 @@ class Tester:
         #PLOT MAIN IMAGE
         self.draw_highest_only = False # only draw bbox with highest score on plot
         self.plot_image = False # plot images
-        self.save_plots = False # save plots to model folder/plots
-        self.plot_ground_truth = True # whether to plot ground truth
+        self.save_plots = True # save plots to model folder/plots
+        self.plot_ground_truth = False # whether to plot ground truth
         self.draw_no_true_positive_only = False # only plot images with no true positives
 
         #SPLIT IMAGE
@@ -134,6 +134,7 @@ class Tester:
         # pytorch only supports static quants on cpu
         if(self.static_quants or setTestValues("CPU_inference")):
             self.device = "cpu"
+            print("Force cpu ", self.device)
         self.half_precission = setTestValues("half_precission")
 
     def count_parameters(self, model):
@@ -164,6 +165,7 @@ class Tester:
             profiler.start()
         test_dataloader = self.test_dataloader # change to dataloader
         # getting predictions
+        print("Model on device: ", self.device)
         self.model.to(self.device, non_blocking=self.non_blocking)  # put model on cpu or gpu
         # set model to evaluation mode
         self.model.eval()
@@ -809,8 +811,8 @@ class Tester:
             "boxes": torch.tensor(boxes, dtype=torch.float32),
             "labels": torch.tensor(labels, dtype=torch.int64),
         }
-        print(ground_truth)
-        print(len(ground_truth["boxes"]))
+        #print(ground_truth)
+        #print(len(ground_truth["boxes"]))
 
         # Some images have more than 1 ground truth, in that case only use that images AP for global
         if get_area:
