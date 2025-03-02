@@ -101,8 +101,11 @@ class PlotGraphs:
         PLOT_PATH.mkdir(parents=True, exist_ok=True)  # Make parent dir if it doesn't exist
         # Setting name using current date and time
         CURRENTDATEANDTIME = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')  # Format as YYYY-MM-DD_HH-MM-SS
-        filename = setTrainValues("plotJSON_fname")
-        PLOT_SAVE_PATH = PLOT_PATH / (filename + f".png") # just name it same as json who cares
+        if(setTrainValues("plotJSON_fname") == ""):
+            filename = setTrainValues("model_name")
+        else:
+            filename = setTrainValues("plotJSON_fname")
+        PLOT_SAVE_PATH = PLOT_PATH / (filename + f".png") # name plot same as json or model if blank
 
         # Saving plot to path
         print(f"Saving the plot to: {PLOT_SAVE_PATH}")
@@ -122,8 +125,13 @@ class PlotGraphs:
         model_name = setTrainValues("model_name")
         JSON_PATH = Path("savedModels/" + model_name)
         JSON_PATH.mkdir(parents=True, exist_ok=True)  # Make parent dir if it doesn't exist
-    
-        filename = setTrainValues("plotJSON_fname")
+
+        # if blank name it same as model name
+        if (setTrainValues("plotJSON_fname") == ""):
+            filename = setTrainValues("model_name")
+        else:
+            filename = setTrainValues("plotJSON_fname")
+
         file_dir = JSON_PATH / (filename + ".json")
         # save to json
         with open(file_dir, 'w') as f:

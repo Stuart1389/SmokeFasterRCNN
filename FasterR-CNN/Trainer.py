@@ -14,7 +14,7 @@ from datetime import datetime
 from TrainingSteps import train_step, validate_step
 from TrainingStepsKnowDistil import train_step_know_distil
 from Logger import Logger
-from GetValues import checkColab, setTrainValues, setGlobalValues
+from GetValues import checkColab, setTrainValues
 from SmokeModel import SmokeModel
 from PlotGraphs import PlotGraphs
 from datetime import timedelta

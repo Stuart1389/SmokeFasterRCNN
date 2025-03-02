@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch.utils.benchmark as benchmark
 import concurrent.futures
-from GetValues import checkColab, setTestValues, setGlobalValues
+from GetValues import checkColab, setTestValues
 from SmokeModel import SmokeModel
 from tabulate import tabulate
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
