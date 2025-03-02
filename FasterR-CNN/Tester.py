@@ -58,7 +58,7 @@ class Tester:
         #PLOT MAIN IMAGE
         self.draw_highest_only = False # only draw bbox with highest score on plot
         self.plot_image = False # plot images
-        self.save_plots = True # save plots to model folder/plots
+        self.save_plots = False # save plots to model folder/plots
         self.plot_ground_truth = False # whether to plot ground truth
         self.draw_no_true_positive_only = False # only plot images with no true positives
 
@@ -225,10 +225,7 @@ class Tester:
     def prune_model(self):
         """
         pruning in pytorch is very experimental, benefits are limited, most performance gains
-        are achieved through  libraries e.g. nvidia apex, tensort.
-        pytorch has articles on 2:4 sparsity but this isnt really applicable to conv
-        and has a bunch of constraints, based on what ive found during development
-        pruning can be quite good for vision transformers but isnt very beneficial for cnns
+        are achieved through libraries e.g. nvidia apex, tensort, etc but these require sparse cores
 
         _________________________________________
         list of conv layers in resnet 50 common to use middle layers, e.g. 3

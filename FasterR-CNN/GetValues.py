@@ -79,7 +79,7 @@ def setTrainValues(val_to_get):
 def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
-        "BATCH_SIZE": 4,
+        "BATCH_SIZE": 12,
         "dataset": "Large data", # "Small data" OR "Large data"
         "model_name": "transform_csj_a100", # name of model to test
         "test_on_val": False, # test on validation instead of test set
@@ -98,13 +98,13 @@ def setTestValues(val_to_get):
         "calibrate_full_set": False,
         "load_QAT_model": False,
 
-        "half_precission": False, # float 16
+        "half_precission": True, # float 16
 
         #Pruning
         "prune_model": False,
         "unstructured": False, # or unstructured, uses l1/l2 to minimize effects
         "prune_amount": 0.3,
-        "tensor_type": "csr",
+        "tensor_type": "csr", # coo or csr
 
         # Upscale
         "upscale_image": False,

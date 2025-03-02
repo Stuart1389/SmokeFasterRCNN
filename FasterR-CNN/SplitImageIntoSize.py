@@ -17,7 +17,7 @@ class SplitImage():
     def __init__(self, dataset_name):
         self.split_images = False
 
-        self.plot_no_large = False
+        self.plot_no_large = True
         self.outlier_remove = True
 
 
