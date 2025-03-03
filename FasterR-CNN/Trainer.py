@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from datetime import datetime
 from TrainingSteps import train_step, validate_step
-from TrainingStepsKnowDistil import train_step_know_distil
 from Logger import Logger
 from GetValues import checkColab, setTrainValues
 from SmokeModel import SmokeModel
@@ -21,7 +20,6 @@ from datetime import timedelta
 from tabulate import tabulate
 import wandb
 from torch.profiler import profile, schedule, tensorboard_trace_handler
-from AdaptStudentFeatures import AdaptFeatures
 from torch.amp import GradScaler, autocast
 from SmokeUtils import get_layers_to_fuse
 #from Tester import Tester
@@ -34,11 +32,9 @@ sys.path.append(relative_path)
 
 class Trainer:
     # Constructor
-    def __init__(self, model, train_dataloader, validate_dataloader, device, plot_train_loss=True, checkpoint = None, teacher=None, adaptive_model=None):
+    def __init__(self, model, train_dataloader, validate_dataloader, device, plot_train_loss=True, checkpoint = None):
         # initialising variables
         self.model = model
-        self.teacher_model = teacher
-        self.adaptive_model = adaptive_model
         self.train_dataloader = train_dataloader
         self.validate_dataloader = validate_dataloader
         self.device = device
@@ -196,15 +192,9 @@ class Trainer:
                 profiler.start()
             # TRAINING STEP
             with torch.profiler.record_function("TRAINING"):
-                if(self.know_distil):
-                    _, train_loss_it_dict, train_loss_dict, self.cur_train_iteration = train_step_know_distil(
-                        self.model, self.optimizer, self.train_dataloader, self.device, epoch, self.epochs,
-                        self.cur_train_iteration, print_freq=10, teacher=self.teacher_model, adaptive_model=self.adaptive_model
-                    )
-                else:
-                    _, train_loss_it_dict, train_loss_dict, self.cur_train_iteration = train_step(
-                        self.model, self.optimizer, self.train_dataloader, self.device, epoch, self.cur_train_iteration, print_freq=10, scaler=self.scalar
-                    )
+                _, train_loss_it_dict, train_loss_dict, self.cur_train_iteration = train_step(
+                    self.model, self.optimizer, self.train_dataloader, self.device, epoch, self.cur_train_iteration, print_freq=10, scaler=self.scalar
+                )
                 self.lr_scheduler.step()
 
             with torch.profiler.record_function("VALIDATING"):
@@ -405,31 +395,15 @@ def main():
     smoke_model = SmokeModel()
     # get dataloaders from model class
     train_dataloader, validate_dataloader, _ = smoke_model.get_dataloader() # don't need test dataloader
-    # get model from model class
-    get_student = setTrainValues("know_distil")
-    if (setTrainValues("know_distil")):
-        # getting teacher model for knowlege distil
-        teacher_model = smoke_model.get_model(get_teacher=True) # Getting teacher
-        teacher_model.to(device, non_blocking=non_blocking)
-        adaptive_model = AdaptFeatures()
-        adaptive_model.to(device, non_blocking=non_blocking)
-        print(adaptive_model)
-    # getting model to train
-    model, in_features, model.roi_heads.box_predictor = smoke_model.get_model(know_distil=get_student)
 
-    """
-    train_dataloader, validate_dataloader, _ = Model.getDataloader() # don't need test dataloader
-    # get model from model class
-    model, in_features, model.roi_heads.box_predictor = Model.getModel()
-    """
+    # getting model to train
+    model, in_features, model.roi_heads.box_predictor = smoke_model.get_model()
 
     model.to(device, non_blocking=non_blocking) # put model on gpu (or cpu :( )
 
-    # create instance of class
-    if(get_student):
-        trainer = Trainer(model, train_dataloader, validate_dataloader, device, teacher=teacher_model, adaptive_model=adaptive_model)
-    else:
-        trainer = Trainer(model, train_dataloader, validate_dataloader, device)
+
+    # create instance of trainer
+    trainer = Trainer(model, train_dataloader, validate_dataloader, device)
     # Start training loop
     trainer.train_loop()
 

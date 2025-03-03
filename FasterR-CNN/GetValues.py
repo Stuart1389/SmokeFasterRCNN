@@ -16,16 +16,12 @@ def setTrainValues(val_to_get):
         # temp resnet101_2080_101,
 
         # Default model settings
-        "mobilenet": True,
+        "mobilenet": False,
 
         # Model builder settings
         "alt_model": False,
         "alt_model_backbone": "resnet101", #resnet18, resnet34, resnet50, resnet101, etc
         "fpnv2": False, # Sets alternate model to use fpnv2
-
-        # Knowlege distillation, uses alt model
-        "know_distil": False,
-        "teacher_model_name": "transform_csj_a100",
 
         "load_hd5f" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
         "force_first_epoch" : False, #
@@ -79,7 +75,7 @@ def setTrainValues(val_to_get):
 def setTestValues(val_to_get):
     # Create dictionary with  values
     test_values = {
-        "BATCH_SIZE": 12,
+        "BATCH_SIZE": 8,
         "dataset": "Large data", # "Small data" OR "Large data"
         "model_name": "transform_csj_a100", # name of model to test
         "test_on_val": False, # test on validation instead of test set

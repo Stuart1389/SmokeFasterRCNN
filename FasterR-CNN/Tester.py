@@ -752,6 +752,7 @@ class Tester:
     # Function parse xml for ground truths (copied from Dataset class)
     # and get area of ground truth to assign each a size (small, medium, large)
     def parse_xml(self, annotation_path, get_area=False):
+        # set default scale values to 1, for default use
         upscale_value = 1
         scale_x, scale_y = 1, 1
         if(self.use_scale):

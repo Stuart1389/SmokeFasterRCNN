@@ -8,6 +8,9 @@ import cv2
 import numpy as np
 from GetValues import setTrainValues
 
+def parse_xml(annotation_path):
+    print("parse")
+
 # modified layer getter class to qork with quants
 class SmokeIntermediateLayerGetter(nn.ModuleDict):
     _version = 2

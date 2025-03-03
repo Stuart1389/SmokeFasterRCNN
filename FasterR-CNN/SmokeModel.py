@@ -27,16 +27,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from collections import OrderedDict
 
-
-
-"""
-def collate_fn(batch):
-    batch = [item for item in batch if item is not None]
-    inputs, targets = zip(*batch)
-    inputs = torch.stack(inputs)
-    return inputs, list(targets)
-"""
-
 def collate_fn(batch):
     batch = [item for item in batch if item is not None]
     return tuple(zip(*batch))
@@ -59,7 +49,6 @@ class SmokeModel:
 
         self.num_train_epochs = setTrainValues("EPOCHS")
 
-        self.load_path_teacher = Path("savedModels/" + setTrainValues("teacher_model_name"))
         self.load_path_train_checkpoint = Path("savedModels/" + setTrainValues("model_load_name"))
         self.load_path_test = Path("savedModels/" + setTestValues("model_name"))
         self.model_arch_path = model_arch_path = Path("savedModelsArch/")
@@ -71,10 +60,10 @@ class SmokeModel:
         self.load_qat_model = setTestValues("load_QAT_model")
         self.start_from_checkpoint = setTrainValues("start_from_checkpoint")
 
-    def get_model(self, testing=None, know_distil=None, get_teacher=None):
+    def get_model(self, testing=None):
         state_dict = None
         saved_dir = None
-        if(setTrainValues("alt_model") or know_distil and not self.force_default and not self.generate_weights):
+        if(setTrainValues("alt_model") and not self.force_default and not self.generate_weights):
             self.model_builder()
         elif(not self.generate_weights):
             self.model_default()
@@ -82,17 +71,14 @@ class SmokeModel:
             self.generate_fpnv2_weights()
 
         # loading model weights if necessary
-        if get_teacher:
-            saved_dir = Path(self.load_path_teacher) / f"{setTrainValues('teacher_model_name')}.pth"
-            print("Load teacher")
-        elif testing:
+        if testing:
             saved_dir = Path(self.load_path_test) / f"{setTestValues('model_name')}.pth"
             print("Load model for testing")
         elif self.start_from_checkpoint:
             print("Load from checkpoint")
             saved_dir = Path(self.load_path_train_checkpoint) / f"{setTrainValues('model_load_name')}.pth"
 
-        if testing and not self.load_qat_model or get_teacher:
+        if testing and not self.load_qat_model:
             state_dict = torch.load(saved_dir, weights_only=True)
             self.model.load_state_dict(state_dict)
             return self.model
@@ -461,14 +447,17 @@ class SmokeModel:
 
 # only run if this script is being run (not being called from other)
 if __name__ == '__main__':
+    """
+    #This just prints information about the default resnet-50 model to compare 
+    #with whatever other model is currently selected in cofig
     model = SmokeModel(force_default=True)
     model.main()
-    model.get_model(know_distil=False)
+    model.get_model()
     model.checkModel()
-
+    """
     print("\n-----------------------------------------------------\n")
 
     modelS = SmokeModel()
     modelS.main()
-    modelS.get_model(know_distil=True)
+    modelS.get_model()
     modelS.checkModel()
