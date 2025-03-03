@@ -8,7 +8,7 @@ from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision.transforms import functional as F
 from torchvision.models.vgg import vgg16, vgg16_bn, vgg19_bn
 import Dataset
-import DatasetHd5f
+import DatasetHdf5
 import time
 from EpochSampler import EpochSampler
 from GetValues import checkColab, setTrainValues, setTestValues
@@ -284,10 +284,10 @@ class SmokeModel:
 
         # Load datasets
         if(setTrainValues("load_hd5f") == True and not testing):
-            train_dir = DatasetHd5f.SmokeDatasetHd5f(str(dataset_hd5f_dir) + "/Train.hdf5")
+            train_dir = DatasetHd5f.SmokeDatasetHdf5(str(dataset_hd5f_dir) + "/Train.hdf5")
             num_train_epochs = self.num_train_epochs
             train_sampler = EpochSampler(train_dir, epochs=num_train_epochs)
-            val_dir = DatasetHd5f.SmokeDatasetHd5f(str(dataset_hd5f_dir) + "/Validate.hdf5")
+            val_dir = DatasetHd5f.SmokeDatasetHdf5(str(dataset_hd5f_dir) + "/Validate.hdf5")
             val_sampler = EpochSampler(val_dir, epochs=num_train_epochs)
         else:
             train_dir = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_train)

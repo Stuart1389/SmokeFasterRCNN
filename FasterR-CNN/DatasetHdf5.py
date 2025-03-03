@@ -9,7 +9,7 @@ import albumentations as A
 from EpochSampler import EpochSampler
 from albumentations.pytorch import ToTensorV2
 
-class SmokeDatasetHd5f(torch.utils.data.Dataset):
+class SmokeDatasetHdf5(torch.utils.data.Dataset):
     def __init__(self, file_path):
         self.file_path = file_path
         self.epochs = setTrainValues("EPOCHS")
@@ -84,7 +84,7 @@ if __name__ == '__main__':
 
 
     # Load datasets
-    debug_dir = SmokeDatasetHd5f(str(write_train_path))
+    debug_dir = SmokeDatasetHdf5(str(write_train_path))
     debug_sampler = EpochSampler(debug_dir, epochs=epochs)
     debug_dataloader = DataLoader(
         dataset=debug_dir,

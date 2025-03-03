@@ -6,6 +6,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 import matplotlib.pyplot as plt
 from GetValues import checkColab
+from SmokeUtils import extract_boxes
 
 # !!Checking bounding box and dataset!!
 # checking dataset before implementing torch dataset
@@ -47,6 +48,8 @@ tree = ET.parse(get_randy_annotation)
 root = tree.getroot()
 
 # Draw the bounding boxes
+# This doesn't use the shared SmokeUtils extract_bbox
+# because this is meant to be a simple check, better to leave it as this simple parse
 draw = ImageDraw.Draw(img)
 for obj in root.findall('object'):
     bndbox = obj.find('bndbox')

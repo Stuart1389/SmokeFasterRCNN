@@ -9,6 +9,7 @@ import cv2
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import matplotlib.pyplot as plt
+from SmokeUtils import extract_boxes
 from torchvision.transforms import transforms
 from GetValues import checkColab, setTrainValues
 from torch.utils.data import Dataset
@@ -89,9 +90,10 @@ class smokeDataset(torch.utils.data.Dataset):
     # Constructor END
 
   def parse_xml(self, annotation_path, testing = False):
-      upscale_value = 1
       if(setTrainValues("upscale_image") or setTrainValues("upscale_bbox")):
           upscale_value = setTrainValues("upscale_value")
+      else:
+          upscale_value = 1
       # Parsing xml files for each image to find bbox
       tree = ET.parse(annotation_path)
       root = tree.getroot()
@@ -145,7 +147,12 @@ class smokeDataset(torch.utils.data.Dataset):
             sys.exit(1)
         #print(f"Image dtype: {image.dtype}")
         #Parse data and return to instance
-        boxes, labels, labels_int = self.parse_xml(annotation_path)
+        #boxes, labels, labels_int = self.parse_xml(annotation_path)
+        if (setTrainValues("upscale_image") or setTrainValues("upscale_bbox")):
+            upscale_value = setTrainValues("upscale_value")
+        else:
+            upscale_value = None
+        boxes, _, labels_int, labels = extract_boxes(annotation_path, upscale_value=upscale_value)
         #boxes, labels = self.parse_xml(annotation_path)
         #boxes = self.parse_xml(annotation_path)
     else:

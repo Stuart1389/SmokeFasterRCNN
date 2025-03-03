@@ -6,10 +6,60 @@ import torch.ao.quantization as quantization
 import matplotlib.pyplot as plt
 import cv2
 import numpy as np
-from GetValues import setTrainValues
+from GetValues import setTrainValues, setTestValues
+import xml.etree.ElementTree as ET
 
-def parse_xml(annotation_path):
-    print("parse")
+def extract_boxes(annotation_path, get_area = False, upscale_value = None, scale_width = None, scale_height = None):
+    # set default scale values to 1, for default use
+    upscale_value = 1
+    scale_x, scale_y = 1, 1
+
+    tree = ET.parse(annotation_path)
+    root = tree.getroot()
+
+    boxes = []
+    areas = []
+
+    size = root.find("size")
+    image_height = float(size.find("height").text)
+    image_width = float(size.find("width").text)
+
+    for obj in root.findall("object"):
+        xml_box = obj.find("bndbox")
+        # print("xml_box", xml_box)
+
+        if (scale_height != None and scale_width != None):
+            scale_x = scale_width / image_width
+            scale_y = scale_height / image_height
+
+        xmin = float(xml_box.find("xmin").text) * upscale_value * scale_x
+        ymin = float(xml_box.find("ymin").text) * upscale_value * scale_y
+        xmax = float(xml_box.find("xmax").text) * upscale_value * scale_x
+        ymax = float(xml_box.find("ymax").text) * upscale_value * scale_y
+
+        if xmin >= xmax or ymin >= ymax:
+            print(f"Invalid area/box coordinates: ({xmin}, {ymin}), ({xmax}, {ymax})")
+
+        boxes.append([xmin, ymin, xmax, ymax])
+        area = (xmax - xmin) * (ymax - ymin)  # get area of ground truth
+        if (get_area):
+            areas.append(area)
+
+    # extract labels
+    labels = [] # label names e.g. smoke
+    labels_int = [] # label class int e.g. 1
+    # Parsing XML file for each image to find bounding boxes
+    class_to_idx = {"smoke": 1}  # dictionary, if "smoke" return 1, alter for whatever targets are being used
+    for obj in root.findall("object"):
+        label = obj.find("name").text  # find name in xml
+        bbox_c = obj.find("bndbox")  # check if bbox exists
+
+        if (bbox_c is not None):
+            labels.append(label)
+            labels_int.append(class_to_idx.get(label, 0))  # 0 if the class isn't found in dictionary
+
+
+    return boxes, areas, labels_int, labels
 
 # modified layer getter class to qork with quants
 class SmokeIntermediateLayerGetter(nn.ModuleDict):

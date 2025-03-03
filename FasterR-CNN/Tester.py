@@ -20,7 +20,7 @@ from torchvision.transforms import v2 as T
 from torchvision.utils import draw_bounding_boxes
 import torch.ao.quantization as quantization
 import numpy as np
-from SmokeUtils import get_layers_to_fuse
+from SmokeUtils import get_layers_to_fuse, extract_boxes
 from torch.nn.utils import prune
 from torch.ao.pruning import WeightNormSparsifier
 from torch.sparse import to_sparse_semi_structured, SparseSemiStructuredTensor
@@ -752,62 +752,21 @@ class Tester:
     # Function parse xml for ground truths (copied from Dataset class)
     # and get area of ground truth to assign each a size (small, medium, large)
     def parse_xml(self, annotation_path, get_area=False):
-        # set default scale values to 1, for default use
-        upscale_value = 1
-        scale_x, scale_y = 1, 1
         if(self.use_scale):
             scale_y = self.scale_height
             scale_x = self.scale_width
         if(setTestValues("upscale_image")):
             # bring ground truth in line with upscaled image
             upscale_value = setTestValues("upscale_value")
-        # Parsing XML file for each image to find bounding boxes
-        tree = ET.parse(annotation_path)
-        root = tree.getroot()
-        # Extract bounding boxes
-        boxes = []
-        areas = []
-        size = root.find("size")
-        image_height = float(size.find("height").text)
-        image_width = float(size.find("width").text)
-        for obj in root.findall("object"):
-            xml_box = obj.find("bndbox")
-            #print("xml_box", xml_box)
+        else:
+            upscale_value = None
 
-
-            if(self.scale_height != None and self.scale_width != None):
-                scale_x = self.scale_width / image_width
-                scale_y = self.scale_height / image_height
-
-            xmin = float(xml_box.find("xmin").text) * upscale_value * scale_x
-            ymin = float(xml_box.find("ymin").text) * upscale_value * scale_y
-            xmax = float(xml_box.find("xmax").text) * upscale_value * scale_x
-            ymax = float(xml_box.find("ymax").text) * upscale_value * scale_y
-
-            if xmin >= xmax or ymin >= ymax:
-                print(f"Invalid area/box coordinates: ({xmin}, {ymin}), ({xmax}, {ymax})")
-
-            boxes.append([xmin, ymin, xmax, ymax])
-            area = (xmax - xmin) * (ymax - ymin) # get area of ground truth
-            if (get_area):
-                areas.append(area)
-
-        # Extract labels
-        labels = []
-        class_to_idx = {"smoke": 1}  # dictionary, if "smoke" return 1
-        filename = root.find("filename").text
-        #print("Filename:", filename) # for debugging
-        for obj in root.findall("object"):
-            label = obj.find("name").text  # find name in xml
-            bbox_c = obj.find("bndbox") # check if bbox exists
-
-            if(bbox_c is not None):
-                labels.append(class_to_idx.get(label, 0))  # 0 if the class isn't found in dictionary
-
+        boxes, areas, labels_int, _ = (
+            extract_boxes(annotation_path, get_area, upscale_value, self.scale_width, self.scale_height))
         # Convert boxes and labels to tensors for torchmetrics
         ground_truth = {
             "boxes": torch.tensor(boxes, dtype=torch.float32),
-            "labels": torch.tensor(labels, dtype=torch.int64),
+            "labels": torch.tensor(labels_int, dtype=torch.int64),
         }
         #print(ground_truth)
         #print(len(ground_truth["boxes"]))

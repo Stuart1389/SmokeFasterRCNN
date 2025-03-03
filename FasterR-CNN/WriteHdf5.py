@@ -6,7 +6,7 @@ import numpy as np
 import time
 import gzip
 
-class WriteHd5f:
+class WriteHdf5:
     def __init__(self):
         self.batch_size = setTrainValues("BATCH_SIZE")
         self.epochs = setTrainValues("EPOCHS")
@@ -117,7 +117,7 @@ class WriteHd5f:
 
 if __name__ == '__main__':
     start_time = time.time()
-    write_h5py = WriteHd5f()
+    write_h5py = WriteHdf5()
     end_time = time.time()
 
     elapsed_time = end_time - start_time
