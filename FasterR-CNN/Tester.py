@@ -66,6 +66,7 @@ class Tester:
         self.plot_split_images = False # if using partitioned/split images, whether to display each split
         self.save_split_image_plots = False
         self.combine_bboxes = False # merge touching bbox predictions when splitting image
+        self.merge_tolerance = 4
 
         # RESIZE / SCALE GROUND TRUTH
         self.use_scale = False
@@ -230,6 +231,9 @@ class Tester:
         _________________________________________
         list of conv layers in resnet 50 common to use middle layers, e.g. 3
         conv layers dont benefit much from current sparsity implementations unfortunately
+
+        This is to highlight that there is no speedup with conv, however using coo/csr with linear, etc
+        could result in small speedups
         """
         #print(self.model.backbone.body)
         layers_to_prune = [
@@ -516,7 +520,8 @@ class Tester:
             else:
                 return  outputs
 
-    def merge_touching_boxes(self, temp_combined, tolerance=2):
+    def merge_touching_boxes(self, temp_combined):
+        tolerance = self.merge_tolerance
         boxes, labels, scores = temp_combined['boxes'], temp_combined['labels'], temp_combined['scores']
         # bool indexing to get bboxes with score higher than threshold
         score_thresh = scores > self.confidence_threshold

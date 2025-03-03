@@ -4,31 +4,31 @@ import random
 from GetValues import checkColab
 
 base_dir = checkColab()
+dataset_name = "Example dataset structure" # see README
+# split ratios e.g. (70/15/15)
+train_split = 0.7
+val_split = 0.15
+test_split = 0.15
 
 # Main dir, keep dataset intact
-main_dir = os.path.join(base_dir, "Dataset", "Cloud", "Main")
+main_dir = os.path.join(base_dir, "Dataset", dataset_name, "Main")
 main_annot = os.path.join(main_dir, "annotations", "xmls")
 main_image = os.path.join(main_dir, "images")
 
 # Train dir
-train_dir = os.path.join(base_dir, "Dataset", "Cloud", "Train")
+train_dir = os.path.join(base_dir, "Dataset", dataset_name, "Train")
 train_annot = os.path.join(train_dir, "annotations", "xmls")
 train_image = os.path.join(train_dir, "images")
 
 # Validate dir
-val_dir = os.path.join(base_dir, "Dataset", "Cloud", "Validate")
+val_dir = os.path.join(base_dir, "Dataset", dataset_name, "Validate")
 val_annot = os.path.join(val_dir, "annotations", "xmls")
 val_image = os.path.join(val_dir, "images")
 
 # Test dir
-test_dir = os.path.join(base_dir, "Dataset", "Cloud", "Test")
+test_dir = os.path.join(base_dir, "Dataset", dataset_name, "Test")
 test_annot = os.path.join(test_dir, "annotations", "xmls")
 test_image = os.path.join(test_dir, "images")
-
-# split ratios (70/15/15)
-train_split = 0.4
-val_split = 0
-test_split = 0
 
 # function deletes files from dir
 def clear_directory(directory):
@@ -70,6 +70,7 @@ def train_test_split(split_annotations=False):
         os.makedirs(train_annot, exist_ok=True)
         os.makedirs(val_annot, exist_ok=True)
         os.makedirs(test_annot, exist_ok=True)
+        print(annotations)
     else:
         dataset = list(zip(images))
         print(dataset)
@@ -95,12 +96,14 @@ def train_test_split(split_annotations=False):
 
 
     if(split_annotations):
+        print("Copying images")
         #copy files to dirs
         copy_files(train_dataset, train_image, train_annot)
         copy_files(val_dataset, val_image, val_annot)
         copy_files(test_dataset, test_image, test_annot)
     else:
         #copy files to dirs
+        print("Copying annotations")
         copy_images(train_dataset, train_image)
         copy_images(val_dataset, val_image)
         copy_images(test_dataset, test_image)
@@ -112,3 +115,4 @@ def train_test_split(split_annotations=False):
 
 
 train_test_split()
+train_test_split(True)

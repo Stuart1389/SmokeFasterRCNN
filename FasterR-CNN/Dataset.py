@@ -57,6 +57,14 @@ transform_test = A.Compose([
     ToTensorV2()
 ])
 
+# this is used by utility files
+# e.g. SmokeUpscale.py
+# its only here to keep transforms for utility seperate
+# from split transforms
+transform_utility = A.Compose([
+    ToTensorV2()
+])
+
 
 # !!CREATING DATASET!!
 #Setting basedir for dataset
@@ -65,7 +73,7 @@ dataset_dir = Path(f"{base_dir}/Dataset/" + setTrainValues("dataset"))
 
 class smokeDataset(torch.utils.data.Dataset):
   # Constructor, setting instanced variables
-  def __init__(self, main_dir: str, transform=None, testing = False):
+  def __init__(self, main_dir: str, transform=None, testing = False, using_upscale_util = False):
     self.main_dir = main_dir
     if(testing):
         self.images = list(Path(str(main_dir) + "/images/").glob("*.jpeg")) # set to list of all images
@@ -82,50 +90,8 @@ class smokeDataset(torch.utils.data.Dataset):
     #self.loaded_images = [np.array(Image.open(img_path)) for img_path in self.images]
     self.transform = transform
     self.testing = testing
-    self.return_filenames = setTrainValues("return_filenames")
+    self.return_filenames = using_upscale_util
     self.empty_image = None
-
-
-
-    # Constructor END
-
-  def parse_xml(self, annotation_path, testing = False):
-      if(setTrainValues("upscale_image") or setTrainValues("upscale_bbox")):
-          upscale_value = setTrainValues("upscale_value")
-      else:
-          upscale_value = 1
-      # Parsing xml files for each image to find bbox
-      tree = ET.parse(annotation_path)
-      root = tree.getroot()
-
-      # getting bounding boxes from xml file
-      boxes = []
-      areas = []
-      for obj in root.findall("object"):
-          xml_box = obj.find("bndbox")
-          xmin = float(xml_box.find("xmin").text) * upscale_value
-          ymin = float(xml_box.find("ymin").text) * upscale_value
-          xmax = float(xml_box.find("xmax").text) * upscale_value
-          ymax = float(xml_box.find("ymax").text) * upscale_value
-          boxes.append([xmin, ymin, xmax, ymax])
-
-      #Dataset has only background and smoke
-      labels = [] # label name aka "smoke"
-      labels_int = [] #label id aka 1
-      class_to_idx = {"smoke": 1} # dictionary if "smoke" return 1
-      for obj in root.findall("object"):
-          label = obj.find("name").text # find name in xml
-          labels.append(label)
-          labels_int.append(class_to_idx[label])
-          #boxes.append(class_to_idx[label])
-          #boxes.append(label)
-
-      #boxes.append([xmin, ymin, xmax, ymax, label])
-
-      #print(f"Boxes: {boxes}")
-      #print(f"labels: {label}")
-      #print(f"Labels: {labels}, Labels_int {labels_int}")
-      return boxes, labels, labels_int
 
 
   def __len__(self):
@@ -153,8 +119,6 @@ class smokeDataset(torch.utils.data.Dataset):
         else:
             upscale_value = None
         boxes, _, labels_int, labels = extract_boxes(annotation_path, upscale_value=upscale_value)
-        #boxes, labels = self.parse_xml(annotation_path)
-        #boxes = self.parse_xml(annotation_path)
     else:
         self.empty_image = True
         boxes = []
@@ -227,20 +191,14 @@ class smokeDataset(torch.utils.data.Dataset):
         """
         return image, target
     if(self.return_filenames):
-        self.transform = transform_test
+        self.transform = transform_utility
         transformed = self.transform(image=image)
         image_tensor = transformed['image']
         return image_tensor, filename
 
     if (self.transform and self.testing):
-        #transformed_bboxes = transformed['bboxes']
-        #transformed_bboxes = torch.tensor(transformed_bboxes, dtype=torch.float32)
-
-
         transformed = self.transform(image=image)
         image_tensor = transformed['image']
-        #print(image.dtype)
-        #print(image.shape)
         return image_tensor, filename
 
 
@@ -284,7 +242,7 @@ if __name__ == '__main__':
 
     # Function to display bbox over image
     def visualize_bbox_pascal_voc(img, bbox, class_name, color=BOX_COLOR, thickness=2):
-        bbox_text = "Ground truth"
+        bbox_text = class_name + " Ground truth"
        # drawing bbox over image
         x_min, y_min, x_max, y_max = bbox
         x_min, x_max, y_min, y_max = int(x_min), int(x_max), int(y_min), int(y_max)
@@ -295,7 +253,7 @@ if __name__ == '__main__':
         cv2.rectangle(img, (x_min, y_min - int(1.3 * text_height)), (x_min + text_width, y_min), BOX_COLOR, -1)
         cv2.putText(
             img,
-            text=bbox_text, # can change this to class_name if you have multiple classes
+            text=bbox_text,
             org=(x_min, y_min - int(0.3 * text_height)),
             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
             fontScale=0.35,
@@ -346,7 +304,7 @@ if __name__ == '__main__':
     image, target = train_test.__getitem__(1) # get image and annotation at index 1
     bbox = target["boxes"]
     #label = target["labels"] cba
-    label = "smoke"
+    label = "Target"
     visualize(image, bbox, label, 0)
 
 
@@ -356,5 +314,5 @@ if __name__ == '__main__':
     image, target = test_test.__getitem__(1) # get image and annotation at index 1
     bbox = target["boxes"]
     #label = target["labels"]
-    label = "smoke"
+    label = "Target"
     visualize(image, bbox, label, 1)

@@ -14,7 +14,7 @@ class SmokeUpscale:
     def __init__(self):
         self.batch_size = setTrainValues("BATCH_SIZE")
         self.epochs = setTrainValues("EPOCHS")
-        self.smoke_model = SmokeModel()
+        self.smoke_model = SmokeModel(using_upscale_util = True)
         self.train_dataloader, self.validate_dataloader, _ = self.smoke_model.get_dataloader()
         self.upscale_model = PanModel.from_pretrained('eugenesiow/pan-bam', scale=setTrainValues("upscale_value"))
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -41,13 +41,13 @@ class SmokeUpscale:
 
 
     def upscale_loop(self):
-        """
+
         for batch, (image_tensors, filenames) in enumerate(self.train_dataloader):
             print(f"Processing batch: {batch} of {len(self.train_dataloader)}")
             upscaled_images = self.upscale_images(image_tensors)
             for tensor, filename in zip(upscaled_images, filenames):
                 self.save_upscaled_images(tensor, filename, self.train_dir)
-        """
+
 
         for batch, (image_tensors, filenames) in enumerate(self.validate_dataloader):
             print(f"Processing batch: {batch} of {len(self.validate_dataloader)}")
@@ -59,19 +59,3 @@ class SmokeUpscale:
 if __name__ == '__main__':
     smoke_upcale = SmokeUpscale()
     smoke_upcale.upscale_loop()
-"""
-image_path = Path("N:\\University subjects\\Thesis\\Python projects\\SmokeFasterRCNN\\Dataset\\Small data\\Train\\images\\ckagzh7gxonuc0841rdaell0k.jpeg")
-image = Image.open(image_path)
-
-model = PanModel.from_pretrained('eugenesiow/pan-bam', scale=2)
-model.to("cuda")
-inputs = ImageLoader.load_image(image)
-print(inputs.shape)
-preds = model(inputs.to("cuda")).to("cuda")
-print(preds)
-
-
-ImageLoader.save_image(preds, './scaled_2x.png')
-ImageLoader.save_compare(inputs, preds, './scaled_2x_compare.png')
-
-"""

@@ -11,7 +11,7 @@ import Dataset
 import DatasetHdf5
 import time
 from EpochSampler import EpochSampler
-from GetValues import checkColab, setTrainValues, setTestValues
+from GetValues import checkColab, setTrainValues, setTestValues, setGlobalValues
 from torch.profiler import profile, record_function, ProfilerActivity
 from torchvision.models.detection.backbone_utils import resnet_fpn_backbone, BackboneWithFPN, mobilenet_backbone
 from torchvision.models.detection import FasterRCNN
@@ -34,7 +34,7 @@ def collate_fn(batch):
 
 class SmokeModel:
     # constructor
-    def __init__(self, force_default=None):
+    def __init__(self, force_default=None, using_upscale_util=False):
         """
         Example anchor sizes, leave as none for defaults
         # fpn takes 1 tuple per feature map
@@ -47,7 +47,7 @@ class SmokeModel:
         """
 
         self.base_dir = checkColab() # get colab or local dirs
-        self.num_classes = 2  # Smoke + background = 2
+        self.num_classes = setGlobalValues("NUM_CLASSES")
         # initializing variables
         self.model = None
         self.model_backbone = setTrainValues("resnet_backbone")
@@ -70,6 +70,7 @@ class SmokeModel:
         self.generate_weights = False
         self.load_qat_model = setTestValues("load_QAT_model")
         self.start_from_checkpoint = setTrainValues("start_from_checkpoint")
+        self.using_upscale_util = using_upscale_util
 
 
     def get_model(self, testing=None):
@@ -253,23 +254,26 @@ class SmokeModel:
 
         pinned_train = setTrainValues("pinned_memory")
         pinned_test = setTestValues("pinned_memory")
-
         # Load datasets
         if(setTrainValues("load_hdf5") == True and not testing):
+            if(self.using_upscale_util):
+                raise ValueError(f"Current util pre-upscale image file currently only works with default "
+                                 f"dataset because hdf5 dataset doesnt return filename."
+                                 f"This should be an easy to implement later")
             train_dir = DatasetHdf5.SmokeDatasetHdf5(str(dataset_hdf5_dir) + "/Train.hdf5")
             num_train_epochs = self.num_train_epochs
             train_sampler = EpochSampler(train_dir, epochs=num_train_epochs)
             val_dir = DatasetHdf5.SmokeDatasetHdf5(str(dataset_hdf5_dir) + "/Validate.hdf5")
             val_sampler = EpochSampler(val_dir, epochs=num_train_epochs)
         else:
-            train_dir = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_train)
-            val_dir = Dataset.smokeDataset(str(dataset_dir) + "/Validate", Dataset.transform_validate)
+            train_dir = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_train, using_upscale_util = self.using_upscale_util)
+            val_dir = Dataset.smokeDataset(str(dataset_dir) + "/Validate", Dataset.transform_validate, using_upscale_util = self.using_upscale_util)
             train_sampler = None
             val_sampler = None
         if(setTestValues("test_on_val")):
             test_dir = Dataset.smokeDataset(str(test_dataset_dir) + "/Validate", Dataset.transform_test, True)
         else:
-            test_dir = Dataset.smokeDataset(str(test_dataset_dir) + "/Test", Dataset.transform_test, True)
+            test_dir = Dataset.smokeDataset(str(test_dataset_dir) + "/Test", Dataset.transform_test, True, using_upscale_util = self.using_upscale_util)
 
         # Create dataloaders to iterate over dataset (batching)
         self.train_dataloader = DataLoader(

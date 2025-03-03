@@ -1,19 +1,27 @@
 import os
 import torch
-# using this file to quickly change values
+# CONFIGURATION FILE, used to set values throughout the pipeline
+def setGlobalValues(val_to_get):
+    global_values = {
+        "NUM_CLASSES": 2, # number of targets, E.g. background + smoke = 2
+        "CLASS_INDEX_DICTIONARY": {"smoke": 1}, # each target must have an id, e.g. smoke = 1, fire = 2, etc
+    }
+
+    return global_values.get(val_to_get, None)
+
 
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 2,
+        # Basic train settings
+        "BATCH_SIZE": 1,
         "EPOCHS": 1,
         "PATIENCE": 3,
-        "dataset": "Large data", # Name of dataset to use
+        "dataset": "Small data", # Name of dataset to use
         "model_name": "test_file", # Names model, including directory, weights, etc
         "plotJSON_fname": "", # json and manual plot filename, leave black to make same as model
-        "model_id": "39B",
-        "save_at_end" : False,
-        # temp resnet101_2080_101,
+        "model_id": "39B", # model is is used for W&B runs only: id_modelname
+        "save_at_end" : False, # forces the model to save at end of training, ignoring validation
 
         # Backbone model settings
         # available backbones to use:
@@ -27,18 +35,24 @@ def setTrainValues(val_to_get):
         "resnet_backbone": "resnet101", #resnet18, resnet34, resnet50, resnet101, etc
         "fpnv2": False, # Sets alternate model to use fpnv2
 
-        "load_hdf5" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
-        "force_first_epoch" : False, #
-        "h5py_dir_save_name": "test_file", # file name for h5py file
-        "h5py_dir_load_name": "test_file", #large_15_no_transform, transform_csj, large_1_transform, test_file
+
+        # HDF5 settings. TO create HDF5 file use WriteHdf5.py
+        # NOTE WriteHdf5.py uses dataloader to write, so if this is enabled when writing
+        # hdf5 will be used to write instead of the default dataset
+        "load_hdf5" : False,
+        "force_first_epoch" : False, # forces hdf5 to repeat the first epoch for all training epochs
+        "h5py_dir_save_name": "test_file", # file name for hdf5 file when written
+        "h5py_dir_load_name": "test_file", # file name hdf5 file to load
+        #large_15_no_transform, transform_csj, large_1_transform, test_file
         # transform_csj_3_def, transform_csj_3_100, transform_csj_3_1, transform_csj_c_20
 
         # PROFILER
         "start_profiler" : False,
         "record_trace" : False,
+        # Enables or disabled W&B logging
         "logWB" : False,
 
-        # PARAMETERS
+        # TRAINING HYPERPARAMETERS
         "learning_rate": 0.001,
         "momentum": 0.9,
         "weight_decay": 0.0005,
@@ -53,6 +67,8 @@ def setTrainValues(val_to_get):
 
         # QUANT
         "quant_aware_training": False,
+
+        # Load previously trained model to continue training
         "start_from_checkpoint": False,
         "model_load_name": "transform_csj_a100",
 
@@ -60,13 +76,9 @@ def setTrainValues(val_to_get):
         "upscale_image": False,
         # only needed when using previously upscaled images with original bbox
         "upscale_bbox": False,
-        "upscale_value": 2,
+        "upscale_value": 4,
         # SmokeUpscale can be used to upscale images before training
-        "upscale_dataset_save_name": "Large data upscale",
-
-        # Misc
-        #e.g. when using dataloader to upscale and filenames are needed
-        "return_filenames": True,
+        "upscale_dataset_save_name": "Example upscale",
 
         "plot_feature_maps": False,
         # start testing straight after training
@@ -84,6 +96,8 @@ def setTestValues(val_to_get):
         "model_name": "transform_csj_a100", # name of model to test
         "test_on_val": False, # test on validation instead of test set
 
+        "CPU_inference": False,  # force cpu inference even if cuda is available
+
         # PROFILER
         "start_profiler": False,
         "record_trace": False,
@@ -94,8 +108,7 @@ def setTestValues(val_to_get):
 
         # Quants, only enable if testing
         "static_quant": False,
-        "CPU_inference": False, # force cpu inference even if cuda is available
-        "calibrate_full_set": False,
+        "calibrate_full_set": False, # calibrate on full dataset rather than 1 image
         "load_QAT_model": False,
 
         "half_precission": True, # float 16

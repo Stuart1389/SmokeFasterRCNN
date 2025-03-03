@@ -6,7 +6,7 @@ import torch.ao.quantization as quantization
 import matplotlib.pyplot as plt
 import cv2
 import numpy as np
-from GetValues import setTrainValues, setTestValues
+from GetValues import setTrainValues, setTestValues, setGlobalValues
 import xml.etree.ElementTree as ET
 
 def extract_boxes(annotation_path, get_area = False, upscale_value = None, scale_width = None, scale_height = None):
@@ -49,7 +49,7 @@ def extract_boxes(annotation_path, get_area = False, upscale_value = None, scale
     labels = [] # label names e.g. smoke
     labels_int = [] # label class int e.g. 1
     # Parsing XML file for each image to find bounding boxes
-    class_to_idx = {"smoke": 1}  # dictionary, if "smoke" return 1, alter for whatever targets are being used
+    class_to_idx = setGlobalValues("CLASS_INDEX_DICTIONARY") # set in config
     for obj in root.findall("object"):
         label = obj.find("name").text  # find name in xml
         bbox_c = obj.find("bndbox")  # check if bbox exists

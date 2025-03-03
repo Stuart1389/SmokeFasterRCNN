@@ -25,3 +25,15 @@ node_modules/
 *.log
 *.tmp
 /FasterR-CNN/savedModels/
+/FasterR-CNN/log_with_pin/
+/FasterR-CNN/log_no_pin/
+/FasterR-CNN/blob_storage/
+/FasterR-CNN/.cache/
+/FasterR-CNN/wandb/
+/FasterR-CNN/test_image/
+/FasterR-CNN/webrtc_event_logs/
+/share/
+/Misc/
+/Scripts/
+/share/
+/Scripts/
