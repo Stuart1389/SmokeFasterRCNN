@@ -149,3 +149,20 @@ def get_layers_to_fuse(module_names):
 
     #print(layers_to_fuse)
     return layers_to_fuse
+
+def get_layers_to_prune():
+    # these are the layers used during pruning
+    # different backbones have different layers
+    # change based on backbone used
+    layers_to_prune = [
+        self.model.backbone.body.layer3[0].conv1,
+        self.model.backbone.body.layer3[0].conv2,
+        self.model.backbone.body.layer3[0].conv3,
+        self.model.backbone.body.layer3[1].conv1,
+        self.model.backbone.body.layer3[1].conv2,
+        self.model.backbone.body.layer3[1].conv3,
+        self.model.backbone.body.layer3[2].conv1,
+        self.model.backbone.body.layer3[2].conv2,
+        self.model.backbone.body.layer3[2].conv3,
+    ]
+    return layers_to_prune

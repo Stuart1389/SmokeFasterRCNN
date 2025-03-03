@@ -20,7 +20,7 @@ from torchvision.transforms import v2 as T
 from torchvision.utils import draw_bounding_boxes
 import torch.ao.quantization as quantization
 import numpy as np
-from SmokeUtils import get_layers_to_fuse, extract_boxes
+from SmokeUtils import get_layers_to_fuse, extract_boxes, get_layers_to_prune
 from torch.nn.utils import prune
 from torch.ao.pruning import WeightNormSparsifier
 from torch.sparse import to_sparse_semi_structured, SparseSemiStructuredTensor
@@ -236,18 +236,7 @@ class Tester:
         could result in small speedups
         """
         #print(self.model.backbone.body)
-        layers_to_prune = [
-            self.model.backbone.body.layer3[0].conv1,
-            self.model.backbone.body.layer3[0].conv2,
-            self.model.backbone.body.layer3[0].conv3,
-            self.model.backbone.body.layer3[1].conv1,
-            self.model.backbone.body.layer3[1].conv2,
-            self.model.backbone.body.layer3[1].conv3,
-            self.model.backbone.body.layer3[2].conv1,
-            self.model.backbone.body.layer3[2].conv2,
-            self.model.backbone.body.layer3[2].conv3,
-        ]
-
+        layers_to_prune = get_layers_to_prune()
         tensor_type = setTestValues("tensor_type")
         prune_amount = setTestValues("prune_amount")
 

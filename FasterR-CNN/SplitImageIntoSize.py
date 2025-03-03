@@ -7,15 +7,14 @@ import torch
 import numpy as np
 import shutil
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 
 class SplitImage():
     """
     Running this file will split images in a dataset to small, medium and large
 
     """
-    def __init__(self, dataset_name):
-        self.split_images = False
+    def __init__(self):
+        self.split_images = True
 
         self.plot_no_large = True
         self.outlier_remove = True
@@ -38,6 +37,7 @@ class SplitImage():
         }
 
         self.base_dir = checkColab()
+        dataset_name = "Example dataset structure"  # see README
         self.main_dir = Path(self.base_dir) / "Dataset" / dataset_name
         self.train_path = self.main_dir / "Train"
         self.val_path = self.main_dir / "Validate"
@@ -276,4 +276,4 @@ class SplitImage():
 
 
 if __name__ == '__main__':
-    split_image = SplitImage("Large data")
+    split_image = SplitImage()

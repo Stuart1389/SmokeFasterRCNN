@@ -170,7 +170,10 @@ Enable amp_mixed_precission within GetValues.py within training settings
 </p>
 <h3> Pruning </h3>
 <p> 
-Enable pruning within testing setting of GetValues.py and test as normal
+Enable pruning within testing setting of GetValues.py <br>
+If not using default or resnet_builder backbones (see GetValues.py) <br>
+In SmokeUtils.py alter get_layers_to_prune, adding layers to prune based on the backbone used <br>
+Pruning strategy can be aletered further, see prune_model method in Tester.py
 </p>
 <h3> AI upscaling </h3>
 <p> 
@@ -241,3 +244,75 @@ Once the file has been created, enable load_hdf5 in GetValues.py, make sure the 
 Enable pinned/non-blocking in GetValues.py for training or testing <br>
 Its recommended to use both simultaneously instead of individually
 </p>
+
+<h3> Splitting images based on ground truth area </h3>
+<p>
+SplitImageIntoSize can be used to split images based on gt area. <br>
+Takes the following dataset structure: 
+</p>
+
+```bash
+├───Example dataset structure
+│   ├───Main
+│   │   ├───annotations
+│   │   │   └───xmls
+│   │   └───images
+│   ├───Test
+│   │   ├───annotations
+│   │   │   └───xmls
+│   │   └───images
+│   ├───Train
+│   │   ├───annotations
+│   │   │   └───xmls
+│   │   └───images
+│   └───Validate
+│       ├───annotations
+│       │   └───xmls
+│       └───images
+
+```
+
+<p>
+It then categorises images by size in each split. This could probably be improved in the future <br>
+</p>
+
+```bash
+├───Example dataset structure
+│   ├───Test
+│   │   ├───annotations
+│   │   │   └───xmls
+│   │   │       ├───large
+│   │   │       ├───medium
+│   │   │       ├───none
+│   │   │       └───small
+│   │   └───images
+│   │       ├───large
+│   │       ├───medium
+│   │       ├───none
+│   │       └───small
+│   ├───Train
+│   │   ├───annotations
+│   │   │   └───xmls
+│   │   │       ├───large
+│   │   │       ├───medium
+│   │   │       ├───none
+│   │   │       └───small
+│   │   └───images
+│   │       ├───large
+│   │       ├───medium
+│   │       ├───none
+│   │       └───small
+│   └───Validate
+│       ├───annotations
+│       │   └───xmls
+│       │       ├───large
+│       │       ├───medium
+│       │       ├───none
+│       │       └───small
+│       └───images
+│           ├───large
+│           ├───medium
+│           ├───none
+│           └───small
+
+```
