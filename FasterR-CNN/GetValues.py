@@ -5,8 +5,8 @@ import torch
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
-        "BATCH_SIZE": 4,
-        "EPOCHS": 2,
+        "BATCH_SIZE": 2,
+        "EPOCHS": 1,
         "PATIENCE": 3,
         "dataset": "Large data", # Name of dataset to use
         "model_name": "test_file", # Names model, including directory, weights, etc
@@ -15,15 +15,19 @@ def setTrainValues(val_to_get):
         "save_at_end" : False,
         # temp resnet101_2080_101,
 
-        # Default model settings
-        "mobilenet": False,
+        # Backbone model settings
+        # available backbones to use:
+        # weights can be manually changed at Lib/site-packages/torchvision/models/detection/faster_rcnn.py
+        # default - coco vpnv2
+        # mobilenet  - IMAGENET1K weights for fpnv1
+        # resnet_builder - IMAGENET1K weights for fpnv1
+        "backbone_to_use": "default",
 
-        # Model builder settings
-        "alt_model": False,
-        "alt_model_backbone": "resnet101", #resnet18, resnet34, resnet50, resnet101, etc
+        # Settings for resnet builder, only applicable when using "resnet_builder" above
+        "resnet_backbone": "resnet101", #resnet18, resnet34, resnet50, resnet101, etc
         "fpnv2": False, # Sets alternate model to use fpnv2
 
-        "load_hd5f" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
+        "load_hdf5" : True, # whether to load from hd5f MAKE SURE THIS IS OFF WHEN CREATING HD5F
         "force_first_epoch" : False, #
         "h5py_dir_save_name": "test_file", # file name for h5py file
         "h5py_dir_load_name": "test_file", #large_15_no_transform, transform_csj, large_1_transform, test_file
@@ -62,7 +66,7 @@ def setTrainValues(val_to_get):
 
         # Misc
         #e.g. when using dataloader to upscale and filenames are needed
-        "return_filenames": False,
+        "return_filenames": True,
 
         "plot_feature_maps": False,
         # start testing straight after training

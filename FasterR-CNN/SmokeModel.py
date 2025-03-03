@@ -35,11 +35,22 @@ def collate_fn(batch):
 class SmokeModel:
     # constructor
     def __init__(self, force_default=None):
+        """
+        Example anchor sizes, leave as none for defaults
+        # fpn takes 1 tuple per feature map
+        example ((128,), (256,), (512,)) or for multi anchor size per feature map:
+        ((32, 64, 128, 256, 512), (32, 64, 128, 256, 512), (32, 64, 128, 256, 512))
+        number of feature maps depends on backbone e.g.
+        default resnet50 fpnv2 is 5, default mobilenet is 3
+        # example aspect ratios
+        aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
+        """
+
         self.base_dir = checkColab() # get colab or local dirs
         self.num_classes = 2  # Smoke + background = 2
         # initializing variables
         self.model = None
-        self.model_backbone = setTrainValues("alt_model_backbone")
+        self.model_backbone = setTrainValues("resnet_backbone")
         self.fpnv2 = setTrainValues("fpnv2")
         self.train_dataloader = None
         self.validate_dataloader = None
@@ -60,15 +71,11 @@ class SmokeModel:
         self.load_qat_model = setTestValues("load_QAT_model")
         self.start_from_checkpoint = setTrainValues("start_from_checkpoint")
 
+
     def get_model(self, testing=None):
         state_dict = None
         saved_dir = None
-        if(setTrainValues("alt_model") and not self.force_default and not self.generate_weights):
-            self.model_builder()
-        elif(not self.generate_weights):
-            self.model_default()
-        else:
-            self.generate_fpnv2_weights()
+        self.model_builder()
 
         # loading model weights if necessary
         if testing:
@@ -96,19 +103,35 @@ class SmokeModel:
         else:
             return self.model, self.in_features, self.model.roi_heads.box_predictor
 
+
+
+
     def model_builder(self):
+        if(setTrainValues("backbone_to_use") == "default"):
+            self.build_default()
+        elif(setTrainValues("backbone_to_use") == "mobilenet"):
+            self.build_mobilenet()
+        elif(setTrainValues("backbone_to_use") == "resnet_builder"):
+            self.resnet_builder()
+
+    def resnet_builder(self):
         print(f"Model builder, Backbone: {self.model_backbone}, FpnV2: {self.fpnv2}")
+        # default anchor sizes/ratios for IMAGENET1K
         anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
-        #anchor_sizes = ((32,), (64,), (128,), (256,))
         aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
+        # generate anchors
         anchor_gen = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
 
+        # Builds a model with more complex FPNv2 using resnet builder
         if (self.fpnv2):
-            # print(combined_state_dict)
+            """
+            This was for experimentation where COCO weights were extracted from default model
+            and used with the resnet builder. weights are provided in github for further experimentation
             fpn = torch.load(self.model_arch_path / "fpn.pth", weights_only=True)
             roi_heads = torch.load(self.model_arch_path / "roi.pth", weights_only=True)
             rpn = torch.load(self.model_arch_path / "rpn.pth", weights_only=True)
             body = torch.load(self.model_arch_path / "body.pth", weights_only=True)
+            """
             self.model = torchvision.models.detection.stus_resnet_fpnv2_builder(weights_backbone="DEFAULT",#"DEFAULT"
                                                                                 trainable_backbone_layers=3,
                                                                                 roi_head_weights=roi_heads,
@@ -116,34 +139,6 @@ class SmokeModel:
                                                                                 model_backbone=self.model_backbone)
             #self.model.rpn.anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
         else:
-            """
-            This "works", but used mobilenet since it works better with frcnn
-            Vgg16 = vgg16("DEFAULT")
-            features = Vgg16.features
-            print(Vgg16)
-            new_layers = OrderedDict({
-                'layer1': nn.Sequential(*features[:5]),  # Conv2d(64) -> MaxPool
-                'layer2': nn.Sequential(*features[5:10]),  # Conv2d(128) -> MaxPool
-                'layer3': nn.Sequential(*features[10:17]),  # Conv2d(256) -> MaxPool
-                'layer4': nn.Sequential(*features[17:24]),  # Conv2d(512) -> MaxPool
-                'layer5': nn.Sequential(*features[24:30])  # Conv2d(512) -> MaxPool
-            })
-            Vgg16 = nn.Sequential(new_layers)
-            return_layers = {'layer2': '0', 'layer3': '1', 'layer4': '2', 'layer5': '3'}
-            Vgg16.out_channels = 512
-            print(Vgg16)
-
-            in_channels_list = [128, 256, 512, 512]
-
-
-            out_channels = 256
-            for name, layer in Vgg16.named_children():
-                if name in ['layer1', 'layer2']:  # Adjust layer names as needed
-                    for param in layer.parameters():
-                        param.requires_grad = False
-
-            backbone = BackboneWithFPN(Vgg16, return_layers, in_channels_list, out_channels)
-            """
             backbone = resnet_fpn_backbone(backbone_name=self.model_backbone, weights="DEFAULT", trainable_layers=3)
             #backbone = mobilenet_backbone(backbone_name=self.model_backbone, weights="DEFAULT", trainable_layers=3, fpn=True)
 
@@ -166,50 +161,28 @@ class SmokeModel:
         #print(self.model.backbone)
         #print(self.model)
 
+    def build_default(self):
+        anchor_sizes = None
+        aspect_ratios = None
+        print("Default model Resnet50 FpnV2")
+        self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT",
+                                                                             trainable_backbone_layers=3,
+                                                                             anchor_values=anchor_sizes,
+                                                                             anchor_ratios=aspect_ratios)
+        self.setup_model()
 
-    def model_default(self):
-        if(setTrainValues("mobilenet")):
-            print("Default model Mobilenet FpnV3")
-            self.model = torchvision.models.detection.fasterrcnn_mobilenet_v3_large_fpn(weights="DEFAULT",
-                                                                                        trainable_backbone_layers=3)
-            # fpn takes 1 tuple per feature map, and uses 3 feature maps
-            #anchor_sizes = ((128,), (256,), (512,))
-            #anchor_sizes = ((64,), (128,), (256,))
-        else:
-            # temp leaving here
-            anchor_sizes = None
-            aspect_ratios = None
-            # anchor gen
-            #anchor_sizes = ((32, 64, 128, 256, 512),) * 5
-            #anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
-            #anchor_sizes = ((32, 64), (64, 128), (128, 256), (256, 512), (512, 1024,))
-            #aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
+    def build_mobilenet(self):
+        anchor_sizes = None
+        aspect_ratios = None
+        print("Default model Mobilenet FpnV3")
+        self.model = torchvision.models.detection.fasterrcnn_mobilenet_v3_large_fpn(weights="DEFAULT",
+                                                                             trainable_backbone_layers=3,
+                                                                             anchor_values=anchor_sizes,
+                                                                             anchor_ratios=aspect_ratios)
 
-            print("Default model Resnet50 FpnV2")
-            self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT",
-                                                                                 trainable_backbone_layers=3,
-                                                                                 anchor_values=anchor_sizes,
-                                                                                 anchor_ratios=aspect_ratios)
+        self.setup_model()
 
-            # fpn takes 1 tuple per feature map, and uses 5 feature maps
-            #anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
-
-        # load faster-rcnn
-        #self.init_model()
-        #state_dict = self.model.state_dict()
-        #filtered_state_dict = {k: v for k, v in state_dict.items() if not k.startswith("backbone.body")}
-        #torch.save(filtered_state_dict, self.model_arch_path / "fpnv2.pth")
-        # Modify anchor box, defaults in detection/faster_rcnn
-        # ((32,), (64,), (128,), (256,), (512,)), ((0.5, 1.0, 2.0),) * len(anchor_sizes)
-        # fpn takes 1 tuple per feature map, and has 5 feature maps
-        #anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
-        # anchor_sizes = ((8,), (32,), (128,), (256,), (512,))
-        # anchor_sizes = ((16,), (32,), (64,), (128,), (256,))
-        # anchor_sizes = ((8,), (16,), (32,), (64,), (128,))
-
-        #aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
-        #self.model.rpn.anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
-
+    def setup_model(self):
         print(self.model.rpn.anchor_generator.sizes)
 
         # Set in features to whatever region of interest(ROI) expects
@@ -218,7 +191,6 @@ class SmokeModel:
         self.model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(self.in_features,
                                                                                                         self.num_classes)
         print(f"Number of parameters: {self.count_parameters(self.model)}")
-
 
 
     # generate weights for adapted fpnv2
@@ -276,18 +248,18 @@ class SmokeModel:
         batch_size = setTrainValues("BATCH_SIZE")
         test_batch_size = setTestValues("BATCH_SIZE")
         dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTrainValues("dataset"))
-        dataset_hd5f_dir = Path(f"{self.base_dir}/DatasetH5py/" + setTrainValues("h5py_dir_load_name"))
+        dataset_hdf5_dir = Path(f"{self.base_dir}/DatasetH5py/" + setTrainValues("h5py_dir_load_name"))
         test_dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTestValues("dataset"))
 
         pinned_train = setTrainValues("pinned_memory")
         pinned_test = setTestValues("pinned_memory")
 
         # Load datasets
-        if(setTrainValues("load_hd5f") == True and not testing):
-            train_dir = DatasetHd5f.SmokeDatasetHdf5(str(dataset_hd5f_dir) + "/Train.hdf5")
+        if(setTrainValues("load_hdf5") == True and not testing):
+            train_dir = DatasetHdf5.SmokeDatasetHdf5(str(dataset_hdf5_dir) + "/Train.hdf5")
             num_train_epochs = self.num_train_epochs
             train_sampler = EpochSampler(train_dir, epochs=num_train_epochs)
-            val_dir = DatasetHd5f.SmokeDatasetHdf5(str(dataset_hd5f_dir) + "/Validate.hdf5")
+            val_dir = DatasetHdf5.SmokeDatasetHdf5(str(dataset_hdf5_dir) + "/Validate.hdf5")
             val_sampler = EpochSampler(val_dir, epochs=num_train_epochs)
         else:
             train_dir = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_train)
@@ -402,7 +374,7 @@ class SmokeModel:
         # pass through model and print summary
         #summary(self.model.backbone.body, input_size=(3, 224, 224), device=str(self.device))
 
-        print(f"type:{type(self.model.backbone)}")
+        #print(f"type:{type(self.model.backbone)}")
         print(self.model.backbone)
         #print(self.model.roi_heads)
         #print(self.model.rpn)
