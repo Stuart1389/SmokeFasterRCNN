@@ -15,8 +15,8 @@ def setTrainValues(val_to_get):
     train_values = {
         # TRAIN SETTINGS
         # Basic train settings
-        "BATCH_SIZE": 2,
-        "EPOCHS": 2,
+        "BATCH_SIZE": 4,
+        "EPOCHS": 1,
         "PATIENCE": 3,
         "dataset": "Small data", # Name of dataset to use
         "model_name": "test_file_C", # Names model, including directory, weights, etc
@@ -34,14 +34,14 @@ def setTrainValues(val_to_get):
 
         # Settings for resnet builder, only applicable when using "resnet_builder" above
         "resnet_backbone": "resnet50", #resnet18, resnet34, resnet50, resnet101, etc
-        "fpnv2": True, # Sets alternate model to use fpnv2
+        "fpnv2": False, # Sets alternate model to use fpnv2
         "load_coco_weights": False, # used to experiment with using coco weights on resnet101 with fpnv2
 
 
         # HDF5 settings. TO create HDF5 file use WriteHdf5.py
         # NOTE WriteHdf5.py uses dataloader to write, so if this is enabled when writing
         # hdf5 will be used to write instead of the default dataset
-        "load_hdf5" : True,
+        "load_hdf5" : False,
         "force_first_epoch" : False, # forces hdf5 to repeat the first epoch for all training epochs
         "h5py_dir_save_name": "test_file_check", # file name for hdf5 file when written
         "h5py_dir_load_name": "transform_csj", # file name hdf5 file to load
