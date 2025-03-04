@@ -18,7 +18,7 @@ def setTrainValues(val_to_get):
         "BATCH_SIZE": 4,
         "EPOCHS": 1,
         "PATIENCE": 3,
-        "dataset": "Small Data", # Name of dataset to use
+        "dataset": "Small data", # Name of dataset to use
         "model_name": "test_file_C", # Names model, including directory, weights, etc
         "plotJSON_fname": "", # json and manual plot filename, leave black to make same as model
         "model_id": "39B", # model is is used for W&B runs only: id_modelname
