@@ -68,6 +68,7 @@ transform_utility = A.Compose([
 base_dir = checkColab()
 dataset_dir = Path(f"{base_dir}/Dataset/" + setTrainValues("dataset"))
 
+# DEFAULT DATASET FOR PIPELINE
 class smokeDataset(torch.utils.data.Dataset):
   # Constructor, setting instanced variables
   def __init__(self, main_dir: str, transform=None, testing = False, using_upscale_util = False):
@@ -263,4 +264,5 @@ if __name__ == '__main__':
     test_test = smokeDataset(str(dataset_dir) + "/Test", transform_train) # create instance of dataset
     image, target = test_test.__getitem__(1) # get image and annotation at index 1
     bbox = target["boxes"]
+    label = target["labels"]
     visualize(image, bbox, label, 1)

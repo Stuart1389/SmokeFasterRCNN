@@ -13,6 +13,7 @@ def setGlobalValues(val_to_get):
 def setTrainValues(val_to_get):
     # Creating dictionary with values
     train_values = {
+        # TRAIN SETTINGS
         # Basic train settings
         "BATCH_SIZE": 1,
         "EPOCHS": 1,
@@ -29,11 +30,12 @@ def setTrainValues(val_to_get):
         # default - coco vpnv2
         # mobilenet  - IMAGENET1K weights for fpnv1
         # resnet_builder - IMAGENET1K weights for fpnv1
-        "backbone_to_use": "default",
+        "backbone_to_use": "resnet_builder",
 
         # Settings for resnet builder, only applicable when using "resnet_builder" above
-        "resnet_backbone": "resnet101", #resnet18, resnet34, resnet50, resnet101, etc
-        "fpnv2": False, # Sets alternate model to use fpnv2
+        "resnet_backbone": "resnet50", #resnet18, resnet34, resnet50, resnet101, etc
+        "fpnv2": True, # Sets alternate model to use fpnv2
+        "load_coco_weights": False, # used to experiment with using coco weights on resnet101 with fpnv2
 
 
         # HDF5 settings. TO create HDF5 file use WriteHdf5.py
@@ -43,13 +45,11 @@ def setTrainValues(val_to_get):
         "force_first_epoch" : False, # forces hdf5 to repeat the first epoch for all training epochs
         "h5py_dir_save_name": "test_file", # file name for hdf5 file when written
         "h5py_dir_load_name": "test_file", # file name hdf5 file to load
-        #large_15_no_transform, transform_csj, large_1_transform, test_file
-        # transform_csj_3_def, transform_csj_3_100, transform_csj_3_1, transform_csj_c_20
 
         # PROFILER
         "start_profiler" : False,
         "record_trace" : False,
-        # Enables or disabled W&B logging
+        # Enables or disables W&B logging
         "logWB" : False,
 
         # TRAINING HYPERPARAMETERS
@@ -77,7 +77,7 @@ def setTrainValues(val_to_get):
         # only needed when using previously upscaled images with original bbox
         "upscale_bbox": False,
         "upscale_value": 4,
-        # SmokeUpscale can be used to upscale images before training
+        # SmokeUpscale.py can be used to upscale images before training
         "upscale_dataset_save_name": "Example upscale",
 
         "plot_feature_maps": False,
@@ -85,14 +85,13 @@ def setTrainValues(val_to_get):
         "test_after_train": False
     }
     # return value corresponding with val_to_get
-    # filenames will be returned INSTEAD of TARGETS
     return train_values.get(val_to_get, None)
 
 def setTestValues(val_to_get):
-    # Create dictionary with  values
+    # TEST SETTINGS
     test_values = {
         "BATCH_SIZE": 8,
-        "dataset": "Large data", # "Small data" OR "Large data"
+        "dataset": "Large data", # dataset to load from
         "model_name": "transform_csj_a100", # name of model to test
         "test_on_val": False, # test on validation instead of test set
 
@@ -109,7 +108,7 @@ def setTestValues(val_to_get):
         # Quants, only enable if testing
         "static_quant": False,
         "calibrate_full_set": False, # calibrate on full dataset rather than 1 image
-        "load_QAT_model": False,
+        "load_QAT_model": False, # this needs to be enabled if loading quant aware trained model
 
         "half_precission": True, # float 16
 
@@ -121,10 +120,8 @@ def setTestValues(val_to_get):
 
         # Upscale
         "upscale_image": False,
-        "upscale_value": 2, # image * upscale_value
+        "upscale_value": 2, # image resolution * upscale value
         "split_images": False
-
-
     }
 
     # return value corresponding with val_to_get

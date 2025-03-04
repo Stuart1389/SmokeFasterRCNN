@@ -8,7 +8,9 @@ import os
 import albumentations as A
 from EpochSampler import EpochSampler
 from albumentations.pytorch import ToTensorV2
+import matplotlib.pyplot as plt
 
+# HDF5 DATASET EXTRACTS DATA FROM HDF5 FILE FOR TRAINING
 class SmokeDatasetHdf5(torch.utils.data.Dataset):
     def __init__(self, file_path):
         self.file_path = file_path
@@ -16,6 +18,7 @@ class SmokeDatasetHdf5(torch.utils.data.Dataset):
         self.debug_dataloader = None
         self.current_epoch = 0
 
+    # used to track current epoch and how many datapoints in dataset
     def __len__(self):
         with h5py.File(self.file_path, 'r') as h5df_file:
             epoch_group = f"epoch_{self.current_epoch + 1}"
@@ -24,24 +27,28 @@ class SmokeDatasetHdf5(torch.utils.data.Dataset):
         print(f"Epoch {self.current_epoch + 1}: Total samples = {self.total_samples}")
         return self.total_samples
 
+
+    # Extract data from hdf5
     def __getitem__(self, idx):
         epoch_idx = self.current_epoch + 1
+        # find index of datapoint within epoch group
         actual_idx = idx % self.total_samples
 
         # Open the HDF5 file to retrieve data
+        # Each dataloader worker opens the file independently
         with h5py.File(self.file_path, 'r') as h5df_file:
             epoch_group = f"epoch_{epoch_idx}"
-            #print("Epoch_group", epoch_group)
+            # checks that the epoch group exists
             if epoch_group in h5df_file:
                 epoch_data = h5df_file[epoch_group]
-                # get image
+                # get and reconstruct image
                 flat_image = np.array(epoch_data['images'][actual_idx])
                 height, width = epoch_data['image_dims'][actual_idx]
                 image = torch.tensor(flat_image.reshape((height, width, -1)), dtype=torch.float32)
-                # get bbox
+                # get and reconstruct bbox
                 num_bbox = epoch_data['num_bbox'][actual_idx]
                 boxes = torch.tensor(epoch_data['boxes'][actual_idx].reshape(num_bbox, 4), dtype=torch.float32)
-                # other targets
+                # get other targets
                 labels = torch.tensor(epoch_data['labels'][actual_idx])
                 image_id = epoch_data['image_ids'][actual_idx]
                 area = torch.tensor(epoch_data['areas'][actual_idx])
@@ -54,36 +61,28 @@ class SmokeDatasetHdf5(torch.utils.data.Dataset):
                     "area": area,
                     "iscrowd": iscrowd
                 }
-                """
-                print(f"Image dtype: {image.dtype}, Shape: {image.shape}")
-                
-                # Print each target item details
-                for key, value in target.items():
-                    print(
-                        f"Key: {key}, Type: {type(value)}, Tensor dtype: {value.dtype if isinstance(value, torch.Tensor) else 'N/A'}, Shape: {value.shape if isinstance(value, torch.Tensor) else 'N/A'}")
-                """
             return image, target
 
 def collate_fn(batch):
     batch = [item for item in batch if item is not None]
     return tuple(zip(*batch))
 
+
+# Run this script to check hdf5 file is working
+# make sure to have a valid hdf5 file set in GetValues.py h5py_dir_load_name
 if __name__ == '__main__':
+
     base_dir = checkColab()
+    # select hdf5 file to load from GetValues.py
     write_main_path = Path(f"{base_dir}/DatasetH5py/" + setTrainValues("h5py_dir_load_name"))
     write_train_path = Path(f"{write_main_path}/Train.hdf5")
 
-    #smome_dataset_hd5f = SmokeDatasetHd5f()
-
-    num_workers = os.cpu_count() # threads available
+    num_workers = os.cpu_count() # cores available
     batch_size = setTrainValues("BATCH_SIZE")
     epochs = 2
+    visualise = False
 
-
-
-
-
-    # Load datasets
+    # Load dataset and create dataloader
     debug_dir = SmokeDatasetHdf5(str(write_train_path))
     debug_sampler = EpochSampler(debug_dir, epochs=epochs)
     debug_dataloader = DataLoader(
@@ -96,13 +95,13 @@ if __name__ == '__main__':
         sampler=debug_sampler
     )
 
+    # prints and optionally displays image/targets from hdf5 file
     for epoch in range(epochs):
-        debug_dir.current_epoch = epoch  # Update the current epoch
-        #print(f"Starting epoch {epoch + 1}/{epochs}")
-
         for batch, (images, targets) in enumerate(debug_dataloader):
             print(f"Processing batch {batch} out of {len(debug_dataloader)}")
             print(images, targets)
-
-        #print(f"Epoch {epoch + 1} completed.")
+            if(visualise):
+                for image in images:
+                    plt.imshow(image.permute(1, 2, 0).numpy())
+                    plt.show()
 

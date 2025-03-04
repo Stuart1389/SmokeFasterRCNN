@@ -2,7 +2,7 @@
 <h2> Getting the pipeline ready </h2>
 <p>
 *NOTE: This ReadMe is a prototype and should be refined further to better help environmental researchers. <br>
-
+Please change base_dir in checkColab function within GetValues to set base directory. <br>
 This pipeline is designed for image and xml annotation pairs. <br>
 Image and xml annotations should have the exact same name to be associated with each other. <br>
 The pipeline assumes that datasets are structured in the following format: <br>

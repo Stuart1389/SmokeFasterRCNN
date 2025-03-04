@@ -20,23 +20,24 @@ class PlotGraphs:
         self.plot_all_loss()
 
     def plot_all_loss(self):
-        # get loss types from averafe and iterations loss dictionaries
+        # get loss types from average loss and iterations loss dictionaries from training
         loss_types = self.train_dict[0].keys()
         loss_it_types = self.train_loss_it_vals[0][0].keys()
 
-        # get number of columns/which is equal to number of loss types
+        # get number of columns which is equal to number of loss types
         num_cols = len(loss_types)
 
         if(self.validate_dict):
+            # plot train and validate loss if validate loss exists
             suptitle = "Train and Validate Loss"
             num_rows = 3
         else:
+            # else only plot train loss
             suptitle = "Train Loss"
             num_rows = 2
 
         # Create subplots with 2 or 3 rows (epoch/validation average losses, train loss iterations, validate loss iterations)
         self.fig, axes = plt.subplots(num_rows, num_cols, figsize=(5 * num_cols, 15), sharey=False)
-
         self.fig.suptitle(suptitle, fontsize=16)
 
         # epoch/validation average losses (1st row)
@@ -98,8 +99,6 @@ class PlotGraphs:
         model_name = setTrainValues("model_name")
         PLOT_PATH = Path("savedModels/" + model_name)
         PLOT_PATH.mkdir(parents=True, exist_ok=True)  # Make parent dir if it doesn't exist
-        # Setting name using current date and time
-        CURRENTDATEANDTIME = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')  # Format as YYYY-MM-DD_HH-MM-SS
         if(setTrainValues("plotJSON_fname") == ""):
             filename = setTrainValues("model_name")
         else:
@@ -125,7 +124,7 @@ class PlotGraphs:
         JSON_PATH = Path("savedModels/" + model_name)
         JSON_PATH.mkdir(parents=True, exist_ok=True)  # Make parent dir if it doesn't exist
 
-        # if blank name it same as model name
+        # if blank name make it same as model name
         if (setTrainValues("plotJSON_fname") == ""):
             filename = setTrainValues("model_name")
         else:

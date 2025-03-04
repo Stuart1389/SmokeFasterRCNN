@@ -31,9 +31,8 @@ def collate_fn(batch):
     batch = [item for item in batch if item is not None]
     return tuple(zip(*batch))
 
-
+# class is used to create models and dataloaders for the pipeline
 class SmokeModel:
-    # constructor
     def __init__(self, force_default=None, using_upscale_util=False):
         """
         Example anchor sizes, leave as none for defaults
@@ -48,7 +47,7 @@ class SmokeModel:
 
         self.base_dir = checkColab() # get colab or local dirs
         self.num_classes = setGlobalValues("NUM_CLASSES")
-        # initializing variables
+        # initialising variables
         self.model = None
         self.model_backbone = setTrainValues("resnet_backbone")
         self.fpnv2 = setTrainValues("fpnv2")
@@ -64,7 +63,7 @@ class SmokeModel:
         self.load_path_test = Path("savedModels/" + setTestValues("model_name"))
         self.model_arch_path = model_arch_path = Path("savedModelsArch/")
 
-        self.device = None
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"  # device agnostic
         self.force_default = force_default
 
         self.generate_weights = False
@@ -72,7 +71,7 @@ class SmokeModel:
         self.start_from_checkpoint = setTrainValues("start_from_checkpoint")
         self.using_upscale_util = using_upscale_util
 
-
+    # Method is responsible for build a model and loading any weights
     def get_model(self, testing=None):
         state_dict = None
         saved_dir = None
@@ -106,7 +105,7 @@ class SmokeModel:
 
 
 
-
+    # Method selects model building method based on GetValues.py settings
     def model_builder(self):
         if(setTrainValues("backbone_to_use") == "default"):
             self.build_default()
@@ -115,6 +114,7 @@ class SmokeModel:
         elif(setTrainValues("backbone_to_use") == "resnet_builder"):
             self.resnet_builder()
 
+    # Used to build a resnet model
     def resnet_builder(self):
         print(f"Model builder, Backbone: {self.model_backbone}, FpnV2: {self.fpnv2}")
         # default anchor sizes/ratios for IMAGENET1K
@@ -125,43 +125,33 @@ class SmokeModel:
 
         # Builds a model with more complex FPNv2 using resnet builder
         if (self.fpnv2):
-            """
-            This was for experimentation where COCO weights were extracted from default model
-            and used with the resnet builder. weights are provided in github for further experimentation
-            fpn = torch.load(self.model_arch_path / "fpn.pth", weights_only=True)
-            roi_heads = torch.load(self.model_arch_path / "roi.pth", weights_only=True)
-            rpn = torch.load(self.model_arch_path / "rpn.pth", weights_only=True)
-            body = torch.load(self.model_arch_path / "body.pth", weights_only=True)
-            """
-            self.model = torchvision.models.detection.stus_resnet_fpnv2_builder(weights_backbone="DEFAULT",#"DEFAULT"
+            # Create faster-rcnn model with resnet backbone and fpnv2
+            #This was for experimentation where COCO weights were extracted from default model
+            #and used with the resnet builder. weights are provided in github for further experimentation
+            if(setTrainValues("load_coco_weights")):
+                fpn = torch.load(self.model_arch_path / "fpn.pth", weights_only=True)
+                roi_heads = torch.load(self.model_arch_path / "roi.pth", weights_only=True)
+                rpn = torch.load(self.model_arch_path / "rpn.pth", weights_only=True)
+                body = torch.load(self.model_arch_path / "body.pth", weights_only=True)
+            else:
+                fpn, roi_heads, rpn, body = None, None, None, None
+            self.model = torchvision.models.detection.stus_resnet_fpnv2_builder(weights_backbone="DEFAULT", # IMAGENET1K
                                                                                 trainable_backbone_layers=3,
                                                                                 roi_head_weights=roi_heads,
                                                                                 rpn_weights=rpn, fpn_weights=fpn, body_weights=body,
                                                                                 model_backbone=self.model_backbone)
-            #self.model.rpn.anchor_generator = AnchorGenerator(sizes=anchor_sizes, aspect_ratios=aspect_ratios)
         else:
+            # default resnet fpnv1 with IMAGENET1K weights
             backbone = resnet_fpn_backbone(backbone_name=self.model_backbone, weights="DEFAULT", trainable_layers=3)
-            #backbone = mobilenet_backbone(backbone_name=self.model_backbone, weights="DEFAULT", trainable_layers=3, fpn=True)
-
             self.model = FasterRCNN(backbone=backbone, num_classes=2,
                                     rpn_anchor_generator=anchor_gen)
             body_weights = torch.load(self.model_arch_path / "body.pth", weights_only=True)
             self.model.backbone.body.load_state_dict(body_weights, strict=False)
 
-        # Set in features to whatever region of interest(ROI) expects
-        self.in_features = self.model.roi_heads.box_predictor.cls_score.in_features
-        # set roi to 2 classes, mainly needed for fpnv2
-        self.model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(self.in_features,
-                                                                                                             self.num_classes)
-        print(f"Number of parameters: {self.count_parameters(self.model)}")
+        self.setup_model()
 
-
-        #self.model.rpn_pre_nms_top_n_test = 2000
-        #self.model.rpn_post_nms_top_n_test = 2000
-
-        #print(self.model.backbone)
-        #print(self.model)
-
+    # method builds default model
+    # resnet-50 fpnv2 with coco weights
     def build_default(self):
         anchor_sizes = None
         aspect_ratios = None
@@ -172,6 +162,7 @@ class SmokeModel:
                                                                              anchor_ratios=aspect_ratios)
         self.setup_model()
 
+    # method builds a mobilenet model
     def build_mobilenet(self):
         anchor_sizes = None
         aspect_ratios = None
@@ -180,21 +171,19 @@ class SmokeModel:
                                                                              trainable_backbone_layers=3,
                                                                              anchor_values=anchor_sizes,
                                                                              anchor_ratios=aspect_ratios)
-
         self.setup_model()
 
+    # extra steps needed for model setup
     def setup_model(self):
         print(self.model.rpn.anchor_generator.sizes)
-
         # Set in features to whatever region of interest(ROI) expects
         self.in_features = self.model.roi_heads.box_predictor.cls_score.in_features
         # Required to work with 2 classes
-        self.model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(self.in_features,
-                                                                                                        self.num_classes)
+        self.model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(self.in_features,                                                                                          self.num_classes)
         print(f"Number of parameters: {self.count_parameters(self.model)}")
 
 
-    # generate weights for adapted fpnv2
+    # This method was used to extract coco weights for experimentation
     def generate_fpnv2_weights(self):
         # num classes is overwritten by roi using self.num_classes
         self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn_v2(weights="DEFAULT",
@@ -220,6 +209,7 @@ class SmokeModel:
                 new_key = key.replace("backbone.fpn.", "")
                 fpn_weights[new_key] = tensor
             elif key.startswith("backbone.body"):
+                # get backbone.body pre-trained weights
                 new_key = key.replace("backbone.body.", "")
                 body_weights[new_key] = tensor
 
@@ -234,24 +224,25 @@ class SmokeModel:
         torch.save(roi_weights, roi_path)
         print(f"Saved ROI weights to {roi_path}")
 
-        # Save ROI weights
+        # Save FPN weights
         fpn_path = self.model_arch_path / "fpn.pth"
         torch.save(fpn_weights, fpn_path)
         print(f"Saved FPN weights to {fpn_path}")
 
+        # Save body weights
         body_path = self.model_arch_path / "body.pth"
         torch.save(body_weights, body_path)
         print(f"Saved Body weights to {body_path}")
 
-    # functions to get train, validate and test dataloaders
+    # method to get train, validate and test dataloaders for their respective splits
     def get_dataloader(self, testing = False):
         num_workers = os.cpu_count() # threads available
         batch_size = setTrainValues("BATCH_SIZE")
         test_batch_size = setTestValues("BATCH_SIZE")
+        # set dataset dirs based on values set in GetValues.py
         dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTrainValues("dataset"))
         dataset_hdf5_dir = Path(f"{self.base_dir}/DatasetH5py/" + setTrainValues("h5py_dir_load_name"))
         test_dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTestValues("dataset"))
-
         pinned_train = setTrainValues("pinned_memory")
         pinned_test = setTestValues("pinned_memory")
         # Load datasets
@@ -307,6 +298,8 @@ class SmokeModel:
 
         return self.train_dataloader, self.validate_dataloader, self.test_dataloader
 
+
+    # this is used to evaluate models on the validate dataloader, even though its not good practice
     def get_validate_test_dataloader(self):
         test_dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTestValues("dataset"))
         num_workers = os.cpu_count() # threads available
@@ -326,76 +319,28 @@ class SmokeModel:
 
         return self.test_validate_dataloader
 
-    def get_debug_dataloader(self):
-        num_workers = os.cpu_count() # threads available
-        batch_size = setTrainValues("BATCH_SIZE")
-        test_batch_size = setTestValues("BATCH_SIZE")
-        dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTrainValues("dataset"))
-        test_dataset_dir = Path(f"{self.base_dir}/Dataset/" + setTestValues("dataset"))
-
-        # Load datasets
-        train_dir = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_train)
-        self.debug_dataloader = DataLoader(
-            dataset=train_dir,
-            batch_size=batch_size,
-            num_workers=num_workers,
-            collate_fn=collate_fn,
-            pin_memory=False,
-            shuffle=True
-        )
-
-        return self.debug_dataloader
-
-
-
-    #!!FINISHED!!
-
-    # check dataloader when running this script
-    def check_dataloader(self, test_runs = 1):
-        for test_runs in range(test_runs):
-            # Iterate through entire dataloader
-            for batch_idx, (images, targets) in enumerate(self.train_dataloader):
-                print(f"Batch {batch_idx}:")
-            for batch_idx, (images, targets) in enumerate(self.validate_dataloader):
-                print(f"Batch {batch_idx}:")
-            for batch_idx, (images, targets) in enumerate(self.test_dataloader):
-                print(f"Batch {batch_idx}:")
-
-
-    # checking model and dataloaders
-    def main(self):
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"  # device agnostic
-        #self.get_dataloader()
-        #self.get_model()
-        #self.check_dataloader()
-
+    # checking model
     def checkModel(self):
+        print(self.device)
         self.model.to(self.device)
-
         # Create dummy tensor
-        #dummy_input = torch.randn(1, 3, 224, 224).to(self.device)
-
+        dummy_input = torch.randn(1, 3, 224, 224).to(self.device)
         # pass through model and print summary
-        #summary(self.model.backbone.body, input_size=(3, 224, 224), device=str(self.device))
-
-        #print(f"type:{type(self.model.backbone)}")
-        print(self.model.backbone)
-        #print(self.model.roi_heads)
-        #print(self.model.rpn)
+        summary(self.model.backbone.body, input_size=(3, 224, 224), device=str(self.device))
         self.prnt_model_c()
 
 
     def prnt_model_c(self):
-        # Print general model settings
-        #print("General model settings:")
-        #print(f"Number of classes: {self.model.roi_heads.box_predictor.cls_score.out_features}")
-        #print(f"Backbone: {self.model.backbone}")
+        #Print general model settings
+        print("General model settings:")
+        print(f"Number of classes: {self.model.roi_heads.box_predictor.cls_score.out_features}")
+        print(f"Backbone: {self.model.backbone}")
         print(f"RPN Anchor Generator: {self.model.rpn.anchor_generator}")
 
         # Print settings for the Region Proposal Network (RPN)
         print("\nRPN settings:")
-        #print(f"Anchor sizes: {self.model.rpn.anchor_generator.sizes}")
-        #print(f"Aspect ratios: {self.model.rpn.anchor_generator.aspect_ratios}")
+        print(f"Anchor sizes: {self.model.rpn.anchor_generator.sizes}")
+        print(f"Aspect ratios: {self.model.rpn.anchor_generator.aspect_ratios}")
         print(f"RPN: {self.model.rpn}")
 
 
@@ -416,12 +361,13 @@ class SmokeModel:
         print(f"Image Std: {self.model.transform.image_std}")
 
 
+    # method used to find number of model parameters
     def count_parameters(self, model):
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 
-# only run if this script is being run (not being called from other)
+# run this script to test model currently selected in GetValues.py
 if __name__ == '__main__':
     """
     #This just prints information about the default resnet-50 model to compare 
@@ -434,6 +380,6 @@ if __name__ == '__main__':
     print("\n-----------------------------------------------------\n")
 
     modelS = SmokeModel()
-    modelS.main()
     modelS.get_model()
     modelS.checkModel()
+

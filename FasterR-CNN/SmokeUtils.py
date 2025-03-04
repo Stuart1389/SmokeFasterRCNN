@@ -9,24 +9,29 @@ import numpy as np
 from GetValues import setTrainValues, setTestValues, setGlobalValues
 import xml.etree.ElementTree as ET
 
+
+# function is used to extract data from annotation xml files, see README for more info
 def extract_boxes(annotation_path, get_area = False, upscale_value = None, scale_width = None, scale_height = None):
     # set default scale values to 1, for default use
     upscale_value = 1
     scale_x, scale_y = 1, 1
 
+    # parse annotation file
     tree = ET.parse(annotation_path)
     root = tree.getroot()
 
     boxes = []
     areas = []
 
+    # extract image height and width from xml
     size = root.find("size")
     image_height = float(size.find("height").text)
     image_width = float(size.find("width").text)
 
+    # Extract bounding box coordinates from xml
+    # and alter them if necessary if there have been any changes to associated image
     for obj in root.findall("object"):
         xml_box = obj.find("bndbox")
-        # print("xml_box", xml_box)
 
         if (scale_height != None and scale_width != None):
             scale_x = scale_width / image_width
@@ -37,6 +42,7 @@ def extract_boxes(annotation_path, get_area = False, upscale_value = None, scale
         xmax = float(xml_box.find("xmax").text) * upscale_value * scale_x
         ymax = float(xml_box.find("ymax").text) * upscale_value * scale_y
 
+        # make sure coordinates are valid
         if xmin >= xmax or ymin >= ymax:
             print(f"Invalid area/box coordinates: ({xmin}, {ymin}), ({xmax}, {ymax})")
 
@@ -49,19 +55,18 @@ def extract_boxes(annotation_path, get_area = False, upscale_value = None, scale
     labels = [] # label names e.g. smoke
     labels_int = [] # label class int e.g. 1
     # Parsing XML file for each image to find bounding boxes
-    class_to_idx = setGlobalValues("CLASS_INDEX_DICTIONARY") # set in config
+    class_to_idx = setGlobalValues("CLASS_INDEX_DICTIONARY") # object name:id key-value pair, set this in GetValues.py
     for obj in root.findall("object"):
         label = obj.find("name").text  # find name in xml
         bbox_c = obj.find("bndbox")  # check if bbox exists
 
         if (bbox_c is not None):
             labels.append(label)
-            labels_int.append(class_to_idx.get(label, 0))  # 0 if the class isn't found in dictionary
-
+            labels_int.append(class_to_idx.get(label, 0))  # 0 if the class name isn't found in dictionary
 
     return boxes, areas, labels_int, labels
 
-# modified layer getter class to qork with quants
+# modified layer getter class, necessary for quantization
 class SmokeIntermediateLayerGetter(nn.ModuleDict):
     _version = 2
     __annotations__ = {
@@ -92,25 +97,26 @@ class SmokeIntermediateLayerGetter(nn.ModuleDict):
         extracted_features = []
         extracted_names = []
 
+        # go through each module in backbone one by one, see research paper for more info
         for name, module in self.items():
             # if we try to quant when already quanted
             # will throw error, so if module has a quant stub then dequant before
-            # cant really use module since other layer types contain quant
-            # resnet names their quant layers "quant" so better than just dequanting at specific layers
-            # since it works with all resnet
-            #print(f"Name: {name}, module: {str(module)}")
             if ("quant" in name):
+                # this prevents errors
                 x = self.dequant(x)
             x = module(x)
             if name in self.return_layers:
-                #print(self.return_layers)
+                # if feature map is to be returned
+                # then dequant it and add it to list
                 out_name = self.return_layers[name]
                 out[out_name] = self.dequant(x)
-                #print(out[out_name].shape)
                 extracted_features.append(out[out_name])
                 extracted_names.append(name)
         return out
 
+# Function used to get a list of layers to fuse
+# this is used for quantization
+# Module_names are taken from backbone in Tester.py
 def get_layers_to_fuse(module_names):
     """
     resnet built with multiple bottleneck blocks which can be seen below. ideally we look for this
@@ -121,14 +127,15 @@ def get_layers_to_fuse(module_names):
     fusing layers together, notice that these are the layers
     defined in resnet Bottleneck which makes up the bulk
     of the resnet backbones
+    Make sure no arithmetic happens between modules being fused
 
     """
 
-    # looking for conv and bn, put occurence in layers to fuse list
-    # which we will use during quantisation
+    # looking for conv and bn, put occurences in layers to fuse list
+    # which we will use during quantization
     layers_to_fuse = []  # get a list of layers in backbone to fuse
     layers_to_fuse.append(['conv1', 'bn1', 'relu'])
-    # example of adding manually
+    # example of adding modules manually:
     """
     layers_to_fuse.append(['conv1', 'bn1', 'relu'])
     layers_to_fuse.append(['layer1.0.conv1', 'layer1.0.bn1', 'layer1.0.relu1'])
@@ -137,9 +144,10 @@ def get_layers_to_fuse(module_names):
     layers_to_fuse.append(['layer1.1.conv1', 'layer1.1.bn1', 'layer1.1.relu1'])
     layers_to_fuse.append(['layer1.1.conv2', 'layer1.1.bn2', 'layer1.1.relu2'])
     """
+    # built for extracting fusable layers from resnet
+    # this will need to be modified for use with other backbones
     for i in range(len(module_names)):
         name, module = module_names[i]
-        #print(name)
         if(i > 2):
             # skip bn3 and relu fuse because down sampling happens in between
             if 'conv' in name and 'bn' in module_names[i + 1][0] and 'relu' in module_names[i + 2][0] and 'bn3' not in module_names[i + 1][0]:
@@ -147,9 +155,9 @@ def get_layers_to_fuse(module_names):
             elif 'conv' in name and 'bn' in module_names[i + 1][0]:
                 layers_to_fuse.append([module_names[i][0], module_names[i + 1][0]])
 
-    #print(layers_to_fuse)
     return layers_to_fuse
 
+# function returns a list of layers to prune
 def get_layers_to_prune():
     # these are the layers used during pruning
     # different backbones have different layers
@@ -166,3 +174,5 @@ def get_layers_to_prune():
         self.model.backbone.body.layer3[2].conv3,
     ]
     return layers_to_prune
+
+

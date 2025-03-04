@@ -10,6 +10,9 @@ import torchvision.transforms as T
 import torch
 from GetValues import checkColab, setTrainValues
 from SmokeModel import SmokeModel
+
+# This script takes a dataset and upscales it
+# See README for more details
 class SmokeUpscale:
     def __init__(self):
         self.batch_size = setTrainValues("BATCH_SIZE")
@@ -24,6 +27,8 @@ class SmokeUpscale:
         self.train_dir = Path(str(self.dataset_dir) + "/Train/images")
         self.val_dir = Path(str(self.dataset_dir) + "/Validate/images")
 
+
+    # Method takes images and upscales them using super-resolution for pytorch model
     def upscale_images(self, image_tensors):
         combined_tensor = torch.stack(image_tensors, dim=0).to(self.device)
         upscale_model = PanModel.from_pretrained('eugenesiow/pan-bam', scale=setTrainValues("upscale_value"))
@@ -32,16 +37,16 @@ class SmokeUpscale:
         formatted_tensors = list(torch.unbind(upscale_outputs, dim=0))
         return formatted_tensors
 
+    # Method saves upscaled images to disk
     def save_upscaled_images(self, image_tensor, filename, save_dir):
         os.makedirs(save_dir, exist_ok=True)
         save_path = save_dir / f"{filename}.jpeg"
-        #print("image_tensor: ", image_tensor, "filename: ", filename, "save dir:", save_dir, "save path: ", save_path)
         torchvision.utils.save_image(image_tensor, save_path, "jpeg")
 
 
 
+    # Loop upscales images using train and validate dataloaders
     def upscale_loop(self):
-
         for batch, (image_tensors, filenames) in enumerate(self.train_dataloader):
             print(f"Processing batch: {batch} of {len(self.train_dataloader)}")
             upscaled_images = self.upscale_images(image_tensors)

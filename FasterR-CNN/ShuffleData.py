@@ -3,8 +3,10 @@ import shutil
 import random
 from GetValues import checkColab
 
+# Running this script will split dataset into train, validate and test splits
+# See README for more information
 base_dir = checkColab()
-dataset_name = "Example dataset structure" # see README
+dataset_name = "Example dataset structure"
 # split ratios e.g. (70/15/15)
 train_split = 0.7
 val_split = 0.15
@@ -94,10 +96,10 @@ def train_test_split(split_annotations=False):
     val_dataset = dataset[train_size:train_size + val_size]
     test_dataset = dataset[train_size + val_size:]
 
-
+    # split annotations and then images
     if(split_annotations):
+        # copy files to dirs
         print("Copying images")
-        #copy files to dirs
         copy_files(train_dataset, train_image, train_annot)
         copy_files(val_dataset, val_image, val_annot)
         copy_files(test_dataset, test_image, test_annot)
