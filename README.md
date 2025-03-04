@@ -317,3 +317,25 @@ It then categorises images by size in each split. This could probably be improve
 │           └───small
 
 ```
+
+<h1> Cloud computing</h1>
+<p>
+A jupyter notebooks is provided in the repo for use with google colab <br>
+Setup: <br>
+In google drive create a base directory for dataset files and to store any saved models. <br>
+Add a folder named "Dataset" and store datasets within, as you would when running locally. <br>
+Add a folder named "DatasetH5py" and store hdf5 files within, as you would when running locally. <br>
+Model weights, json, plots, etc will automatically be stored in a folder called "FasterR-CNN within the base directory" <br>
+Within the jupyter notebook, at the top alter "base_dir" and point it to the created base directory within google drive <br>
+The following directory structure should be used in google drive.
+</p>
+
+``` bash
+├───BaseDir
+│   ├───Dataset
+│   │   └───Example dataset structure (see above)
+│   └───DatasetH5py
+│       └───Example hdf5 dataset
+│           ├───Train.hdf5
+│           └───Validate.hdf5
+```
