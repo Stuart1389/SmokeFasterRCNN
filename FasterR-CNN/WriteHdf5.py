@@ -6,6 +6,7 @@ import numpy as np
 import time
 import gzip
 
+# class used to create hdf5 files from dataset
 class WriteHdf5:
     def __init__(self):
         self.batch_size = setTrainValues("BATCH_SIZE")
@@ -21,16 +22,16 @@ class WriteHdf5:
         self.write_validate_path = Path(f"{self.write_main_path}/Validate.hdf5")
 
         #write to file
+        # create train hdf5 file
         self.write_to_file(self.train_dataloader, self.write_main_path, self.write_train_path)
+        # create validate hdf5 file
         self.write_to_file(self.validate_dataloader, self.write_main_path, self.write_validate_path)
 
         #check file
         self.read_from_file(self.write_train_path)
         self.read_from_file(self.write_validate_path)
 
-        # chunking
-        self.chunk_size = 300
-
+    # method reads from hdf5 file, used to examine a hdf5 file created using this script
     def read_from_file(self, file_path):
         with h5py.File(file_path, 'r') as file:
             # Function to print all groups and datasets recursively
@@ -49,16 +50,16 @@ class WriteHdf5:
             print_items(file)
 
 
+    # method to write to hdf5 file from dataloader, see README for more info
     def write_to_file(self, dataloader, dir_write_path, file_write_path):
-        dir_write_path.mkdir(parents=True, exist_ok=True)
-        chunk_size = 20
-        # get dataset information
+        dir_write_path.mkdir(parents=True, exist_ok=True) # path to write to
+        chunk_size = setTrainValues("hdf5_chunk_size")
+        # get dataset length
         total_samples = len(dataloader.dataset)
-        #get image dimensions from a image from dataset, all images need to be same size
-        #image_shape = dataloader.dataset[0][0].shape
 
         # open hdf5 and write
         with h5py.File(file_write_path, "w") as h5df_file:
+            # Writing a single epoch, e.g. if 5 epochs in GetValues.py (see README) this will repeat 5 times
             for epoch in range(self.epochs):
                 print(f"Processing epoch {epoch + 1} out of {self.epochs}")
                 epoch_group = h5df_file.create_group(f"epoch_{epoch + 1}")  # Create a group for each epoch
@@ -72,7 +73,7 @@ class WriteHdf5:
                 box_storage = epoch_group.create_dataset("boxes", shape=(total_samples,), chunks=chunk_size,
                                                          dtype=h5py.special_dtype(vlen='float32'))
                 print(box_storage.chunks)
-                #num off bboxes to reconstruct with cor shape
+                #num off bboxes to reconstruct with shape
                 num_bbox_storage = epoch_group.create_dataset("num_bbox", shape=(total_samples, ), chunks=chunk_size, dtype='int32')
                 label_storage = epoch_group.create_dataset("labels", shape=(total_samples,), chunks=chunk_size, dtype=h5py.special_dtype(vlen='int64'))
                 image_id_storage = epoch_group.create_dataset("image_ids", shape=(total_samples,), chunks=chunk_size, dtype='int64')
@@ -83,14 +84,13 @@ class WriteHdf5:
                 # Create global index, this is so that we write to the correct spot when using dataloader
                 global_index = 0
 
-
+                # Loop through each batch from dataloader for current epoch
                 for batch, (images, targets) in enumerate(dataloader):
-
+                    # getting data from dataloader
                     print(f"Processing batch {batch + 1} out of {len(dataloader)}")
                     image_tensors = list(tensor.to("cpu", non_blocking=False) for tensor in images)
                     targets = list(target for target in targets)
                     batch_size = len(image_tensors)
-
 
                     # write to file
                     for i in range(batch_size):

@@ -29,7 +29,7 @@ current_dir = os.getcwd()
 relative_path = os.path.join(current_dir, '..', 'Libr')
 sys.path.append(relative_path)
 
-
+# CLass is used to train a model on a given task
 class Trainer:
     # Constructor
     def __init__(self, model, train_dataloader, validate_dataloader, device, plot_train_loss=True, checkpoint = None):
@@ -39,12 +39,12 @@ class Trainer:
         self.validate_dataloader = validate_dataloader
         self.device = device
         self.epochs = setTrainValues("EPOCHS") # number of epochs to train on
-        self.patience = setTrainValues("PATIENCE") # num of epochs to do with no imrpovement
+        self.patience = setTrainValues("PATIENCE") # num of subsequent epochs to do with no improvement
         self.plot_train_loss = plot_train_loss
         self.checkpoint = checkpoint # used to train a model from a checkpoint
-        self.best_val_loss = float('inf')  # first value make mega
+        self.best_val_loss = float('inf')  # first value
         # this isnt storing the best value, but the train loss value when validation loss was best
-        self.best_train_loss = float('inf')  # first value make mega
+        self.best_train_loss = float('inf')  # first value
         self.epochs_no_improve = 0 # number of epochs with no improvement
         self.epochs_trained = 0 # number of epochs trained (tells us epochs trained for early stopping)
         self.model_name = setTrainValues("model_name")
@@ -76,7 +76,7 @@ class Trainer:
         self.save_path.mkdir(parents=True, # make parent dir if doesnt exist
                          exist_ok=True) # dont cry if already exists
         self.scalar = None
-        # mixed precission
+        # scalar for mixed precission (AMP)
         if(setTrainValues("amp_mixed_precission")):
             self.scalar = GradScaler('cuda')
 
@@ -93,13 +93,13 @@ class Trainer:
         # Trying to get to convergence quicker without overshooting
         self.lr_scheduler = torch.optim.lr_scheduler.StepLR(
             self.optimizer, # SGD
-            step_size=self.step_size, # Reduces learning rate every 3 epochs
-            gamma=self.gamma # learning rate becomes 10% of previous 0.5 -> 0.05
+            step_size=self.step_size, # Reduces learning rate every VALUE epochs
+            gamma=self.gamma # learning rate becomes VALUE% e.g. at gamma = 0.1, lr = 0.5 -> 0.05
         )
 
-        # Init wandb
+        # Initialising weights and biases
         if(not self.logWB):
-            # disable wandb
+            # disable wandb if GetValues.py logWB is disbaled
             os.environ["WANDB_MODE"] = "disabled"
             print("wandbdisabled")
 
@@ -117,9 +117,10 @@ class Trainer:
 
 
 
-    # function saves model parameters
+    # method saves model parameters
     def save_model(self, final_save = None):
         state_dict = self.model.state_dict()
+        # saving quant aware model
         if(setTrainValues("quant_aware_training")):
             # need to convert before saving but
             # cant convert mid train
@@ -129,8 +130,6 @@ class Trainer:
             temp_model.eval()
             temp_model.backbone.body = torch.ao.quantization.convert(temp_model.backbone.body, inplace=True)
             state_dict = temp_model.state_dict()
-            #self.model.to('cpu')
-            #self.model.backbone.body = torch.ao.quantization.convert(self.model.backbone.body, inplace=True)
         # Save model parameters
         # Setting name
         model_save_name = self.model_name + ".pth"
@@ -140,7 +139,7 @@ class Trainer:
         torch.save(obj=state_dict, f=model_save_path)
 
 
-    # function defines training loop used to train model
+    # method defines training loop used to train model
     def train_loop(self):
         # start timer
         start_time = time.time()
@@ -173,12 +172,10 @@ class Trainer:
             # QUANT AWARE TRAINING
             # quant fusions must be done in eval mode
             self.model.eval()
-            #Quant aware training
             self.model.backbone.body.qconfig = torch.ao.quantization.get_default_qconfig('x86')
-            #print(self.model.backbone.body)
 
             module_names = list(self.model.backbone.body.named_modules())
-            # get layers to fure, see smoke utils
+            # get layers to fure, see smoke utils/README
             layers_to_fuse = get_layers_to_fuse(module_names)
 
             self.model.backbone.body = torch.ao.quantization.fuse_modules(self.model.backbone.body,layers_to_fuse)
@@ -205,12 +202,6 @@ class Trainer:
 
             # holds number of epochs model trained on
             self.epochs_trained += 1
-            #if(epoch > 8 and setTrainValues("quant_aware_training")):
-                #self.model.backbone.body.apply(torch.ao.quantization.disable_observer)
-            #if (epoch > 8 and setTrainValues("quant_aware_training")):
-                #self.model.backbone.body.apply(torch.nn.intrinsic.qat.freeze_bn_stats)
-
-
 
             # Add loss dicts to list
             # Average loss per epoch
@@ -295,29 +286,22 @@ class Trainer:
         # wandb logging
 
         if (setTrainValues("test_after_train")):
-            # ensure vram is freed
+            # ensure vram is freed up
             if (self.device == "cuda"):
                 torch.cuda.empty_cache()
             # evaluate model after training
             tester = Tester()
             tester.test_dir()
 
-    # function displays metrics collected from training loop
+    # method displays metrics collected from training loop
     def display_results(self, cur_highest_vram, total_training_time,
                         avg_time_per_epoch, epochs_trained,
                         best_val_loss, best_train_loss):
-        """
-        print("Highest VRAM used: {:.2f} MB".format(cur_highest_vram))
-        print(f"Total training time: {str(timedelta(seconds=total_training_time)).split('.')[0]}")
-        print(f"Average time per epoch: {str(timedelta(seconds=avg_time_per_epoch)).split('.')[0]}")
-        print(f"Model trained on {self.epochs_trained} epochs.")
-        print(f"Best val loss: {self.best_val_loss:.4f} Best train loss: {self.best_train_loss:.4f}")
-        print("Finished")
-        """
 
         # Getting values used during training
         gpu, tokens = self.get_GPU_name(self.model_name)
         total_training_time_fmt = total_training_time / 3600 # get time in hours
+        # get tokens, based on google colab prices as of implementation
         tokens_spent = total_training_time_fmt * tokens
 
         # set patience to same as epoch when we want to compare times
@@ -330,7 +314,7 @@ class Trainer:
         data = [
             ["Model Name", f"{self.model_name}"],
             ["GPU\nTokens per hours\nTokens used",
-             f"{gpu}\n{tokens}\n{tokens_spent:.2f}"], # lazy
+             f"{gpu}\n{tokens}\n{tokens_spent:.2f}"],
             ["Batch Size", f"{self.batch_size}"],
             ["Epochs Set", f"{self.epochs}"],
             ["Patience", f"{patience_val}"],
@@ -387,7 +371,6 @@ def main():
     non_blocking = setTrainValues("non_blocking")
 
     # Setting variables for instance
-    #device = setGlobalValues("device")
     device = "cuda" if torch.cuda.is_available() else "cpu" # device agnostic
     print(device)
 
@@ -400,7 +383,6 @@ def main():
     model, in_features, model.roi_heads.box_predictor = smoke_model.get_model()
 
     model.to(device, non_blocking=non_blocking) # put model on gpu (or cpu :( )
-
 
     # create instance of trainer
     trainer = Trainer(model, train_dataloader, validate_dataloader, device)

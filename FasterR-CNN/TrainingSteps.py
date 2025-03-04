@@ -17,46 +17,19 @@ import wandb
 from GetValues import setTrainValues
 from super_image import PanModel
 
-def get_iou_type(model):
-    model_without_ddp = model
-    if isinstance(model, torch.nn.parallel.DistributedDataParallel):
-        model_without_ddp = model.module
-    iou_types = ["bbox"]
-    if isinstance(model_without_ddp, torchvision.models.detection.MaskRCNN):
-        iou_types.append("segm")
-    if isinstance(model_without_ddp, torchvision.models.detection.KeypointRCNN):
-        iou_types.append("keypoints")
-    return iou_types
-
-def debugging(cur_debugging):
-    for name, param in cur_debugging.named_parameters():
-        print(f"Layer: {name}, Requires Grad: {param.requires_grad}")
-
-def count_activated_params(cur_debugging):
-    activated_params = 0
-    total_params = 0
-    for param in cur_debugging.parameters():
-        total_params += param.numel()
-        activated_params += (param != 0).sum().item()
-    return activated_params, total_params
-
-def count_trainable_params(cur_debugging):
-    trainable_params = sum(p.numel() for p in cur_debugging.parameters() if p.requires_grad)
-    return trainable_params
-
-def make_all_params_trainable(cur_debugging):
-    for param in cur_debugging.parameters():
-        param.requires_grad = True
-
+# function used to dynamically upscale images during training
+@torch.inference_mode()
 def upscale_images(device, image_tensors):
     combined_tensor = torch.stack(image_tensors, dim=0).to(device)
     upscale_model = PanModel.from_pretrained('eugenesiow/pan-bam', scale=setTrainValues("upscale_value"))
     upscale_model.to(device)
+    upscale_model.eval()
     upscale_outputs = upscale_model(combined_tensor)
     # undo stack for faster rcnn input
     formatted_tensors = list(torch.unbind(upscale_outputs, dim=0))
     return formatted_tensors
 
+# Training step function
 def train_step(model, optimizer, data_loader, device, epoch, iteration, print_freq,
                scaler=None, profiler=None):
     cur_debugging = model.backbone.body
@@ -71,40 +44,13 @@ def train_step(model, optimizer, data_loader, device, epoch, iteration, print_fr
     num_batches = len(data_loader)
     non_blocking = setTrainValues("non_blocking")
 
-    active_neurons = 0
-    feature_map_sizes = []
-
-    def hook_fn(module, input, output):
-        nonlocal active_neurons
-        feature_map_sizes.append(output.shape)  # Store the shape of the output tensor (feature map size)
-        active_neurons += output.numel()
-
+    # metric logger used to display results to console for simplicity
     model.train()
-    hooks = []
-    for layer in cur_debugging.children():
-        hook = layer.register_forward_hook(hook_fn)
-        hooks.append(hook)
-
-    #DEBUGGING
-    #debugging(model)
-    activated_params, total_params = count_activated_params(cur_debugging)
-    #print(f"Activated Parameters in Backbone: {activated_params}")
-    #print(f"Total Parameters in Backbone: {total_params}")
-
-    trainable_params = count_trainable_params(cur_debugging)
-
-    #print(f"Trainable parameters in model: {trainable_params}")
-
-    #make_all_params_trainable(model.backbone.body)
-    #trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    #print(f"Trainable parameters after making all parameters trainable: {trainable_params}")
-
-    #print(model.backbone.fpn)
-
     metric_logger = utils.MetricLogger(delimiter="  ")
     metric_logger.add_meter("lr", utils.SmoothedValue(window_size=1, fmt="{value:.6f}"))
     header = f"Epoch: [{epoch}]"
 
+    # model warmup to help mitigate instability
     lr_scheduler = None
     if epoch == 0:
         warmup_factor = 1.0 / 1000
@@ -114,10 +60,10 @@ def train_step(model, optimizer, data_loader, device, epoch, iteration, print_fr
             optimizer, start_factor=warmup_factor, total_iters=warmup_iters
         )
 
+    # training loop
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
         if(setTrainValues("upscale_image")):
             images = upscale_images(device, images)
-        #with torch.profiler.record_function("MOVE_IMAGES"):
         images = list(image.to(device, non_blocking=non_blocking) for image in images)
 
         if(setTrainValues("half_precission")):
@@ -125,15 +71,11 @@ def train_step(model, optimizer, data_loader, device, epoch, iteration, print_fr
 
         targets = [{k: v.to(device, non_blocking=non_blocking) if isinstance(v, torch.Tensor) else v for k, v in t.items()} for t in targets]
 
-        with torch.amp.autocast('cuda', enabled=scaler is not None):
+        with torch.amp.autocast('cuda', enabled=scaler is not None): # Automatic mixed precision
+            # input images and targets into faster-rcnn and return loss dictionary
             loss_dict, _, _, _, _ = model(images, targets)
             losses = sum(loss for loss in loss_dict.values())
             iteration += 1
-            for hook in hooks:
-                hook.remove()
-
-            #print(f"Active neurons: {active_neurons}")
-            #print(f"Feature Map Sizes: {feature_map_sizes}")
 
         # reduce losses over all GPUs for logging purposes
         loss_dict_reduced = utils.reduce_dict(loss_dict)
@@ -144,19 +86,20 @@ def train_step(model, optimizer, data_loader, device, epoch, iteration, print_fr
         log_it_loss(iteration_loss_list, loss_value, loss_dict_reduced, epoch, iteration)
 
         # gettting individual loss from dict for average epoch graphs
-        total_loss += losses_reduced.item() # epoch
+        total_loss += losses_reduced.item()
         total_loss_classifier += loss_dict_reduced['loss_classifier'].item()
         total_loss_box_reg += loss_dict_reduced['loss_box_reg'].item()
         total_loss_objectness += loss_dict_reduced['loss_objectness'].item()
         total_loss_rpn_box_reg += loss_dict_reduced['loss_rpn_box_reg'].item()
 
+        # indicates instability
         if not math.isfinite(loss_value):
             print(f"Loss is {loss_value}, stopping training")
-            #print(loss_dict_reduced)
             sys.exit(1)
 
         optimizer.zero_grad()
         if scaler is not None:
+            # AMP
             scaler.scale(losses).backward()
             scaler.step(optimizer)
             scaler.update()
@@ -169,7 +112,6 @@ def train_step(model, optimizer, data_loader, device, epoch, iteration, print_fr
 
         metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
-        #train_loss.append(loss_value)
 
     # Logging average loss
     avg_loss_dict = log_avg_loss(total_loss, total_loss_classifier, total_loss_box_reg,
@@ -218,6 +160,8 @@ def log_it_loss(iteration_loss_list, loss_value, loss_dict_reduced, epoch, itera
     })
 
 
+# Validation step function - uses coco evaluatior for simplisity
+# more complex evaluation implemented in Tester.py
 @torch.inference_mode()
 def validate_step(model, data_loader, device, epoch, iteration, scaler=None, profiler=None):
     model.eval()
@@ -225,8 +169,8 @@ def validate_step(model, data_loader, device, epoch, iteration, scaler=None, pro
     header = "Validation:"
 
     coco = get_coco_api_from_dataset(data_loader.dataset)
-    iou_types = get_iou_type(model)
-    coco_evaluator = CocoEvaluator(coco, iou_types)
+    # method of calculating iou determined by target type, in our case bounding boxes
+    coco_evaluator = CocoEvaluator(coco, ['bbox'])
 
     # Init loss values
     iteration_loss_list = []  # loss graph iteration instead of epoch
@@ -238,14 +182,13 @@ def validate_step(model, data_loader, device, epoch, iteration, scaler=None, pro
     num_batches = len(data_loader)
     non_blocking = setTrainValues("non_blocking")
 
-
-
+    # validation loop
     for images, targets in metric_logger.log_every(data_loader, 10, header):
         images = list(img.to(device, non_blocking=non_blocking) for img in images)
         if(setTrainValues("half_precission")):
             images = [tensor.cuda().half() for tensor in images]
 
-        targets = [ # targets to get validation loss
+        targets = [ # targets are necessary for validation loss
             {k: (v.to(device, non_blocking=non_blocking) if isinstance(v, torch.Tensor) else v) for k, v in t.items()}
             for t in targets
         ]
@@ -254,9 +197,10 @@ def validate_step(model, data_loader, device, epoch, iteration, scaler=None, pro
             # creates overhead by waiting for gpu operations to finish, use during validation for more reliable validating
             torch.cuda.synchronize()
         model_time = time.time()
-        # validate
-        with torch.amp.autocast('cuda', enabled=scaler is not None):
+
+        with torch.amp.autocast('cuda', enabled=scaler is not None): # Automatic mixed precision
             iteration += 1
+            # model input here, get predictions and validation loss
             outputs, loss_dict, _, _, _, _ = model(images, targets)
             losses = sum(loss for loss in loss_dict.values())
 
@@ -283,7 +227,6 @@ def validate_step(model, data_loader, device, epoch, iteration, scaler=None, pro
             'current_epoch': epoch + 1,
             'current_iteration': iteration
         })
-        #print("it loss:", iteration_loss_list)
         
 
         # gettting individual loss from dict for average epoch graphs
@@ -293,23 +236,15 @@ def validate_step(model, data_loader, device, epoch, iteration, scaler=None, pro
         total_loss_objectness += loss_dict_reduced['loss_objectness'].item()
         total_loss_rpn_box_reg += loss_dict_reduced['loss_rpn_box_reg'].item()
 
-        #print(loss_dict_reduced)
-        #print(loss_value)
-
-        #outputs = model(images)
-        #print(outputs)
-
-
         outputs = [{k: v.to(device, non_blocking=non_blocking) for k, v in t.items()} for t in outputs]
         model_time = time.time() - model_time
 
+        # process predictions
         res = {target["image_id"]: output for target, output in zip(targets, outputs)}
         evaluator_time = time.time()
         coco_evaluator.update(res)
         evaluator_time = time.time() - evaluator_time
         metric_logger.update(model_time=model_time, evaluator_time=evaluator_time)
-
-    # Getting average loss values and storing in dict
 
     avg_loss_dict = {
         "avg_total_loss": total_loss / num_batches,

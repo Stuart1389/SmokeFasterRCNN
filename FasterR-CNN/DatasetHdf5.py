@@ -80,7 +80,7 @@ if __name__ == '__main__':
     num_workers = os.cpu_count() # cores available
     batch_size = setTrainValues("BATCH_SIZE")
     epochs = 2
-    visualise = False
+    visualise = True
 
     # Load dataset and create dataloader
     debug_dir = SmokeDatasetHdf5(str(write_train_path))

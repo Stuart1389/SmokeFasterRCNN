@@ -15,11 +15,11 @@ def setTrainValues(val_to_get):
     train_values = {
         # TRAIN SETTINGS
         # Basic train settings
-        "BATCH_SIZE": 1,
-        "EPOCHS": 1,
+        "BATCH_SIZE": 2,
+        "EPOCHS": 2,
         "PATIENCE": 3,
         "dataset": "Small data", # Name of dataset to use
-        "model_name": "test_file", # Names model, including directory, weights, etc
+        "model_name": "test_file_C", # Names model, including directory, weights, etc
         "plotJSON_fname": "", # json and manual plot filename, leave black to make same as model
         "model_id": "39B", # model is is used for W&B runs only: id_modelname
         "save_at_end" : False, # forces the model to save at end of training, ignoring validation
@@ -41,15 +41,16 @@ def setTrainValues(val_to_get):
         # HDF5 settings. TO create HDF5 file use WriteHdf5.py
         # NOTE WriteHdf5.py uses dataloader to write, so if this is enabled when writing
         # hdf5 will be used to write instead of the default dataset
-        "load_hdf5" : False,
+        "load_hdf5" : True,
         "force_first_epoch" : False, # forces hdf5 to repeat the first epoch for all training epochs
-        "h5py_dir_save_name": "test_file", # file name for hdf5 file when written
-        "h5py_dir_load_name": "test_file", # file name hdf5 file to load
+        "h5py_dir_save_name": "test_file_check", # file name for hdf5 file when written
+        "h5py_dir_load_name": "transform_csj", # file name hdf5 file to load
+        "hdf5_chunk_size": 2, # chunk size for hdf5, needs to be less than number of samples in epoch
 
         # PROFILER
         "start_profiler" : False,
         "record_trace" : False,
-        # Enables or disables W&B logging
+        # Enables or disables Weights&Biases logging
         "logWB" : False,
 
         # TRAINING HYPERPARAMETERS
