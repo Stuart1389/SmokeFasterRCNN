@@ -8,10 +8,9 @@ import matplotlib.pyplot as plt
 from GetValues import checkColab
 from SmokeUtils import extract_boxes
 
-# !!Checking bounding box and dataset!!
-# checking dataset before implementing torch dataset
+# !!This file can be used to visually check bounding box and dataset!!
 
-### DATASET: https://github.com/aiformankind/wildfire-smoke-dataset/blob/master/README.md
+### DATASET USED IN PAPER: https://github.com/aiformankind/wildfire-smoke-dataset/blob/master/README.md
 base_dir = checkColab()
 print(torch.__version__)
 
@@ -19,8 +18,8 @@ print(torch.__version__)
 image_path = Path(f"{base_dir}/Dataset/Large data/Train/images")
 annotation_path = Path(f"{base_dir}/Dataset/Large data/Train/annotations/xmls")
 
+# functions walks through dir path and return its contents
 def walk_through_dir(dir_path):
-  """walk through dir path and return its contents """
   for dirpath, dirnames, filenames in os.walk(dir_path): # Go through target directory and go through each sub directory and print info
     print(f"There are {len(dirnames)} directories and {len(filenames)} images in '{dirpath}'.")
 
@@ -29,6 +28,7 @@ print(walk_through_dir(image_path))
 # Set image path
 image_path_list = list(image_path.glob("*.jpeg"))  # glob together/stick together all the files that follow a pattern. anything/anything/anything.jpeg. get all images
 
+# randomly select an image
 get_randy_image = random.choice(image_path_list)
 file_name = get_randy_image.stem
 print(file_name)
@@ -50,6 +50,7 @@ root = tree.getroot()
 # Draw the bounding boxes
 # This doesn't use the shared SmokeUtils extract_bbox
 # because this is meant to be a simple check, better to leave it as this simple parse
+# make sure to change based on xml structure
 draw = ImageDraw.Draw(img)
 for obj in root.findall('object'):
     bndbox = obj.find('bndbox')

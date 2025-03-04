@@ -130,7 +130,7 @@ FasterR-CNN > SavedModels > model_name set in GetValues <br>
 
 <h2> Evaluating a model: </h2>
 <p>
-Make sure within GetValues the model_name value is the same as the name of the trained model <br>
+Make sure within GetValues the model_name value in test settings is the same as the name of the trained model <br>
 Open Tester.py and run the file. The model will be automatically evaluated.
 There are many options at the top of the Tester.py file relating to visualisation, metrics, etc
 </p>
@@ -146,7 +146,7 @@ Below is a guide on how to use each strategy.
 
 <h3> Quantization </h3>
 <p>
-*Note quantization is implemented for CPU only, device will change automatically when enabled
+*Note quantization is implemented for CPU only, device will change automatically when enabled <br>
 Setup (ignore if using default or resnet_builder as backbone): <br>
 Open SmokeUtils.py, edit the get_layers_to_fuse function <br>
 Ensure arithmetic doesn't occur between fused layers. <br>
@@ -154,9 +154,9 @@ Edit the backbone model, ensuring that any arithmetic is replaced with floatfunc
 https://pytorch.org/docs/stable/generated/torch.ao.nn.quantized.FloatFunctional.html <br>
 Editing backbone_utils.py and faster_rcnn.py (from torchvision/detection) may be necessary depending on the model used. <br>
 Post-static quants: <br>
-Enable static_quant in test setting of GetValues.py and test as normal
+Enable static_quant in test setting of GetValues.py and test as normal <br>
 Quant-Aware-Training: <br>
-Enable quant_aware_training in training settings of GetValues.py and train
+Enable quant_aware_training in training settings of GetValues.py and train <br>
 When evaluating, enable load_QAT_model in test setting of GetValues.py and evaluate as normal
 
 </p>
@@ -173,7 +173,7 @@ Enable amp_mixed_precission within GetValues.py within training settings
 Enable pruning within testing setting of GetValues.py <br>
 If not using default or resnet_builder backbones (see GetValues.py) <br>
 In SmokeUtils.py alter get_layers_to_prune, adding layers to prune based on the backbone used <br>
-Pruning strategy can be aletered further, see prune_model method in Tester.py
+Pruning strategy can be altered further, see prune_model method in Tester.py
 </p>
 <h3> AI upscaling </h3>
 <p> 
@@ -196,7 +196,7 @@ SmokeUpscale output:
 
 <p>
 Training: <br>
-Using pre-upscaled images:
+Using pre-upscaled images: <br>
 Within GetValues.py enable upscale_bbox and ensure upscale_value is the value used to upscale images during pre-upscaling <br>
 Then train as normal. <br>
 
