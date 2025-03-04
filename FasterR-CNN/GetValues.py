@@ -132,6 +132,6 @@ def checkColab():
     if "COLAB_GPU" in os.environ:
         base_dir = "/content/drive/My Drive/Colab Notebooks/Thesis" # this is to run the program in colab
     else: # change this to (Project folder\\SmokeFasterRCNN) to run locally
-        base_dir = "N:\\University subjects\\Thesis\\Python projects\\SmokeFasterRCNN"
+        base_dir = "N:\\University subjects\\Honours\\Python projects\\SmokeFasterRCNN"
     return base_dir
 
