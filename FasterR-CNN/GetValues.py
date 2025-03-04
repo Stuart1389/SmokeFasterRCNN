@@ -30,7 +30,7 @@ def setTrainValues(val_to_get):
         # default - coco vpnv2
         # mobilenet  - IMAGENET1K weights for fpnv1
         # resnet_builder - IMAGENET1K weights for fpnv1
-        "backbone_to_use": "resnet_builder",
+        "backbone_to_use": "default",
 
         # Settings for resnet builder, only applicable when using "resnet_builder" above
         "resnet_backbone": "resnet50", #resnet18, resnet34, resnet50, resnet101, etc
@@ -90,7 +90,7 @@ def setTrainValues(val_to_get):
 def setTestValues(val_to_get):
     # TEST SETTINGS
     test_values = {
-        "BATCH_SIZE": 8,
+        "BATCH_SIZE": 2,
         "dataset": "Large data", # dataset to load from
         "model_name": "transform_csj_a100", # name of model to test
         "test_on_val": False, # test on validation instead of test set

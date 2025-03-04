@@ -7,19 +7,21 @@ import torch
 import numpy as np
 import shutil
 import matplotlib.pyplot as plt
+from SmokeUtils import extract_boxes
 
+# class used to split images into small, medium and large based on ground truth area, see README for more info
 class SplitImage():
-    """
-    Running this file will split images in a dataset to small, medium and large
-
-    """
     def __init__(self):
-        self.split_images = True
+        # Setting dir of dataset to split
+        self.base_dir = checkColab()
+        #dataset_name = "Example dataset structure"  # set this to dataset name, see README
+        dataset_name = "Large Data"
 
-        self.plot_no_large = True
-        self.outlier_remove = True
+        self.split_images = False # whether to actually split the images in drive
+        self.plot_no_large = True # dont plot large ground truths in scatter plot
+        self.outlier_remove = True # whether to remove outliers
 
-
+        # Creating lists to hold filenames for each split/size
         self.train_areas = {
             "small_vals": [],
             "medium_vals": [],
@@ -36,13 +38,12 @@ class SplitImage():
             "large_vals": [],
         }
 
-        self.base_dir = checkColab()
-        dataset_name = "Example dataset structure"  # see README
         self.main_dir = Path(self.base_dir) / "Dataset" / dataset_name
         self.train_path = self.main_dir / "Train"
         self.val_path = self.main_dir / "Validate"
         self.test_path = self.main_dir / "Test"
 
+        # methods split images
         self.subclass_images(self.train_path, self.train_areas)
         self.subclass_images(self.val_path, self.val_areas)
         self.subclass_images(self.test_path, self.test_areas)
@@ -51,23 +52,25 @@ class SplitImage():
         print(self.val_areas)
         print(self.test_areas)
 
+        # method to plot scatter of size distribution
         self.plot_scatter(self.train_areas, self.val_areas, self.test_areas)
 
 
 
 
-
+    # method splits images into size and moves them to destination
     def subclass_images(self, dir, dict):
         image_dir = Path(str(dir) + "/images/")
         anot_dir = Path(str(dir) + "/annotations/xmls")
+        # creating folder in directory for each size
         if(self.split_images):
             self.create_size_folders(image_dir, anot_dir)
 
+        # This method is used to determine ground_truth area sizes
         self.image_gt_size = self.get_ground_truth_size(image_dir, anot_dir, dict)
-        #print(self.image_gt_size)
 
+        # move each image to new directory
         for image_path in image_dir.glob("*.jpeg"):
-
             filename = image_path.name
             anot_name = image_path.stem + ".xml"
             anot_path = anot_dir / anot_name
@@ -81,6 +84,7 @@ class SplitImage():
                 shutil.move(str(image_path), size_dir_image / filename)
                 shutil.move(str(anot_path), size_dir_anot / anot_name)
 
+    # method plot scatter plot of size distributions
     def plot_scatter(self, train_area_dict, val_area_dict, test_area_dict):
         fig, axs = plt.subplots(1, 3, figsize=(15, 5))  # Create a 1x3 grid of subplots
 
@@ -98,9 +102,6 @@ class SplitImage():
                 if(self.plot_no_large):
                     if area == "large_vals":
                         continue
-                if(self.outlier_remove):
-                    filtered_values = self.remove_outliers(values)
-                else:
                     filtered_values = values
 
                 axs[idx].scatter(range(len(filtered_values)), filtered_values, color=colors[area], label=area)
@@ -112,7 +113,7 @@ class SplitImage():
         plt.tight_layout()
         plt.show()
 
-
+    #method creates size folders
     def create_size_folders(self, image_dir, annotation_dir):
         sizes = ['small', 'medium', 'large', 'none']
 
@@ -120,21 +121,7 @@ class SplitImage():
             (image_dir / size).mkdir(parents=True, exist_ok=True)
             (annotation_dir / size).mkdir(parents=True, exist_ok=True)
 
-    def remove_outliers(self, values):
-        Q1 = np.percentile(values, 25)
-        Q3 = np.percentile(values, 75)
-        IQR = Q3 - Q1
-
-        lower_bound = Q1 - 1.5 * IQR
-        upper_bound = Q3 + 1.5 * IQR
-
-        return [x for x in values if lower_bound <= x <= upper_bound]
-    """
-    Lazy implementation below due to time
-    Below is copied from tester. This should really be changed
-    to remove duplicate code/make it more object orinted
-    """
-
+    # method to find area of ground truths, copied from Tester.py for simplisity
     def get_ground_truth_size(self, test_image_dir, test_annot_dir, area_dict):
         all_areas = []
 
@@ -226,44 +213,15 @@ class SplitImage():
 
         return categorized_images_dict
 
+    # method to get area from ground truth bboxes
     def parse_xml(self, annotation_path, get_area=False):
-        # Parsing XML file for each image to find bounding boxes
-        tree = ET.parse(annotation_path)
-        root = tree.getroot()
-        # Extract bounding boxes
-        boxes = []
-        areas = []
-        for obj, size in zip(root.findall("object"), root.findall("size")):
-            xml_box = obj.find("bndbox")
-            image_height = float(size.find("height").text)
-            image_width = float(size.find("width").text)
-
-            xmin = float(xml_box.find("xmin").text)
-            ymin = float(xml_box.find("ymin").text)
-            xmax = float(xml_box.find("xmax").text)
-            ymax = float(xml_box.find("ymax").text)
-
-            if xmin >= xmax or ymin >= ymax:
-                print(f"Invalid area/box coordinates: ({xmin}, {ymin}), ({xmax}, {ymax})")
-
-            boxes.append([xmin, ymin, xmax, ymax])
-            area = (xmax - xmin) * (ymax - ymin) # get area of ground truth
-            if (get_area):
-                areas.append(area)
-
-        # Extract labels
-        labels = []
-        class_to_idx = {"smoke": 1}  # dictionary, if "smoke" return 1
-        for obj in root.findall("object"):
-            label = obj.find("name").text  # find name in xml
-            labels.append(class_to_idx.get(label, 0))  # 0 if the class isn't found in dictionary
-
+        boxes, areas, labels_int, _ = (
+            extract_boxes(annotation_path, get_area))
         # Convert boxes and labels to tensors for torchmetrics
         ground_truth = {
             "boxes": torch.tensor(boxes, dtype=torch.float32),
-            "labels": torch.tensor(labels, dtype=torch.int64),
+            "labels": torch.tensor(labels_int, dtype=torch.int64),
         }
-        #print(areas)
 
         # Some images have more than 1 ground truth, in that case only use that images AP for global
         if get_area:
@@ -273,6 +231,7 @@ class SplitImage():
                 return 0
         else:
             return ground_truth
+
 
 
 if __name__ == '__main__':

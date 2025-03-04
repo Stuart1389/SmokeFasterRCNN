@@ -44,6 +44,7 @@ from torch.ao.pruning import WeightNormSparsifier
 import torch_pruning as tp
 SparseSemiStructuredTensor._FORCE_CUTLASS = True
 
+# Class if used to evaluate models
 class Tester:
     #Constructor
     def __init__(self):
@@ -99,7 +100,7 @@ class Tester:
         _, _, self.test_dataloader = smoke_model.get_dataloader(True)
         self.validate_dataloader = smoke_model.get_validate_test_dataloader()
 
-        # Paths
+        # set dataset dirs
         if(setTestValues("test_on_val")):
             self.test_image_dir = Path(f"{self.base_dir}/Dataset/") / setTestValues("dataset") / "Validate/images"
             self.test_annot_dir = Path(f"{self.base_dir}/Dataset/") / setTestValues("dataset") / "Validate/annotations/xmls"
@@ -107,10 +108,10 @@ class Tester:
             self.test_image_dir = Path(f"{self.base_dir}/Dataset/") / setTestValues("dataset") / "Test/images"
             self.test_annot_dir = Path(f"{self.base_dir}/Dataset/") / setTestValues("dataset") / "Test/annotations/xmls"
 
-        # Metrics
+        # initialise mAP metrics
         self.initialise_metrics()
 
-        # Benchmark times
+        # list to hold benchmark times
         self.benchmark_times = []
 
         # Total time
@@ -123,8 +124,8 @@ class Tester:
 
         # dictionary containing ground truth sizes
         self.image_gt_size = self.get_ground_truth_size(self.test_image_dir, self.test_annot_dir)
-        #print(self.image_gt_size)
 
+        # get values from GetValues.py
         self.model_name = setTestValues("model_name")
         self.start_profiler = setTestValues("start_profiler")
         self.record_trace = setTestValues("record_trace")
@@ -149,12 +150,12 @@ class Tester:
         print(time.strftime("%Y-%m-%d_%H-%M-%S"))
         sys.stdout = Logger(log_filename)
 
+        # initialise profiler
         profiler = torch.profiler.profile(
                 activities=[
                     torch.profiler.ProfilerActivity.CPU,
                     torch.profiler.ProfilerActivity.CUDA
                 ],
-                #schedule=torch.profiler.schedule(wait=1, warmup=1, active=3),
                 on_trace_ready=torch.profiler.tensorboard_trace_handler(self.save_path / 'profiler_test_output'),
                 record_shapes=False,
                 profile_memory=False,
@@ -164,7 +165,7 @@ class Tester:
         )
         if(self.start_profiler):
             profiler.start()
-        test_dataloader = self.test_dataloader # change to dataloader
+        test_dataloader = self.test_dataloader
         # getting predictions
         print("Model on device: ", self.device)
         self.model.to(self.device, non_blocking=self.non_blocking)  # put model on cpu or gpu
@@ -175,15 +176,10 @@ class Tester:
             self.model = self.model.cuda().half()
 
         # Static quantization
-        #print(self.model)
-        #print(self.model.backbone.body)
-        #print(self.model.backbone)
-
-        # QUANTS!
         if(self.static_quants):
             self.quant_model()
 
-        #self.model = self.model.cuda().half()
+        # prune model
         if(setTestValues("prune_model")):
             self.prune_model()
 
@@ -192,6 +188,8 @@ class Tester:
         if(self.save_plots):
             self.make_plot_dir()
 
+        # delete currently saved split image plots in model folder
+        # and create new dir for plots
         if(self.save_split_image_plots):
             self.make_plot_dir(True)
 
@@ -199,11 +197,12 @@ class Tester:
 
         # Start timer
         self.start_time = time.time()
-        # Walks through dir_path, for each file call predictBbox and pass file path
+        # for batch in test_dataloader, pass images through model and calculate evaluation metrics
         for batch, (image_tensor, filename) in enumerate(test_dataloader):
             print(f"Processing batch {batch} out of {len(test_dataloader)}")
+            # Get predictions from faster-rcnn model
             self.get_predictions(image_tensor, filename)
-            #profiler.step()
+        # method to calculate and display results
         self.get_results()
         if(self.start_profiler):
             profiler.stop()
@@ -211,6 +210,7 @@ class Tester:
         sys.stdout.file.close()
         sys.stdout = sys.__stdout__
 
+    # method to make directory to store saved plots
     def make_plot_dir(self, split_images = False):
         self.plot_save_path = self.save_path / "plots"
         self.split_plot_save_path = self.save_path / "split_plots"
@@ -223,6 +223,7 @@ class Tester:
             shutil.rmtree(save_path)
         save_path.mkdir(exist_ok=False)
 
+    # method to prune model
     def prune_model(self):
         """
         pruning in pytorch is very experimental, benefits are limited, most performance gains
@@ -288,15 +289,20 @@ class Tester:
                 prune.remove(module, name="weight") # remove hooks
                 print("Sparse weight tensor:", sparse_weight)
 
+    # method to quantize model
     def quant_model(self):
         print(f"Threads available: {torch.get_num_threads()}")
-        # torch.set_num_threads(torch.get_num_threads())
+        # get list of modules from backbone.body, these will be used to find fusable modules
         module_names = list(self.model.backbone.body.named_modules())
         self.model.backbone.body.qconfig = torch.ao.quantization.get_default_qconfig('x86')
+        # finds fusable layers, see SmokeUtils.py/get_layers_to_fuse function and README
         layers_to_fuse = get_layers_to_fuse(module_names)
+        # quant model
         self.model.backbone.body = torch.ao.quantization.fuse_modules(self.model.backbone.body, layers_to_fuse)
         self.model.backbone.body = torch.ao.quantization.prepare(self.model.backbone.body, inplace=False)
+        # calibration
         if (self.calibrate_full_set):
+            # calibrate on full dataset
             start_time = time.time()
             for batch, (image_tensor, filename) in enumerate(self.validate_dataloader):  # or self.test_dataloader
                 print(f"Calibrating batch {batch} out of {len(self.validate_dataloader)}")
@@ -307,6 +313,7 @@ class Tester:
             end_time = time.time()
             print(f"Calibration took: {end_time - start_time:.2f} seconds")
         else:
+            # calibrate on single image
             image_tensor, filename = next(iter(self.validate_dataloader))  # quant calibration
             self.model.backbone.body(image_tensor[0].unsqueeze(0))
 
@@ -316,34 +323,30 @@ class Tester:
             self.model.load_state_dict(self.qat_state_dict)
 
 
-    # Transform images for model
-    def get_transform(self):
-        transforms = []
-        transforms.append(T.ToDtype(torch.float, scale=True))
-        transforms.append(T.ToPureTensor())
-        return T.Compose(transforms)
-
-    # function to calculate the average time to make a prediction
+    # method to calculate the average time to make a prediction
     def get_avg_time(self, benchmark_times):
         total_time = sum(benchmark_times)  # get sum
         avg_time = total_time / len(benchmark_times)  # get average
         return avg_time
 
+    # method to dynamically upscale images during evaluation
+    @torch.inference_mode()
     def upscale_images(self, image_tensors):
         combined_tensor = torch.stack(image_tensors, dim=0).to(self.device)
         upscale_model = PanModel.from_pretrained('eugenesiow/pan-bam', scale=setTestValues("upscale_value"))
         upscale_model.to(self.device)
+        upscale_model.eval()
         upscale_outputs = upscale_model(combined_tensor)
         # undo stack for faster rcnn input
         formatted_tensors = list(torch.unbind(upscale_outputs, dim=0))
         return formatted_tensors
 
+
+    # method to split images into 4 sections
     def split_image(self, input_tensor):
         split_tensors = []
-
         for tensor in input_tensor:
             _, H, W = tensor.shape # c, w, h
-
             H_mid, W_mid = H // 2, W // 2
 
             # Split the tensor into 4 parts
@@ -351,13 +354,11 @@ class Tester:
             part2 = tensor[:, :H_mid, W_mid:]  # Top right
             part3 = tensor[:, H_mid:, :W_mid]  # Bot left
             part4 = tensor[:, H_mid:, W_mid:]  # Bot right
-
-            #batch = torch.stack([part1, part2, part3, part4], dim=0)
-            #print("batch_shape",batch.shape)
             split_tensors.append([part1, part2, part3, part4])
-        #result = torch.cat(batches, dim=0)
         return split_tensors
 
+
+    # Method to visualise segmented image
     def display_split_images(self, split_images, pred_dict, filename):
         part1, part2, part3, part4 = split_images
         # display split parts in matplotlib
@@ -392,6 +393,8 @@ class Tester:
         if(self.plot_split_images):
             plt.show()
 
+
+    # method to adjust bounding box positions for segmented/split images
     def adjust_boxes(self, boxes, offset_x, offset_y):
         # move bbox based on position in split
         adjusted_boxes = boxes.clone()
@@ -401,21 +404,17 @@ class Tester:
         adjusted_boxes[:, 3] += offset_y  # y_max
         return adjusted_boxes
 
-
+    # method to initiate processing of predictions
     def int_prediction(self, image_tensor, outputs, filenames):
-        # parallel processing after getting model predictions, might aswell
+        # parallel processing after getting model predictions
         futures = []
         with concurrent.futures.ThreadPoolExecutor() as executor:
             for image_tensor, prediction, filename in zip(image_tensor, outputs, filenames):
-                # print(f"{temp_index}! - pred:", prediction, filename)
-                # temp_index += 1
                 futures.append(executor.submit(self.process_predictions, image_tensor, prediction, filename))
-                # self.process_predictions(image_tensor, prediction, filename)
-        # print("outputs", outputs)
         concurrent.futures.wait(futures)
 
         if(self.plot_image or self.save_plots):
-            # plt not thread safe, originally used multiprocess but it caused a bunch of overhead
+            # plt not thread safe, originally used multiprocess but it performed worse
             image_vls = [future.result() for future in futures]
 
             for result in image_vls:
@@ -432,9 +431,10 @@ class Tester:
                                             metrics,
                                             filename)
 
+    # method to process images. Images are input into Faster-rcnn and outputs are processed
+    @torch.inference_mode()
     def get_model_outputs(self, tensor_list, full_image_tensors = None):
         image_tensors = list(tensor.to(self.device, non_blocking=self.non_blocking) for tensor in tensor_list)
-
         # half precission
         if self.half_precission:
             image_tensors = [tensor.cuda().half() for tensor in image_tensors]
@@ -458,13 +458,12 @@ class Tester:
                 time_taken_ind = time_taken.mean / self.batch_size
                 print(f"Prediction time taken: {time_taken_ind:.4f} seconds")
                 self.benchmark_times.append(time_taken_ind)
-            # outputs = self.model(image_tensors)
+            # this is the fatser-rcnn model
             outputs, _, _, _, _, _ = self.model(image_tensors)
 
             if(setTestValues("split_images")):
                 # offsets
-                # print(image_tensor[0].shape[1:])
-                full_image_height, full_image_width = full_image_tensors[0].shape[1:]  # get  image dims
+                full_image_height, full_image_width = full_image_tensors[0].shape[1:]  # get image dims
                 H_mid, W_mid = full_image_height // 2, full_image_width // 2  # midpoints
 
                 # Mapping offsets for the splits
@@ -483,7 +482,6 @@ class Tester:
                 }
 
                 vis_split = []
-                #print(outputs)
                 i = 0
                 for output in outputs:
                     # combined dict for using with the single combined image
@@ -493,6 +491,7 @@ class Tester:
                     temp_combined['labels'] = torch.cat((temp_combined['labels'], output['labels']), dim=0)
                     temp_combined['scores'] = torch.cat((temp_combined['scores'], output['scores']), dim=0)
 
+                    # merge bounding boxes if true
                     if(self.combine_bboxes):
                         temp_combined = self.merge_touching_boxes(temp_combined)
 
@@ -509,14 +508,13 @@ class Tester:
             else:
                 return  outputs
 
+    # method merges bounding boxes based on distance, max distanced is tolerance value
     def merge_touching_boxes(self, temp_combined):
         tolerance = self.merge_tolerance
         boxes, labels, scores = temp_combined['boxes'], temp_combined['labels'], temp_combined['scores']
         # bool indexing to get bboxes with score higher than threshold
         score_thresh = scores > self.confidence_threshold
         boxes, labels, scores = boxes[score_thresh], labels[score_thresh], scores[score_thresh]
-
-        # only use boxes where temp_combined['scores'] > self.confidence_threshold
 
         if boxes.shape[0] == 0:
             return temp_combined
@@ -539,8 +537,7 @@ class Tester:
 
                 x1_j, y1_j, x2_j, y2_j = boxes[j]
 
-                # Check if bbox edge is within tol
-
+                # Check if bbox edge is within tolerance
                 horizontally_touching = (
                         (abs(x2 - x1_j) <= tolerance or abs(x2_j - x1) <= tolerance)
                         and (y1 < y2_j and y2 > y1_j)
@@ -571,22 +568,18 @@ class Tester:
 
         return temp_combined
 
-    # !!GETTING PREDICTION!!
-    @torch.inference_mode()
+    # method handles the retrieving and processing of predictions
+    # calls method to feed images into model and to process predictions
     def get_predictions(self, image_tensor, filename):
-        #print("image tensor type", type(image_tensor))
         with torch.profiler.record_function("TESTING"):
             if(setTestValues("upscale_image")):
                 image_tensor = self.upscale_images(image_tensor)
 
             image_tensor_split = self.split_image(image_tensor)
-            #print("image tensor type after", type(image_tensor))
-            # print("image:", image, "image_tensor", image_tensor, "filename", filename)
             filenames = list(files for files in filename)
             image_tensors = list(tensor.to(self.device, non_blocking=self.non_blocking) for tensor in image_tensor)
 
             combined_outputs = []
-            #combined_outputs.append(temp_combined)
             if(setTestValues("split_images")):
                 for item, fname in zip(image_tensor_split, filename):
                     temp_combined, vis_split = self.get_model_outputs(item, image_tensor)
@@ -598,10 +591,10 @@ class Tester:
 
             self.int_prediction(image_tensor, combined_outputs, filename)
 
+    # method used to process predictions
     def process_predictions(self, image_tensor, predictions, filename):
         global total_tp, total_fp, total_fn
         # Normalize the image
-        #x = image_tensor
         image = (255.0 * (image_tensor - image_tensor.min()) / (image_tensor.max() - image_tensor.min())).to(torch.uint8)
         # Filter predictions based on confidence score
         filtered_labels = []
@@ -617,10 +610,9 @@ class Tester:
 
         # annotation path for ground truth using test_annot_dir
         # CHANGE image ID to filename
-        image_id = filename # temp
-        #print(image_id)
+        image_id = filename
         annotation_path = os.path.join(self.test_annot_dir, f"{image_id}.xml")
-        ground_truth = self.parse_xml(annotation_path)
+        ground_truth = self.parse_xml(annotation_path) # get ground truth
 
         # format predictions for mAP calculation
         predicted = {
@@ -631,9 +623,8 @@ class Tester:
         }
 
         # getting ground truth size (small, medium, large)
-        # filename stored with format in dict, might change dict later
-        gt_size = self.image_gt_size.get(filename + ".jpeg")
-        #print(gt_size)
+        # filename stored with format in dictionary
+        gt_size = self.image_gt_size.get(filename + ".jpeg") # gt = ground truth
 
         # getting tp, tn, fp, fn for each image
         metrics = self.get_image_val(
@@ -681,7 +672,7 @@ class Tester:
                 filtered_boxes.append(box)
                 filtered_scores.append(score)
 
-        # Initialize counters
+        # Initialise counters
         tp_count = {'small': 0, 'medium': 0, 'large': 0, 'global': 0}
         fp_count = {'small': 0, 'medium': 0, 'large': 0, 'global': 0}
         fn_count = {'small': 0, 'medium': 0, 'large': 0, 'global': 0}
@@ -730,9 +721,9 @@ class Tester:
 
 
     # !!GETTING GROUND TRUTH AND MAP VALUES AND PRECISION/RECALL
-    # function initialising mAP metrics
+    # method initialising mAP metrics
     def initialise_metrics(self):
-        # kind of ugly but changing this would just make things way more complicated for no gain
+        # kind of ugly but changing this would just make things more complicated for no gain
         self.map_metricGlobalA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])
         self.map_metricGlobalB = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
         self.map_metricSmallA = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.5])
@@ -743,7 +734,7 @@ class Tester:
         self.map_metricLargeB = MeanAveragePrecision(iou_type='bbox', iou_thresholds=[0.3])
 
     # Need ground truths to calculate mAP
-    # Function parse xml for ground truths (copied from Dataset class)
+    # Function parse xml for ground truths
     # and get area of ground truth to assign each a size (small, medium, large)
     def parse_xml(self, annotation_path, get_area=False):
         if(self.use_scale):
@@ -762,9 +753,6 @@ class Tester:
             "boxes": torch.tensor(boxes, dtype=torch.float32),
             "labels": torch.tensor(labels_int, dtype=torch.int64),
         }
-        #print(ground_truth)
-        #print(len(ground_truth["boxes"]))
-
         # Some images have more than 1 ground truth, in that case only use that images AP for global
         if get_area:
             if len(areas) == 1:
@@ -807,7 +795,7 @@ class Tester:
 
         for root, dirs, files in os.walk(test_image_dir):
             for filename in files:
-                if filename.endswith(".jpeg"): # dont really need but whatever
+                if filename.endswith(".jpeg"):
                     # Get corresponding XML annotation file
                     get_annotation = os.path.join(test_annot_dir, filename.replace(".jpeg", ".xml")) # image and annot have same names
 
@@ -932,10 +920,6 @@ class Tester:
             output_image = draw_bounding_boxes(output_image, m_iou["boxes"], m_iou["label"], colors="yellow")
             output_image = draw_bounding_boxes(output_image, h_iou["boxes"], h_iou["label"], colors="green")
 
-        # Convert filtered boxes to a tensor
-        #filtered_boxes = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)
-        #print("output labels", filtered_labels)
-
         # convert ground truth boxes to tensor
         ground_truth_boxes = [bbox.clone().detach() for bbox in ground_truth['boxes']]
 
@@ -943,10 +927,8 @@ class Tester:
         if(self.plot_ground_truth):
             output_image = draw_bounding_boxes(output_image, torch.stack(ground_truth_boxes),
                                                ["Ground Truth"] * len(ground_truth_boxes), colors="blue")
-        # registry increased ide.rest.api.request.per.minute to 100
         plt.figure(figsize=(12, 12))
         plt.imshow(output_image.permute(1, 2, 0))
-        #print(filename)
         plt.axis('off')
 
         # creating legend
@@ -956,6 +938,7 @@ class Tester:
         b_patch = mpatches.Patch(color='blue', label='Ground truth')
         plt.legend(handles=[r_patch, y_patch, g_patch, b_patch], loc='lower left', fontsize=10)
 
+        # saving plots if enabled
         if (self.save_plots):
             plot_save_path = self.plot_save_path / filename
             plt.savefig(plot_save_path, bbox_inches="tight")
