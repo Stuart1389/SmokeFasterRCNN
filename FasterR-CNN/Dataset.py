@@ -73,14 +73,10 @@ class smokeDataset(torch.utils.data.Dataset):
   # Constructor, setting instanced variables
   def __init__(self, main_dir: str, transform=None, testing = False, using_upscale_util = False):
     self.main_dir = main_dir
-    if(testing):
-        self.images = list(Path(str(main_dir) + "/images/").glob("*.jpeg")) # set to list of all images
-        self.annotations = list(Path(str(main_dir) + "/annotations/xmls").glob("*.xml")) # set to list of all xml files
-    else:
-        # Sort image and annotations lists so they're retrieved in the same order
-        self.images = sorted(list(Path(str(main_dir) + "/images/").glob("*.jpeg")))
-        self.images += sorted(list(Path(str(main_dir) + "/images/").glob("*.jpg")))
-        self.annotations = sorted(list(Path(str(main_dir) + "/annotations/xmls").glob("*.xml")))
+    # Sort image and annotations lists so they're retrieved in the same order
+    self.images = sorted(list(Path(str(main_dir) + "/images/").glob("*.jpeg")))
+    self.images += sorted(list(Path(str(main_dir) + "/images/").glob("*.jpg")))
+    self.annotations = sorted(list(Path(str(main_dir) + "/annotations/xmls").glob("*.xml")))
     self.transform = transform # which transform to use
     self.testing = testing # Whether we are testing or not
     self.return_filenames = using_upscale_util # Whether the SmokeUpscale.py script is being run
