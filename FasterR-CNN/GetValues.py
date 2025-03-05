@@ -51,7 +51,7 @@ def setTrainValues(val_to_get):
         "start_profiler" : False,
         "record_trace" : False,
         # Enables or disables Weights&Biases logging
-        "logWB" : True,
+        "logWB" : False,
 
         # TRAINING HYPERPARAMETERS
         "learning_rate": 0.004,
@@ -63,7 +63,7 @@ def setTrainValues(val_to_get):
         # DATALOADER/TODEVICE/MIXED-PRECISSION
         "non_blocking": True,
         "pinned_memory": True,
-        "amp_mixed_precission": True,
+        "amp_mixed_precission": False,
         "half_precission": False,
 
         # QUANT
