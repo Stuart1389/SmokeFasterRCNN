@@ -19,7 +19,7 @@ def setTrainValues(val_to_get):
         "EPOCHS": 15,
         "PATIENCE": 4,
         "dataset": "Large data", # Name of dataset to use e.g. Example dataset structure in README
-        "model_name": "colab_output_T4", # Names model, including directory, weights, etc
+        "model_name": "colab_output_L4", # Names model, including directory, weights, etc
         "plotJSON_fname": "", # json and manual plot filename, leave black to make same as model
         "model_id": "108", # model is is used for W&B runs only: id_modelname
         "save_at_end" : False, # forces the model to save at end of training, ignoring validation

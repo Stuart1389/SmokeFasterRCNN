@@ -339,7 +339,9 @@ Add a folder named "Dataset" and store datasets within, as you would when runnin
 Add a folder named "DatasetH5py" and store hdf5 files within, as you would when running locally. <br>
 Model weights, json, plots, etc will automatically be stored in a folder called "FasterR-CNN within the base directory" <br>
 Within the jupyter notebook, at the top alter "base_dir" and point it to the created base directory within google drive <br>
-The following directory structure should be used in google drive.
+The following directory structure should be used in google drive. <br>
+By default, the notebook points to this repository, to use for other tasks clone this repository and use it to create a new one. <br>
+Change "!git clone https://github.com/Stuart1389/SmokeFasterRCNN.git" within SmokePipeline.ipynb to the new repository.
 </p>
 
 ``` bash
