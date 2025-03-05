@@ -1,12 +1,16 @@
 <h1> Resources </h1>
 <p>
-The following resources are provides: <br>
-<a href = "https://wandb.ai/stustu1389gc-glasgow-caledonian-university/smoke-detection?nw=nwuserstustu1389gc"> Weights and biases project </a> <br>
 In the root directory of the repository:
 requirements.txt can be used to easily download/install required packages <br>
-Pipeline.xlsx contains information about model training and evaluation. Along with some testing for the pipeline.
+Pipeline.xlsx contains information about model training and evaluation. Along with some testing for the pipeline. <br>
+SmokePipeline.ipynb is a jupyter notebook designed for use with google colab. (See bottom of README for more info).
 </p>
 
+<h1> Using Weights & Biases</h1>
+<p>
+To use weights and biased login to a W&B account. <a href = "https://docs.wandb.ai/quickstart/"> W&B quickstart </a> <br>
+Create a W&B project, go to Trainer.py and edit: wandb.init(project="Example_project_name" <br>
+</p>
 
 <h2> Getting the pipeline ready </h2>
 <p>
