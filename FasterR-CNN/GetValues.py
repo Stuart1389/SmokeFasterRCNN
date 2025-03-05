@@ -28,7 +28,7 @@ def setTrainValues(val_to_get):
         # available backbones to use:
         # weights can be manually changed at Lib/site-packages/torchvision/models/detection/faster_rcnn.py
         # default - coco vpnv2
-        # mobilenet  - IMAGENET1K weights for fpnv1
+        # mobilenet  - IMAGENET1K weights for fpnv1, it's recommeneded to resize to 244*244 when using this
         # resnet_builder - IMAGENET1K weights for fpnv1
         "backbone_to_use": "mobilenet",
 
