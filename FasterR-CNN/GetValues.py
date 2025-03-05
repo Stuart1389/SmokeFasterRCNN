@@ -15,13 +15,13 @@ def setTrainValues(val_to_get):
     train_values = {
         # TRAIN SETTINGS
         # Basic train settings
-        "BATCH_SIZE": 4,
-        "EPOCHS": 1,
-        "PATIENCE": 3,
-        "dataset": "Small data", # Name of dataset to use
-        "model_name": "test_file_C", # Names model, including directory, weights, etc
+        "BATCH_SIZE": 8,
+        "EPOCHS": 15,
+        "PATIENCE": 4,
+        "dataset": "Large data", # Name of dataset to use e.g. Example dataset structure in README
+        "model_name": "test_file", # Names model, including directory, weights, etc
         "plotJSON_fname": "", # json and manual plot filename, leave black to make same as model
-        "model_id": "39B", # model is is used for W&B runs only: id_modelname
+        "model_id": "36A", # model is is used for W&B runs only: id_modelname
         "save_at_end" : False, # forces the model to save at end of training, ignoring validation
 
         # Backbone model settings
@@ -30,7 +30,7 @@ def setTrainValues(val_to_get):
         # default - coco vpnv2
         # mobilenet  - IMAGENET1K weights for fpnv1
         # resnet_builder - IMAGENET1K weights for fpnv1
-        "backbone_to_use": "default",
+        "backbone_to_use": "mobilenet",
 
         # Settings for resnet builder, only applicable when using "resnet_builder" above
         "resnet_backbone": "resnet50", #resnet18, resnet34, resnet50, resnet101, etc
@@ -41,11 +41,11 @@ def setTrainValues(val_to_get):
         # HDF5 settings. TO create HDF5 file use WriteHdf5.py
         # NOTE WriteHdf5.py uses dataloader to write, so if this is enabled when writing
         # hdf5 will be used to write instead of the default dataset
-        "load_hdf5" : False,
-        "force_first_epoch" : False, # forces hdf5 to repeat the first epoch for all training epochs
-        "h5py_dir_save_name": "test_file_check", # file name for hdf5 file when written
-        "h5py_dir_load_name": "transform_csj", # file name hdf5 file to load
-        "hdf5_chunk_size": 2, # chunk size for hdf5, needs to be less than number of samples in epoch
+        "load_hdf5" : True,
+        "force_first_epoch" : True, # forces hdf5 to repeat the first epoch for all training epochs
+        "h5py_dir_save_name": "mobilenet_1", # file name for hdf5 file when written
+        "h5py_dir_load_name": "mobilenet_1", # file name hdf5 file to load
+        "hdf5_chunk_size": 8, # chunk size for hdf5, needs to be less than number of samples in epoch
 
         # PROFILER
         "start_profiler" : False,
@@ -54,16 +54,16 @@ def setTrainValues(val_to_get):
         "logWB" : False,
 
         # TRAINING HYPERPARAMETERS
-        "learning_rate": 0.001,
+        "learning_rate": 0.004,
         "momentum": 0.9,
-        "weight_decay": 0.0005,
-        "step_size": 3,
+        "weight_decay": 0.0001,
+        "step_size": 4,
         "gamma": 0.1,
 
         # DATALOADER/TODEVICE/MIXED-PRECISSION
         "non_blocking": True,
         "pinned_memory": True,
-        "amp_mixed_precission": True,
+        "amp_mixed_precission": False,
         "half_precission": False,
 
         # QUANT
@@ -91,9 +91,9 @@ def setTrainValues(val_to_get):
 def setTestValues(val_to_get):
     # TEST SETTINGS
     test_values = {
-        "BATCH_SIZE": 2,
+        "BATCH_SIZE": 4,
         "dataset": "Large data", # dataset to load from
-        "model_name": "transform_csj_a100", # name of model to test
+        "model_name": "cmp_not_pinned", # name of model to test
         "test_on_val": False, # test on validation instead of test set
 
         "CPU_inference": False,  # force cpu inference even if cuda is available
@@ -111,7 +111,7 @@ def setTestValues(val_to_get):
         "calibrate_full_set": False, # calibrate on full dataset rather than 1 image
         "load_QAT_model": False, # this needs to be enabled if loading quant aware trained model
 
-        "half_precission": True, # float 16
+        "half_precission": False, # float 16
 
         #Pruning
         "prune_model": False,

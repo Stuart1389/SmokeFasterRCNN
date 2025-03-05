@@ -182,7 +182,7 @@ class smokeDataset(torch.utils.data.Dataset):
 # !!VISUALIZATION!!
 # To see if bounding boxes are being displayed properly after transformations, etc.
 # Function to display bbox over image
-def visualize_bbox_pascal_voc(img, bbox, class_name, thickness=2):
+def visualise_bbox(img, bbox, class_name):
     color = (0, 0, 255) # bbox colour
     text_color = (255, 255, 255) # gt text colour
     index_to_class = {v: k for k, v in setGlobalValues("CLASS_INDEX_DICTIONARY").items()} # reverse dictionary
@@ -193,7 +193,7 @@ def visualize_bbox_pascal_voc(img, bbox, class_name, thickness=2):
     x_min, x_max, y_min, y_max = int(x_min), int(x_max), int(y_min), int(y_max)
 
     # creating ground truth box
-    cv2.rectangle(img, (x_min, y_min), (x_max, y_max), color=color, thickness=thickness)
+    cv2.rectangle(img, (x_min, y_min), (x_max, y_max), color=color, thickness=2)
 
     # creating text box
     ((text_width, text_height), _) = cv2.getTextSize(bbox_text, cv2.FONT_HERSHEY_SIMPLEX, 0.35, 1)
@@ -210,7 +210,7 @@ def visualize_bbox_pascal_voc(img, bbox, class_name, thickness=2):
     return img
 
 # Creates plot with image
-def visualize(image, bboxes, labels, image_id):
+def plot_image(image, bboxes, labels, image_id):
     img = image.permute(1, 2, 0).numpy() # convert tensor to numpy array
     # Check if bboxes exists (e.g. if zoomed in), prevents index out of bounds error
     # Prevents index out of bounds error from below if no bbox
@@ -223,7 +223,7 @@ def visualize(image, bboxes, labels, image_id):
 
     # overlay each bbox over image
     for bbox, label in zip(bboxes, labels):
-        img = visualize_bbox_pascal_voc(img, bbox, label)
+        img = visualise_bbox(img, bbox, label)
 
     # create figure
     plt.figure(figsize=(12, 12))
@@ -256,7 +256,7 @@ if __name__ == '__main__':
     print(f"It took {elapsed_time:.2f} to process 1 image")
     bbox = target["boxes"]
     label = target["labels"]
-    visualize(image, bbox, label, 0)
+    plot_image(image, bbox, label, 0)
 
 
 
@@ -265,4 +265,4 @@ if __name__ == '__main__':
     image, target = test_test.__getitem__(1) # get image and annotation at index 1
     bbox = target["boxes"]
     label = target["labels"]
-    visualize(image, bbox, label, 1)
+    plot_image(image, bbox, label, 1)

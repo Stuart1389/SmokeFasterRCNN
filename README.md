@@ -1,8 +1,16 @@
+<h1> Resources </h1>
+<p>
+The following resources are provides: <br>
+<a href = "https://wandb.ai/stustu1389gc-glasgow-caledonian-university/smoke-detection?nw=nwuserstustu1389gc"> Weights and biases project </a> <br>
+In the root directory of the repository:
+requirements.txt can be used to easily download/install required packages <br>
+Pipeline.xlsx contains information about model training and evaluation. Along with some testing for the pipeline.
+</p>
+
 
 <h2> Getting the pipeline ready </h2>
 <p>
 *NOTE: This ReadMe is a prototype and should be refined further to better help environmental researchers. <br>
-A requirements.txt file is provided <br>
 Please change base_dir in checkColab function within GetValues to set base directory. <br>
 This pipeline is designed for image and xml annotation pairs. <br>
 Image and xml annotations should have the exact same name to be associated with each other. <br>

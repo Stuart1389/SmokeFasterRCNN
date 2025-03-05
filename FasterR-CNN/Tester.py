@@ -44,7 +44,7 @@ from torch.ao.pruning import WeightNormSparsifier
 import torch_pruning as tp
 SparseSemiStructuredTensor._FORCE_CUTLASS = True
 
-# Class if used to evaluate models
+# Class is used to evaluate previously trained models
 class Tester:
     #Constructor
     def __init__(self):
@@ -53,14 +53,14 @@ class Tester:
         self.base_dir = checkColab()
         # scores over this will be counted towards mAP/precission/recall and will be displayed if plot
         self.confidence_threshold = 0.5
-        self.benchmark = False # measure how long it takes to make average prediction
+        self.benchmark = True # measure how long it takes to make average prediction
         self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
 
         #PLOT MAIN IMAGE
         self.draw_highest_only = False # only draw bbox with highest score on plot
         self.plot_image = False # plot images
         self.save_plots = False # save plots to model folder/plots
-        self.plot_ground_truth = False # whether to plot ground truth
+        self.plot_ground_truth = True # whether to plot ground truth
         self.draw_no_true_positive_only = False # only plot images with no true positives
 
         #SPLIT IMAGE
@@ -69,7 +69,7 @@ class Tester:
         self.combine_bboxes = False # merge touching bbox predictions when splitting image
         self.merge_tolerance = 4
 
-        # RESIZE / SCALE GROUND TRUTH
+        # RESIZE / SCALE GROUND TRUTH, if image scale is changed e.g. in transforms, set these to whatever you're scaling to
         self.use_scale = False
         self.scale_height = 224
         self.scale_width = 224
