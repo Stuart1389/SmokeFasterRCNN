@@ -19,9 +19,9 @@ def setTrainValues(val_to_get):
         "EPOCHS": 15,
         "PATIENCE": 4,
         "dataset": "Large data", # Name of dataset to use e.g. Example dataset structure in README
-        "model_name": "test_file", # Names model, including directory, weights, etc
+        "model_name": "colab_output_T4", # Names model, including directory, weights, etc
         "plotJSON_fname": "", # json and manual plot filename, leave black to make same as model
-        "model_id": "36A", # model is is used for W&B runs only: id_modelname
+        "model_id": "108", # model is is used for W&B runs only: id_modelname
         "save_at_end" : False, # forces the model to save at end of training, ignoring validation
 
         # Backbone model settings
@@ -41,8 +41,8 @@ def setTrainValues(val_to_get):
         # HDF5 settings. TO create HDF5 file use WriteHdf5.py
         # NOTE WriteHdf5.py uses dataloader to write, so if this is enabled when writing
         # hdf5 will be used to write instead of the default dataset
-        "load_hdf5" : True,
-        "force_first_epoch" : True, # forces hdf5 to repeat the first epoch for all training epochs
+        "load_hdf5" : False,
+        "force_first_epoch" : False, # forces hdf5 to repeat the first epoch for all training epochs
         "h5py_dir_save_name": "mobilenet_1", # file name for hdf5 file when written
         "h5py_dir_load_name": "mobilenet_1", # file name hdf5 file to load
         "hdf5_chunk_size": 8, # chunk size for hdf5, needs to be less than number of samples in epoch
@@ -51,7 +51,7 @@ def setTrainValues(val_to_get):
         "start_profiler" : False,
         "record_trace" : False,
         # Enables or disables Weights&Biases logging
-        "logWB" : False,
+        "logWB" : True,
 
         # TRAINING HYPERPARAMETERS
         "learning_rate": 0.004,
@@ -63,7 +63,7 @@ def setTrainValues(val_to_get):
         # DATALOADER/TODEVICE/MIXED-PRECISSION
         "non_blocking": True,
         "pinned_memory": True,
-        "amp_mixed_precission": False,
+        "amp_mixed_precission": True,
         "half_precission": False,
 
         # QUANT
@@ -91,9 +91,9 @@ def setTrainValues(val_to_get):
 def setTestValues(val_to_get):
     # TEST SETTINGS
     test_values = {
-        "BATCH_SIZE": 4,
+        "BATCH_SIZE": 8,
         "dataset": "Large data", # dataset to load from
-        "model_name": "cmp_not_pinned", # name of model to test
+        "model_name": "colab_output_T4", # name of model to test
         "test_on_val": False, # test on validation instead of test set
 
         "CPU_inference": False,  # force cpu inference even if cuda is available

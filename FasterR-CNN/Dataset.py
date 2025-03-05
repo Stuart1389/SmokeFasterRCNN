@@ -22,7 +22,7 @@ import sys
 # pipeline assumes pascal_voc is format (xmin, ymin, xmax, ymax) for bbox coords
 transform_train = A.Compose([
     # EXAMPLE TRANSFORMS, SEE https://albumentations.ai/
-    #A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
+    A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
     #A.PadIfNeeded(min_height=640, min_width=480),
     #A.RandomBrightnessContrast(p=0.4),
     #A.RandomContrast(p=0.5),
@@ -35,21 +35,21 @@ transform_train = A.Compose([
     #A.BBoxSafeRandomCrop(erosion_rate=0, p=1),
     #A.RandomScale(scale_limit=0.7, p=1),
     #A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=1),
-    #A.Resize(height=224, width=224),
+    A.Resize(height=224, width=224),
 
     ToTensorV2()
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))
 
 transform_validate = A.Compose([
-    #A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
-    #A.Resize(height=224, width=224),
+    A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
+    A.Resize(height=224, width=224),
     #A.ToGray(p=1.0),
     ToTensorV2()
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))
 
 transform_test = A.Compose([
-    #A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
-    #A.Resize(height=224, width=224),
+    A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
+    A.Resize(height=224, width=224),
     #A.ToGray(p=1.0),
     ToTensorV2()
 ])

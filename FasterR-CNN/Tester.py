@@ -70,7 +70,7 @@ class Tester:
         self.merge_tolerance = 4
 
         # RESIZE / SCALE GROUND TRUTH, if image scale is changed e.g. in transforms, set these to whatever you're scaling to
-        self.use_scale = False
+        self.use_scale = True
         self.scale_height = 224
         self.scale_width = 224
 
