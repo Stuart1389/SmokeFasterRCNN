@@ -51,7 +51,7 @@ def setTrainValues(val_to_get):
         "start_profiler" : False,
         "record_trace" : False,
         # Enables or disables Weights&Biases logging
-        "logWB" : False,
+        "logWB" : True,
 
         # TRAINING HYPERPARAMETERS
         "learning_rate": 0.004,
