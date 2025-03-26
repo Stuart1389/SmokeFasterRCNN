@@ -92,7 +92,7 @@ def setTestValues(val_to_get):
     test_values = {
         "BATCH_SIZE": 8,
         "dataset": "Large data", # dataset to load from
-        "model_name": "colab_output_L4", # name of model to test
+        "model_name": "colab_output_L4", # name of model to load
         "test_on_val": False, # test on validation instead of test set
 
         "CPU_inference": False,  # force cpu inference even if cuda is available

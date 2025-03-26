@@ -44,7 +44,7 @@ class SmokeModel:
         # example aspect ratios
         aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
         """
-
+        print("Beginning model setup")
         self.base_dir = checkColab() # get colab or local dirs
         self.num_classes = setGlobalValues("NUM_CLASSES")
         # initialising variables
@@ -167,7 +167,7 @@ class SmokeModel:
     def build_mobilenet(self):
         anchor_sizes = None
         aspect_ratios = None
-        print("Default model Mobilenet FpnV3")
+        print("Default model MobilenetV3 FPN")
         self.model = torchvision.models.detection.fasterrcnn_mobilenet_v3_large_fpn(weights="DEFAULT",
                                                                              trainable_backbone_layers=3,
                                                                              anchor_values=anchor_sizes,
@@ -176,12 +176,13 @@ class SmokeModel:
 
     # extra steps needed for model setup
     def setup_model(self):
-        print(self.model.rpn.anchor_generator.sizes)
+        print(f"Anchor sizes: {self.model.rpn.anchor_generator.sizes}")
+        print(f"Anchor aspect ratios: {self.model.rpn.anchor_generator.aspect_ratios}")
         # Set in features to whatever region of interest(ROI) expects
         self.in_features = self.model.roi_heads.box_predictor.cls_score.in_features
         # Required to work with 2 classes
         self.model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(self.in_features,                                                                                          self.num_classes)
-        print(f"Number of parameters: {self.count_parameters(self.model)}")
+        print(f"Number of parameters (at model setup): {self.count_parameters(self.model)}")
 
 
     # This method was used to extract coco weights for experimentation

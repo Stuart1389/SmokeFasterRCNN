@@ -93,7 +93,7 @@ class Tester:
             self.model, self.qat_state_dict = smoke_model.get_model(True)
         else:
             self.model = smoke_model.get_model(True)
-        print(f"Number of parameters: {self.count_parameters(self.model)}")
+        print(f"Number of parameters (at testing start): {self.count_parameters(self.model)}")
         #print(self.model.rpn)
 
         # get test dataloader
@@ -637,13 +637,11 @@ class Tester:
         )
 
         # Accumulate TP, FP, FN counts for the total
-        print(f"{metrics}")
+        #print(f"{metrics}")
         for size in ["small", "medium", "large", "global"]:
             self.total_tp[size] += metrics["TP"][size]
             self.total_fp[size] += metrics["FP"][size]
             self.total_fn[size] += metrics["FN"][size]
-
-        print("ground_truth b4", ground_truth)
 
         if gt_size == "small":
             self.map_metricSmallA.update([predicted], [ground_truth])
@@ -656,7 +654,7 @@ class Tester:
             self.map_metricLargeB.update([predicted], [ground_truth])
 
         # mAP update
-        print(f"predicted: {predicted}, Ground truth: {ground_truth}")
+        print(f"predicted: {predicted['boxes'].tolist()}\nGround truth: {ground_truth['boxes']}")
         self.map_metricGlobalA.update([predicted], [ground_truth])
         self.map_metricGlobalB.update([predicted], [ground_truth])
         return filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics, filename
@@ -826,10 +824,10 @@ class Tester:
                 size_counts[size] += 1
 
         # Print count for each size
-        print(f"Small: {size_counts['small']}")
-        print(f"Medium: {size_counts['medium']}")
-        print(f"Large: {size_counts['large']}")
-        print(f"None: {size_counts['none']}")
+        print(f"Num small images: {size_counts['small']}")
+        print(f"Num medium images: {size_counts['medium']}")
+        print(f"Num large images: {size_counts['large']}")
+        print(f"Num non-classified images: {size_counts['none']}")
 
         # Print area metrics
         # remove outliers
