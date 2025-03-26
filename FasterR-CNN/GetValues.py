@@ -5,6 +5,19 @@ def setGlobalValues(val_to_get):
     global_values = {
         "NUM_CLASSES": 2, # number of targets, E.g. background + smoke = 2
         "CLASS_INDEX_DICTIONARY": {"smoke": 1}, # each target must have an id, e.g. smoke = 1, fire = 2, etc
+
+        # Backbone model settings
+        # available backbones to use:
+        # weights can be manually changed at Lib/site-packages/torchvision/models/detection/faster_rcnn.py
+        # default - coco vpnv2
+        # mobilenet  - IMAGENET1K weights for fpnv1, it's recommeneded to resize to 244*244 when using this
+        # resnet_builder - IMAGENET1K weights for fpnv1
+        "backbone_to_use": "mobilenet",
+
+        # Settings for resnet builder, only applicable when using "resnet_builder" above
+        "resnet_backbone": "resnet50",  # resnet18, resnet34, resnet50, resnet101, etc
+        "fpnv2": False,  # Sets alternate model to use fpnv2
+        "load_coco_weights": False,  # used to experiment with using coco weights on resnet101 with fpnv2
     }
 
     return global_values.get(val_to_get, None)
@@ -23,20 +36,6 @@ def setTrainValues(val_to_get):
         "plotJSON_fname": "", # json and manual plot filename, leave black to make same as model
         "model_id": "108", # model is is used for W&B runs only: id_modelname
         "save_at_end" : False, # forces the model to save at end of training, ignoring validation
-
-        # Backbone model settings
-        # available backbones to use:
-        # weights can be manually changed at Lib/site-packages/torchvision/models/detection/faster_rcnn.py
-        # default - coco vpnv2
-        # mobilenet  - IMAGENET1K weights for fpnv1, it's recommeneded to resize to 244*244 when using this
-        # resnet_builder - IMAGENET1K weights for fpnv1
-        "backbone_to_use": "mobilenet",
-
-        # Settings for resnet builder, only applicable when using "resnet_builder" above
-        "resnet_backbone": "resnet50", #resnet18, resnet34, resnet50, resnet101, etc
-        "fpnv2": False, # Sets alternate model to use fpnv2
-        "load_coco_weights": False, # used to experiment with using coco weights on resnet101 with fpnv2
-
 
         # HDF5 settings. TO create HDF5 file use WriteHdf5.py
         # NOTE WriteHdf5.py uses dataloader to write, so if this is enabled when writing
@@ -128,6 +127,7 @@ def setTestValues(val_to_get):
     # return value corresponding with val_to_get
     return test_values.get(val_to_get, None)
 
+# sets working directory, used to ensure notebook runs correctly in colab
 def checkColab():
     if "COLAB_GPU" in os.environ:
         base_dir = "/content/drive/My Drive/Colab Notebooks/Honours" # this is to run the program in colab

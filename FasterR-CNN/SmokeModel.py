@@ -49,8 +49,9 @@ class SmokeModel:
         self.num_classes = setGlobalValues("NUM_CLASSES")
         # initialising variables
         self.model = None
-        self.model_backbone = setTrainValues("resnet_backbone")
-        self.fpnv2 = setTrainValues("fpnv2")
+        # which resnet backbone to use if using a custom resnet model
+        self.resnet_model_backbone = setGlobalValues("resnet_backbone")
+        self.fpnv2 = setGlobalValues("fpnv2")
         self.train_dataloader = None
         self.validate_dataloader = None
         self.test_dataloader = None
@@ -107,16 +108,16 @@ class SmokeModel:
 
     # Method selects model building method based on GetValues.py settings
     def model_builder(self):
-        if(setTrainValues("backbone_to_use") == "default"):
+        if(setGlobalValues("backbone_to_use") == "default"):
             self.build_default()
-        elif(setTrainValues("backbone_to_use") == "mobilenet"):
+        elif(setGlobalValues("backbone_to_use") == "mobilenet"):
             self.build_mobilenet()
-        elif(setTrainValues("backbone_to_use") == "resnet_builder"):
+        elif(setGlobalValues("backbone_to_use") == "resnet_builder"):
             self.resnet_builder()
 
     # Used to build a resnet model
     def resnet_builder(self):
-        print(f"Model builder, Backbone: {self.model_backbone}, FpnV2: {self.fpnv2}")
+        print(f"Model builder, Backbone: {self.resnet_model_backbone}, FpnV2: {self.fpnv2}")
         # default anchor sizes/ratios for IMAGENET1K
         anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
         aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
@@ -128,7 +129,7 @@ class SmokeModel:
             # Create faster-rcnn model with resnet backbone and fpnv2
             #This was for experimentation where COCO weights were extracted from default model
             #and used with the resnet builder. weights are provided in github for further experimentation
-            if(setTrainValues("load_coco_weights")):
+            if(setGlobalValues("load_coco_weights")):
                 fpn = torch.load(self.model_arch_path / "fpn.pth", weights_only=True)
                 roi_heads = torch.load(self.model_arch_path / "roi.pth", weights_only=True)
                 rpn = torch.load(self.model_arch_path / "rpn.pth", weights_only=True)
@@ -139,10 +140,10 @@ class SmokeModel:
                                                                                 trainable_backbone_layers=3,
                                                                                 roi_head_weights=roi_heads,
                                                                                 rpn_weights=rpn, fpn_weights=fpn, body_weights=body,
-                                                                                model_backbone=self.model_backbone)
+                                                                                model_backbone=self.resnet_model_backbone)
         else:
             # default resnet fpnv1 with IMAGENET1K weights
-            backbone = resnet_fpn_backbone(backbone_name=self.model_backbone, weights="DEFAULT", trainable_layers=3)
+            backbone = resnet_fpn_backbone(backbone_name=self.resnet_model_backbone, weights="DEFAULT", trainable_layers=3)
             self.model = FasterRCNN(backbone=backbone, num_classes=2,
                                     rpn_anchor_generator=anchor_gen)
             body_weights = torch.load(self.model_arch_path / "body.pth", weights_only=True)
