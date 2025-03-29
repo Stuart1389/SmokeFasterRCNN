@@ -1,19 +1,14 @@
 import os
-import random
-import xml.etree.ElementTree as ET
 import numpy as np
 import torch
 from pathlib import Path
-from PIL import Image, ImageDraw
+from PIL import Image
 import cv2
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import matplotlib.pyplot as plt
 from SmokeUtils import extract_boxes
-from torchvision.transforms import transforms
 from GetValues import checkColab, setTrainValues, setGlobalValues
-from torch.utils.data import Dataset
-from multiprocessing import Pool
 import time
 import sys
 
@@ -35,21 +30,21 @@ transform_train = A.Compose([
     #A.BBoxSafeRandomCrop(erosion_rate=0, p=1),
     #A.RandomScale(scale_limit=0.7, p=1),
     #A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=1),
-    A.Resize(height=224, width=224),
+    #A.Resize(height=224, width=224),
 
     ToTensorV2()
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))
 
 transform_validate = A.Compose([
     #A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
-    A.Resize(height=224, width=224),
+    #A.Resize(height=224, width=224),
     #A.ToGray(p=1.0),
     ToTensorV2()
 ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'class_id']))
 
 transform_test = A.Compose([
     #A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], p=1.0),
-    A.Resize(height=224, width=224),
+    #A.Resize(height=224, width=224),
     #A.ToGray(p=1.0),
     ToTensorV2()
 ])
@@ -133,7 +128,7 @@ class smokeDataset(torch.utils.data.Dataset):
         transformed = self.transform(image=image, bboxes=boxes, class_labels=labels, class_id=labels_int)
         transformed_image = transformed['image']
         transformed_bboxes = transformed['bboxes']
-        transformed_class_labels = transformed['class_labels']
+        #transformed_class_labels = transformed['class_labels']
         transformed_class_id = transformed['class_id']
         transformed_bboxes = torch.tensor(transformed_bboxes, dtype=torch.float32)
         transformed_class_id = torch.tensor(transformed_class_id, dtype=torch.int64)

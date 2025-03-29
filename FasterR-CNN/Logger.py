@@ -1,6 +1,4 @@
 import sys
-import time
-from pathlib import Path
 
 # DualLogger class to write to both the console and the file, to save console log from training for later
 class Logger:

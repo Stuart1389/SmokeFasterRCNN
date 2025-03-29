@@ -2,9 +2,7 @@
 import matplotlib.pyplot as plt
 import json
 from pathlib import Path
-from datetime import datetime
-from itertools import chain
-from GetValues import checkColab, setTrainValues
+from GetValues import setTrainValues
 
 class PlotGraphs:
     def __init__(self, train_dict, validate_dict, train_loss_it_vals, validate_loss_it_vals):

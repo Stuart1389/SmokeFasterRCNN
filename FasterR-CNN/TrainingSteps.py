@@ -31,9 +31,7 @@ def upscale_images(device, image_tensors):
 
 # Training step function
 def train_step(model, optimizer, data_loader, device, epoch, iteration, print_freq,
-               scaler=None, profiler=None):
-    cur_debugging = model.backbone.body
-
+               scaler=None):
     iteration_loss_list = [] # loss graph iteration instead of epoch
     # Init loss values
     total_loss = 0
@@ -163,7 +161,7 @@ def log_it_loss(iteration_loss_list, loss_value, loss_dict_reduced, epoch, itera
 # Validation step function - uses coco evaluatior for simplisity
 # more complex evaluation implemented in Tester.py
 @torch.inference_mode()
-def validate_step(model, data_loader, device, epoch, iteration, scaler=None, profiler=None):
+def validate_step(model, data_loader, device, epoch, iteration, scaler=None):
     model.eval()
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = "Validation:"
@@ -202,7 +200,6 @@ def validate_step(model, data_loader, device, epoch, iteration, scaler=None, pro
             iteration += 1
             # model input here, get predictions and validation loss
             outputs, loss_dict, _, _, _, _ = model(images, targets)
-            losses = sum(loss for loss in loss_dict.values())
 
         # Getting all loss values below
         # getting combined loss

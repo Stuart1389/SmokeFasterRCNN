@@ -11,10 +11,8 @@ import xml.etree.ElementTree as ET
 
 
 # function is used to extract data from annotation xml files, see README for more info
-def extract_boxes(annotation_path, get_area = False, upscale_value = None, scale_width = None, scale_height = None):
-    # set default scale values to 1, for default use
-    upscale_value = 1
-    scale_x, scale_y = 1, 1
+def extract_boxes(annotation_path, get_area = False, upscale_value = 1,
+                  scale_width = None, scale_height = None, scale_x = 1, scale_y = 1):
 
     # parse annotation file
     tree = ET.parse(annotation_path)
@@ -33,7 +31,7 @@ def extract_boxes(annotation_path, get_area = False, upscale_value = None, scale
     for obj in root.findall("object"):
         xml_box = obj.find("bndbox")
 
-        if (scale_height != None and scale_width != None):
+        if (scale_height is not None and scale_width is not None):
             scale_x = scale_width / image_width
             scale_y = scale_height / image_height
 

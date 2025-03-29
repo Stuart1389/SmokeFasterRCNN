@@ -1,7 +1,6 @@
 ### Testing model predictions
 import os
 import sys
-#os.environ["OMP_NUM_THREADS"] = "8"
 import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -24,7 +23,6 @@ from SmokeUtils import get_layers_to_fuse, extract_boxes, get_layers_to_prune
 from torch.nn.utils import prune
 from torch.ao.pruning import WeightNormSparsifier
 from torch.sparse import to_sparse_semi_structured, SparseSemiStructuredTensor
-#from simplify import simplify
 from super_image import PanModel
 from multiprocessing import Pool
 import matplotlib.patches as mpatches
@@ -42,7 +40,7 @@ from torch import nn
 from torch.sparse import to_sparse_semi_structured, SparseSemiStructuredTensor
 from torch.ao.pruning import WeightNormSparsifier
 import torch_pruning as tp
-SparseSemiStructuredTensor._FORCE_CUTLASS = True
+
 
 # Class is used to evaluate previously trained models
 class Tester:
@@ -53,12 +51,12 @@ class Tester:
         self.base_dir = checkColab()
         # scores over this will be counted towards mAP/precission/recall and will be displayed if plot
         self.confidence_threshold = 0.5
-        self.benchmark = True # measure how long it takes to make average prediction
+        self.benchmark = False # measure how long it takes to make average prediction
         self.ap_value = 0.5 # ap value for precision/recall e.g. if 0.5 then iou > 50% overlap = true positive
 
         #PLOT MAIN IMAGE
         self.draw_highest_only = False # only draw bbox with highest score on plot
-        self.plot_image = False # plot images
+        self.plot_image = True # plot images
         self.save_plots = False # save plots to model folder/plots
         self.plot_ground_truth = True # whether to plot ground truth
         self.draw_no_true_positive_only = False # only plot images with no true positives
@@ -70,7 +68,7 @@ class Tester:
         self.merge_tolerance = 4
 
         # RESIZE / SCALE GROUND TRUTH, if image scale is changed e.g. in transforms, set these to whatever you're scaling to
-        self.use_scale = True
+        self.use_scale = False
         self.scale_height = 224
         self.scale_width = 224
 
@@ -422,14 +420,10 @@ class Tester:
                 if (self.draw_no_true_positive_only):
                     if (metrics["TP"] == 0):
                         # call function to display image with overlayed bboxes
-                        self.display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth,
-                                                metrics,
-                                                filename)
+                        self.display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, filename)
                 else:
                     # call function to display image with overlayed bboxes
-                    self.display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth,
-                                            metrics,
-                                            filename)
+                    self.display_prediction(filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, filename)
 
     # method to process images. Images are input into Faster-rcnn and outputs are processed
     @torch.inference_mode()
@@ -576,8 +570,6 @@ class Tester:
                 image_tensor = self.upscale_images(image_tensor)
 
             image_tensor_split = self.split_image(image_tensor)
-            filenames = list(files for files in filename)
-            image_tensors = list(tensor.to(self.device, non_blocking=self.non_blocking) for tensor in image_tensor)
 
             combined_outputs = []
             if(setTestValues("split_images")):
@@ -735,9 +727,6 @@ class Tester:
     # Function parse xml for ground truths
     # and get area of ground truth to assign each a size (small, medium, large)
     def parse_xml(self, annotation_path, get_area=False):
-        if(self.use_scale):
-            scale_y = self.scale_height
-            scale_x = self.scale_width
         if(setTestValues("upscale_image")):
             # bring ground truth in line with upscaled image
             upscale_value = setTestValues("upscale_value")
@@ -891,7 +880,7 @@ class Tester:
                 h_iou["boxes"].append(box)
 
         return n_iou, m_iou, h_iou
-    def display_prediction(self, filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, metrics, filename):
+    def display_prediction(self, filtered_labels, filtered_boxes, filtered_scores, image, ground_truth, filename):
         if(not self.plot_image):
             matplotlib.use('Agg')
         # !!! DISPLAYING PREDICTIONS THROUGH MATPLOT LIB !!!
@@ -1002,8 +991,6 @@ class Tester:
         BOLD = "\033[1m"  # Bold text
 
         # total time and vram
-        elapsed_time_data = [[f"{BOLD}Global Time{RESET}", f"{elapsed_time:} seconds"]]
-
         elapsed_time_data = [
             [f"{BOLD}Global Time{RESET}", f"{elapsed_time:} seconds"],
             [f"{BOLD}Max VRAM{RESET}", f"{max_vram:.2f} MB"],

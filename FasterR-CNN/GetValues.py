@@ -9,10 +9,10 @@ def setGlobalValues(val_to_get):
         # Backbone model settings
         # available backbones to use:
         # weights can be manually changed at Lib/site-packages/torchvision/models/detection/faster_rcnn.py
-        # default - coco vpnv2
+        # default - coco weight resnet 50 fpnv2
         # mobilenet  - IMAGENET1K weights for fpnv1, it's recommeneded to resize to 244*244 when using this
         # resnet_builder - IMAGENET1K weights for fpnv1
-        "backbone_to_use": "mobilenet",
+        "backbone_to_use": "default",
 
         # Settings for resnet builder, only applicable when using "resnet_builder" above
         "resnet_backbone": "resnet50",  # resnet18, resnet34, resnet50, resnet101, etc
@@ -28,11 +28,11 @@ def setTrainValues(val_to_get):
     train_values = {
         # TRAIN SETTINGS
         # Basic train settings
-        "BATCH_SIZE": 8,
-        "EPOCHS": 15,
+        "BATCH_SIZE": 2,
+        "EPOCHS": 2,
         "PATIENCE": 4,
         "dataset": "Large data", # Name of dataset to use e.g. Example dataset structure in README
-        "model_name": "colab_output_L4", # Names model, including directory, weights, etc
+        "model_name": "test", # Names model, including directory, weights, etc
         "plotJSON_fname": "", # json and manual plot filename, leave black to make same as model
         "model_id": "108", # model is is used for W&B runs only: id_modelname
         "save_at_end" : False, # forces the model to save at end of training, ignoring validation
@@ -40,17 +40,17 @@ def setTrainValues(val_to_get):
         # HDF5 settings. TO create HDF5 file use WriteHdf5.py
         # NOTE WriteHdf5.py uses dataloader to write, so if this is enabled when writing
         # hdf5 will be used to write instead of the default dataset
-        "load_hdf5" : False,
-        "force_first_epoch" : False, # forces hdf5 to repeat the first epoch for all training epochs
+        "load_hdf5" : True,
+        "force_first_epoch" : True, # forces hdf5 to repeat the first epoch for all training epochs
         "h5py_dir_save_name": "mobilenet_1", # file name for hdf5 file when written
-        "h5py_dir_load_name": "mobilenet_1", # file name hdf5 file to load
+        "h5py_dir_load_name": "small_1_transform", # file name hdf5 file to load
         "hdf5_chunk_size": 8, # chunk size for hdf5, needs to be less than number of samples in epoch
 
         # PROFILER
         "start_profiler" : False,
         "record_trace" : False,
         # Enables or disables Weights&Biases logging
-        "logWB" : True,
+        "logWB" : False,
 
         # TRAINING HYPERPARAMETERS
         "learning_rate": 0.004,
@@ -90,9 +90,9 @@ def setTrainValues(val_to_get):
 def setTestValues(val_to_get):
     # TEST SETTINGS
     test_values = {
-        "BATCH_SIZE": 8,
+        "BATCH_SIZE": 4,
         "dataset": "Large data", # dataset to load from
-        "model_name": "colab_output_L4", # name of model to load
+        "model_name": "no_validation_2080", # name of model to load
         "test_on_val": False, # test on validation instead of test set
 
         "CPU_inference": False,  # force cpu inference even if cuda is available
@@ -110,7 +110,7 @@ def setTestValues(val_to_get):
         "calibrate_full_set": False, # calibrate on full dataset rather than 1 image
         "load_QAT_model": False, # this needs to be enabled if loading quant aware trained model
 
-        "half_precission": False, # float 16
+        "half_precission": True, # float 16
 
         #Pruning
         "prune_model": False,

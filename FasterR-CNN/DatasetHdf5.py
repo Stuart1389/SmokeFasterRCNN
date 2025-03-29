@@ -5,9 +5,7 @@ import torch
 import h5py
 import numpy as np
 import os
-import albumentations as A
 from EpochSampler import EpochSampler
-from albumentations.pytorch import ToTensorV2
 import matplotlib.pyplot as plt
 
 # HDF5 DATASET EXTRACTS DATA FROM HDF5 FILE FOR TRAINING

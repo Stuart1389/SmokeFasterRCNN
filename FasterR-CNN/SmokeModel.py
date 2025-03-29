@@ -62,7 +62,7 @@ class SmokeModel:
 
         self.load_path_train_checkpoint = Path("savedModels/" + setTrainValues("model_load_name"))
         self.load_path_test = Path("savedModels/" + setTestValues("model_name"))
-        self.model_arch_path = model_arch_path = Path("savedModelsArch/")
+        self.model_arch_path = Path("savedModelsArch/")
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"  # device agnostic
         self.force_default = force_default
@@ -74,7 +74,6 @@ class SmokeModel:
 
     # Method is responsible for build a model and loading any weights
     def get_model(self, testing=None):
-        state_dict = None
         saved_dir = None
         self.model_builder()
 
@@ -325,8 +324,6 @@ class SmokeModel:
     def checkModel(self):
         print(self.device)
         self.model.to(self.device)
-        # Create dummy tensor
-        dummy_input = torch.randn(1, 3, 224, 224).to(self.device)
         # pass through model and print summary
         summary(self.model.backbone.body, input_size=(3, 224, 224), device=str(self.device))
         self.prnt_model_c()

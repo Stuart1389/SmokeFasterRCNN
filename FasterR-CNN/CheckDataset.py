@@ -6,7 +6,6 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 import matplotlib.pyplot as plt
 from GetValues import checkColab
-from SmokeUtils import extract_boxes
 
 # !!This file can be used to visually check bounding box and dataset!!
 

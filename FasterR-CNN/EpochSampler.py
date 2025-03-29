@@ -1,4 +1,3 @@
-import torch
 from torch.utils.data import Sampler
 from GetValues import setTrainValues
 """

@@ -118,7 +118,7 @@ class Trainer:
 
 
     # method saves model parameters
-    def save_model(self, final_save = None):
+    def save_model(self):
         state_dict = self.model.state_dict()
         # saving quant aware model
         if(setTrainValues("quant_aware_training")):
@@ -247,8 +247,8 @@ class Trainer:
 
         # GETTING METRICS
         # Creating instance of class to plot graphs from loss values
-        plot_graphs = PlotGraphs(train_loss_vals, validate_loss_vals,
-                                 train_loss_it_vals, validate_loss_it_vals)
+        PlotGraphs(train_loss_vals, validate_loss_vals, train_loss_it_vals, validate_loss_it_vals)
+
         # Get highest vram reserved value since program start
         cur_highest_vram = torch.cuda.max_memory_reserved() / 1024 / 1024
         torch.cuda.reset_peak_memory_stats() # reset
