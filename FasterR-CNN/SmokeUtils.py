@@ -1,18 +1,14 @@
 from collections import OrderedDict
-from typing import Any, Callable, Dict, Optional, Tuple, TypeVar, Union
-from torch import nn, Tensor
-import torch
+from torch import nn
 import torch.ao.quantization as quantization
-import matplotlib.pyplot as plt
-import cv2
-import numpy as np
-from GetValues import setTrainValues, setTestValues, setGlobalValues
+from GetValues import setGlobalValues
 import xml.etree.ElementTree as ET
+from typing import Any, Callable, Dict, Optional, Tuple, TypeVar, Union
 
 
 # function is used to extract data from annotation xml files, see README for more info
 def extract_boxes(annotation_path, get_area = False, upscale_value = 1,
-                  scale_width = None, scale_height = None, scale_x = 1, scale_y = 1):
+                  scale_width = None, scale_height = None):
 
     # parse annotation file
     tree = ET.parse(annotation_path)
@@ -34,7 +30,9 @@ def extract_boxes(annotation_path, get_area = False, upscale_value = 1,
         if (scale_height is not None and scale_width is not None):
             scale_x = scale_width / image_width
             scale_y = scale_height / image_height
-
+        else:
+            scale_x = 1
+            scale_y = 1
         xmin = float(xml_box.find("xmin").text) * upscale_value * scale_x
         ymin = float(xml_box.find("ymin").text) * upscale_value * scale_y
         xmax = float(xml_box.find("xmax").text) * upscale_value * scale_x
@@ -156,20 +154,20 @@ def get_layers_to_fuse(module_names):
     return layers_to_fuse
 
 # function returns a list of layers to prune
-def get_layers_to_prune():
+def get_layers_to_prune(model):
     # these are the layers used during pruning
     # different backbones have different layers
     # change based on backbone used
     layers_to_prune = [
-        self.model.backbone.body.layer3[0].conv1,
-        self.model.backbone.body.layer3[0].conv2,
-        self.model.backbone.body.layer3[0].conv3,
-        self.model.backbone.body.layer3[1].conv1,
-        self.model.backbone.body.layer3[1].conv2,
-        self.model.backbone.body.layer3[1].conv3,
-        self.model.backbone.body.layer3[2].conv1,
-        self.model.backbone.body.layer3[2].conv2,
-        self.model.backbone.body.layer3[2].conv3,
+        model.backbone.body.layer3[0].conv1,
+        model.backbone.body.layer3[0].conv2,
+        model.backbone.body.layer3[0].conv3,
+        model.backbone.body.layer3[1].conv1,
+        model.backbone.body.layer3[1].conv2,
+        model.backbone.body.layer3[1].conv3,
+        model.backbone.body.layer3[2].conv1,
+        model.backbone.body.layer3[2].conv2,
+        model.backbone.body.layer3[2].conv3,
     ]
     return layers_to_prune
 

@@ -40,7 +40,7 @@ def setTrainValues(val_to_get):
         # HDF5 settings. TO create HDF5 file use WriteHdf5.py
         # NOTE WriteHdf5.py uses dataloader to write, so if this is enabled when writing
         # hdf5 will be used to write instead of the default dataset
-        "load_hdf5" : True,
+        "load_hdf5" : False,
         "force_first_epoch" : True, # forces hdf5 to repeat the first epoch for all training epochs
         "h5py_dir_save_name": "mobilenet_1", # file name for hdf5 file when written
         "h5py_dir_load_name": "small_1_transform", # file name hdf5 file to load

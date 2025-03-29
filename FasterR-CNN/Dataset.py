@@ -101,7 +101,7 @@ class smokeDataset(torch.utils.data.Dataset):
             # used to adjust bboxes when upscaling to match targets
             upscale_value = setTrainValues("upscale_value")
         else:
-            upscale_value = None
+            upscale_value = 1
         # Global parse function from SmokeUtils see README for more info
         boxes, _, labels_int, labels = extract_boxes(annotation_path, upscale_value=upscale_value)
     else:

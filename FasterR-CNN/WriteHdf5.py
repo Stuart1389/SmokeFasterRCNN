@@ -4,7 +4,6 @@ import h5py
 from pathlib import Path
 import numpy as np
 import time
-import gzip
 
 # class used to create hdf5 files from dataset
 class WriteHdf5:

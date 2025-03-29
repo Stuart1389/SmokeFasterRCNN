@@ -1,8 +1,6 @@
-from Tester import Tester
 from pathlib import Path
-from GetValues import checkColab, setTrainValues
+from GetValues import checkColab
 import os
-import xml.etree.ElementTree as ET
 import torch
 import numpy as np
 import shutil

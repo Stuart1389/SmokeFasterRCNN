@@ -5,23 +5,20 @@ import sys
 import torch
 import os
 import time
-import logging
 import numpy as np
 import random
-import matplotlib.pyplot as plt
 from pathlib import Path
-from datetime import datetime
 from TrainingSteps import train_step, validate_step
 from Logger import Logger
-from GetValues import checkColab, setTrainValues
+from GetValues import setTrainValues
 from SmokeModel import SmokeModel
 from PlotGraphs import PlotGraphs
 from datetime import timedelta
 from tabulate import tabulate
 import wandb
-from torch.profiler import profile, schedule, tensorboard_trace_handler
-from torch.amp import GradScaler, autocast
+from torch.amp import GradScaler
 from SmokeUtils import get_layers_to_fuse
+from Tester import Tester
 #from Tester import Tester
 
 current_dir = os.getcwd()

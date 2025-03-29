@@ -7,9 +7,7 @@ sys.path.append(relative_path)
 
 import math
 import time
-import matplotlib.pyplot as plt
 import torch
-import torchvision.models.detection.mask_rcnn
 import utils
 from coco_eval import CocoEvaluator
 from coco_utils import get_coco_api_from_dataset

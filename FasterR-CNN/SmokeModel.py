@@ -4,28 +4,15 @@ from pathlib import Path
 import torch
 import torchvision
 from torch.utils.data import DataLoader
-from torchvision.models.detection import fasterrcnn_resnet50_fpn
-from torchvision.transforms import functional as F
-from torchvision.models.vgg import vgg16, vgg16_bn, vgg19_bn
+#from torchvision.models.vgg import vgg16, vgg16_bn, vgg19_bn
 import Dataset
 import DatasetHdf5
-import time
 from EpochSampler import EpochSampler
 from GetValues import checkColab, setTrainValues, setTestValues, setGlobalValues
-from torch.profiler import profile, record_function, ProfilerActivity
-from torchvision.models.detection.backbone_utils import resnet_fpn_backbone, BackboneWithFPN, mobilenet_backbone
+from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
 from torchvision.models.detection import FasterRCNN
-from torchvision.models.detection.faster_rcnn import FastRCNNConvFCHead
-from torchvision.models.detection.rpn import AnchorGenerator, RPNHead
-from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor
-from torchvision.models import resnet50
-import torch.nn as nn
-import torch.nn.init as init
+from torchvision.models.detection.rpn import AnchorGenerator
 from torchsummary import summary
-from collections import defaultdict
-import matplotlib.pyplot as plt
-import numpy as np
-from collections import OrderedDict
 
 def collate_fn(batch):
     batch = [item for item in batch if item is not None]

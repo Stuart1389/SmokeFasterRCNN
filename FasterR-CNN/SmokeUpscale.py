@@ -1,12 +1,7 @@
 import torchvision.utils
-from super_image import PanModel, ImageLoader
+from super_image import PanModel
 import os
-import numpy as np
-from PIL import Image
 from pathlib import Path
-from GetValues import setTrainValues
-import matplotlib.pyplot as plt
-import torchvision.transforms as T
 import torch
 from GetValues import checkColab, setTrainValues
 from SmokeModel import SmokeModel

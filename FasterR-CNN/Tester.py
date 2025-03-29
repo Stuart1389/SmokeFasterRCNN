@@ -2,44 +2,26 @@
 import os
 import sys
 import time
-import xml.etree.ElementTree as ET
 from pathlib import Path
-import copy
 import matplotlib
 import matplotlib.pyplot as plt
-import torch
-import torch.utils.benchmark as benchmark
 import concurrent.futures
 from GetValues import checkColab, setTestValues
 from SmokeModel import SmokeModel
 from tabulate import tabulate
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 from torchvision.ops import box_iou
-from torchvision.transforms import v2 as T
 from torchvision.utils import draw_bounding_boxes
-import torch.ao.quantization as quantization
-import numpy as np
 from SmokeUtils import get_layers_to_fuse, extract_boxes, get_layers_to_prune
 from torch.nn.utils import prune
-from torch.ao.pruning import WeightNormSparsifier
-from torch.sparse import to_sparse_semi_structured, SparseSemiStructuredTensor
 from super_image import PanModel
-from multiprocessing import Pool
 import matplotlib.patches as mpatches
 import torchvision.transforms.functional as F
 from Logger import Logger
-
-
-#DELETE
-import collections
 import numpy as np
 import torch
 import torch.utils.benchmark as benchmark
 import shutil
-from torch import nn
-from torch.sparse import to_sparse_semi_structured, SparseSemiStructuredTensor
-from torch.ao.pruning import WeightNormSparsifier
-import torch_pruning as tp
 
 
 # Class is used to evaluate previously trained models
@@ -56,7 +38,7 @@ class Tester:
 
         #PLOT MAIN IMAGE
         self.draw_highest_only = False # only draw bbox with highest score on plot
-        self.plot_image = True # plot images
+        self.plot_image = False # plot images
         self.save_plots = False # save plots to model folder/plots
         self.plot_ground_truth = True # whether to plot ground truth
         self.draw_no_true_positive_only = False # only plot images with no true positives
@@ -235,7 +217,7 @@ class Tester:
         could result in small speedups
         """
         #print(self.model.backbone.body)
-        layers_to_prune = get_layers_to_prune()
+        layers_to_prune = get_layers_to_prune(self.model)
         tensor_type = setTestValues("tensor_type")
         prune_amount = setTestValues("prune_amount")
 
@@ -731,7 +713,7 @@ class Tester:
             # bring ground truth in line with upscaled image
             upscale_value = setTestValues("upscale_value")
         else:
-            upscale_value = None
+            upscale_value = 1
 
         boxes, areas, labels_int, _ = (
             extract_boxes(annotation_path, get_area, upscale_value, self.scale_width, self.scale_height))
@@ -888,24 +870,23 @@ class Tester:
         n_iou = {"boxes": [], "label": []}
         m_iou = {"boxes": [], "label": []}
         h_iou = {"boxes": [], "label": []}
-        if(len(filtered_boxes) > 0):
-            n_iou, m_iou, h_iou = self.get_bbox_colours(filtered_labels, filtered_boxes, ground_truth, n_iou, m_iou, h_iou)
-        #filtered_boxes_tensor = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)
-        n_iou["boxes"] = torch.stack(n_iou["boxes"]) if n_iou["boxes"] else torch.empty((0, 4), dtype=torch.long)
-        m_iou["boxes"] = torch.stack(m_iou["boxes"]) if m_iou["boxes"] else torch.empty((0, 4), dtype=torch.long)
-        h_iou["boxes"] = torch.stack(h_iou["boxes"]) if h_iou["boxes"] else torch.empty((0, 4), dtype=torch.long)
+
         # Get prediction with highest score and draw only that if draw_only_highest is true
         if filtered_scores and self.draw_highest_only:
             max_score_idx = filtered_scores.index(max(filtered_scores))  # get index pos of highest score
+            filtered_boxes_tensor = torch.stack(filtered_boxes) if filtered_boxes else torch.empty((0, 4), dtype=torch.long)
             highest_score_box = filtered_boxes_tensor[max_score_idx].unsqueeze(0)  # Add batch dimension
-            highest_score_label = [filtered_labels[max_score_idx]]  # get highest value using index pos
-            # Draw highest scoring bbox in red
-            output_image = draw_bounding_boxes(image, highest_score_box, highest_score_label, colors="red")
-        else:
-            # Draw all predicted bbox in red
-            output_image = draw_bounding_boxes(image, n_iou["boxes"], n_iou["label"], colors="red")
-            output_image = draw_bounding_boxes(output_image, m_iou["boxes"], m_iou["label"], colors="yellow")
-            output_image = draw_bounding_boxes(output_image, h_iou["boxes"], h_iou["label"], colors="green")
+            filtered_labels = [filtered_labels[max_score_idx]]  # get highest value using index pos
+
+        if(len(filtered_boxes) > 0):
+            n_iou, m_iou, h_iou = self.get_bbox_colours(filtered_labels, filtered_boxes, ground_truth, n_iou, m_iou, h_iou)
+        n_iou["boxes"] = torch.stack(n_iou["boxes"]) if n_iou["boxes"] else torch.empty((0, 4), dtype=torch.long)
+        m_iou["boxes"] = torch.stack(m_iou["boxes"]) if m_iou["boxes"] else torch.empty((0, 4), dtype=torch.long)
+        h_iou["boxes"] = torch.stack(h_iou["boxes"]) if h_iou["boxes"] else torch.empty((0, 4), dtype=torch.long)
+
+        output_image = draw_bounding_boxes(image, n_iou["boxes"], n_iou["label"], colors="red")
+        output_image = draw_bounding_boxes(output_image, m_iou["boxes"], m_iou["label"], colors="yellow")
+        output_image = draw_bounding_boxes(output_image, h_iou["boxes"], h_iou["label"], colors="green")
 
         # convert ground truth boxes to tensor
         ground_truth_boxes = [bbox.clone().detach() for bbox in ground_truth['boxes']]
