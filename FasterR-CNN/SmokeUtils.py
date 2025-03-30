@@ -6,14 +6,28 @@ import xml.etree.ElementTree as ET
 from typing import Any, Callable, Dict, Optional, Tuple, TypeVar, Union
 
 
-# function is used to extract data from annotation xml files, see README for more info
 def extract_boxes(annotation_path, get_area = False, upscale_value = 1,
                   scale_width = None, scale_height = None):
+    """
+    function is used to extract data from annotation xml files, see README for more info
+
+    parameters:
+    annotation_path : os path to xml file to extract bboxes from
+    get_area : Whether to calculate the area of each bounding box
+    upscale_value : Each bounding box size is multiplied by this value (used when upscalling images)
+    scale_width/height : Used to correct a bounding box when resizing (use only when resizing image after albumentations transform)
+
+    returns:
+    boxes : list containing bounding box coordinate in pascal voc format (xmin, ymin, xmax, ymax) | [[355.0, 181.0, 410.0, 198.0], [355.0, 171.0, 482.0, 198.0]]
+    areas : list of calculated areas for each bounding box
+    labels_int : list of integer codes for labels (e.g. for background, smoke and fire | smoke = 1, fire = 2) | [1, 1, 2, 1, etc]
+    labels : list of string labels (e.g. for background, smoke and fire) | ['smoke', 'smoke', 'fire', 'smoke', etc]
+    """
 
     # parse annotation file
     tree = ET.parse(annotation_path)
     root = tree.getroot()
-
+    # lists to store bbox values
     boxes = []
     areas = []
 
@@ -33,6 +47,7 @@ def extract_boxes(annotation_path, get_area = False, upscale_value = 1,
         else:
             scale_x = 1
             scale_y = 1
+        # extract bbox coordinates and correct if necessary
         xmin = float(xml_box.find("xmin").text) * upscale_value * scale_x
         ymin = float(xml_box.find("ymin").text) * upscale_value * scale_y
         xmax = float(xml_box.find("xmax").text) * upscale_value * scale_x

@@ -110,7 +110,7 @@ def setTestValues(val_to_get):
         "calibrate_full_set": False, # calibrate on full dataset rather than 1 image
         "load_QAT_model": False, # this needs to be enabled if loading quant aware trained model
 
-        "half_precission": True, # float 16
+        "half_precission": False, # float 16
 
         #Pruning
         "prune_model": False,

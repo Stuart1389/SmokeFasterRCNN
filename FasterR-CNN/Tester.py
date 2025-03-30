@@ -231,7 +231,7 @@ class Tester:
 
             with torch.no_grad():
                 weight_tensor = module.weight
-                print("Dense weight tensor:", weight_tensor)
+                #print("Dense weight tensor:", weight_tensor)
 
                 if(tensor_type == "coo"):
                     indices = torch.nonzero(weight_tensor, as_tuple=True)  # coords
@@ -267,7 +267,7 @@ class Tester:
                     )
 
                 prune.remove(module, name="weight") # remove hooks
-                print("Sparse weight tensor:", sparse_weight)
+                #print("Sparse tensor:", sparse_weight)
 
     # method to quantize model
     def quant_model(self):
