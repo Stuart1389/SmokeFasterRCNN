@@ -6,7 +6,7 @@ from pathlib import Path
 import matplotlib
 import matplotlib.pyplot as plt
 import concurrent.futures
-from GetValues import checkColab, setTestValues
+from GetValues import checkColab, setTestValues, setGlobalValues
 from SmokeModel import SmokeModel
 from tabulate import tabulate
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
@@ -44,7 +44,7 @@ class Tester:
         self.draw_no_true_positive_only = False # only plot images with no true positives
 
         #SPLIT IMAGE
-        self.plot_split_images = False # if using partitioned/split images, whether to display each split
+        self.plot_split_images = True # if using partitioned/split images, whether to display each split
         self.save_split_image_plots = False
         self.combine_bboxes = False # merge touching bbox predictions when splitting image
         self.merge_tolerance = 4
@@ -313,20 +313,25 @@ class Tester:
     @torch.inference_mode()
     def upscale_images(self, image_tensors):
         combined_tensor = torch.stack(image_tensors, dim=0).to(self.device)
+        # initialise model to upscale
         upscale_model = PanModel.from_pretrained('eugenesiow/pan-bam', scale=setTestValues("upscale_value"))
         upscale_model.to(self.device)
         upscale_model.eval()
+        # pass images through upscale model and return upscaled images
         upscale_outputs = upscale_model(combined_tensor)
         # undo stack for faster rcnn input
         formatted_tensors = list(torch.unbind(upscale_outputs, dim=0))
         return formatted_tensors
 
 
-    # method to split images into 4 sections
+    # method to split images into 4 sections and return a list containing sections
     def split_image(self, input_tensor):
         split_tensors = []
         for tensor in input_tensor:
-            _, H, W = tensor.shape # c, w, h
+            # find image height and width
+            _, H, W = tensor.shape # colour channel, width, height
+            # find midpoint of height and width
+            # this is used to split the image into 4 equal sections
             H_mid, W_mid = H // 2, W // 2
 
             # Split the tensor into 4 parts
@@ -340,34 +345,39 @@ class Tester:
 
     # Method to visualise segmented image
     def display_split_images(self, split_images, pred_dict, filename):
-        part1, part2, part3, part4 = split_images
         # display split parts in matplotlib
         fig, axs = plt.subplots(2, 2, figsize=(10, 10))
-
-        for i, part in enumerate([part1, part2, part3, part4]):
+        # iterate through each image section
+        for i, part in enumerate(split_images):
             boxes_over_thresh = []
             labels_over_thresh = []
             scores_over_thresh = []
             for box, label, score in zip(pred_dict[i]["boxes"], pred_dict[i]["labels"], pred_dict[i]["scores"]):
+                # check if bbox confidence score is above threshold
                 if(score > self.confidence_threshold):
-                    print("score",score)
                     boxes_over_thresh.append(box)
                     labels_over_thresh.append(label)
                     scores_over_thresh.append(score)
 
-            labels_str = ["Smoke" if label.item() == 1 else str(label.item()) for label in labels_over_thresh]
+            # reverse dictionary to get class str from id {"smoke": 1} to {1: "smoke"}
+            reverse_class_dict = {v: k for k, v in setGlobalValues("CLASS_INDEX_DICTIONARY").items()}
+            # get class str from dict using label int as key
+            labels_str = [reverse_class_dict[label.item()] for label in labels_over_thresh]
             boxes_tensor = torch.stack(boxes_over_thresh) if boxes_over_thresh else torch.empty((0, 4))
+            # overlay bounding box predictions over image
             output_image = draw_bounding_boxes(part, boxes_tensor, labels_str,
                                                colors="red")
-
+            # get position in 2*2 grid
             row, col = i // 2, i % 2
-            output_image_np = F.to_pil_image(output_image).convert("RGB")
+            # convert tensor to pil image
+            output_image_np = F.to_pil_image(output_image)
             axs[row, col].imshow(output_image_np)
             axs[row, col].axis('off')
             axs[row, col].set_title(f'Part {i + 1}')
 
         plt.tight_layout()
         if (self.save_split_image_plots):
+            # save plots to disk
             plot_save_path = self.split_plot_save_path / filename
             plt.savefig(plot_save_path, bbox_inches="tight")
         if(self.plot_split_images):
