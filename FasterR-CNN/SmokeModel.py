@@ -64,7 +64,7 @@ class SmokeModel:
         saved_dir = None
         self.model_builder()
 
-        # loading model weights if necessary
+        # getting directory which holds model weights if weights are going to be loaded
         if testing:
             saved_dir = Path(self.load_path_test) / f"{setTestValues('model_name')}.pth"
             print("Load model for testing")
@@ -72,10 +72,15 @@ class SmokeModel:
             print("Load from checkpoint")
             saved_dir = Path(self.load_path_train_checkpoint) / f"{setTrainValues('model_load_name')}.pth"
 
+        # loading the model weights:
+        # if we are testing and aren't loading a qat model we can just load weights as normal and return the model
         if testing and not self.load_qat_model:
             state_dict = torch.load(saved_dir, weights_only=True)
             self.model.load_state_dict(state_dict)
             return self.model
+        # if we are doing quant aware training then we cant load state dict yet because model hasn't been prepared
+        # so we return state dict, wherever we are using the model, we prepare for quant aware state dict then load
+        # could many move quant preperation here
         elif self.load_qat_model:
             try:
                 state_dict = torch.load(saved_dir, weights_only=True)
@@ -83,6 +88,7 @@ class SmokeModel:
                 print("Ensure load QAT model is disabled (GetValues.py) if not TESTING and a quant aware trained model\n")
                 sys.exit(1)
             return self.model, state_dict
+        # if starting model training from a previously trained checkpoint:
         elif self.start_from_checkpoint:
             state_dict = torch.load(saved_dir, weights_only=True)
             self.model.load_state_dict(state_dict)
@@ -224,7 +230,7 @@ class SmokeModel:
 
     # method to get train, validate and test dataloaders for their respective splits
     def get_dataloader(self, testing = False):
-        num_workers = os.cpu_count() # threads available
+        num_workers = os.cpu_count() # passed to dataloader to fully utilise cpu threads available
         batch_size = setTrainValues("BATCH_SIZE")
         test_batch_size = setTestValues("BATCH_SIZE")
         # set dataset dirs based on values set in GetValues.py
@@ -238,20 +244,24 @@ class SmokeModel:
             if(self.using_upscale_util):
                 raise ValueError(f"Current util pre-upscale image file currently only works with default "
                                  f"dataset because hdf5 dataset doesnt return filename."
-                                 f"This should be an easy to implement later")
+                                 f"This should be easy to implement later")
             train_dir = DatasetHdf5.SmokeDatasetHdf5(str(dataset_hdf5_dir) + "/Train.hdf5")
             num_train_epochs = self.num_train_epochs
+            # hdf5 reqauires custom sampler to keep track of the current epoch to retrieve correct images and targets
             train_sampler = EpochSampler(train_dir, epochs=num_train_epochs)
             val_dir = DatasetHdf5.SmokeDatasetHdf5(str(dataset_hdf5_dir) + "/Validate.hdf5")
             val_sampler = EpochSampler(val_dir, epochs=num_train_epochs)
         else:
             train_dir = Dataset.smokeDataset(str(dataset_dir) + "/Train", Dataset.transform_train, using_upscale_util = self.using_upscale_util)
             val_dir = Dataset.smokeDataset(str(dataset_dir) + "/Validate", Dataset.transform_validate, using_upscale_util = self.using_upscale_util)
+            # can use default sampler when not using hdf5
             train_sampler = None
             val_sampler = None
         if(setTestValues("test_on_val")):
+            # changes file directory to receive images and targets from to validation dataset
             test_dir = Dataset.smokeDataset(str(test_dataset_dir) + "/Validate", Dataset.transform_test, True)
         else:
+            # testing dataset using test set and test transforms
             test_dir = Dataset.smokeDataset(str(test_dataset_dir) + "/Test", Dataset.transform_test, True, using_upscale_util = self.using_upscale_util)
 
         # Create dataloaders to iterate over dataset (batching)

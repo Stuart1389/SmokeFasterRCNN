@@ -19,7 +19,6 @@ import wandb
 from torch.amp import GradScaler
 from SmokeUtils import get_layers_to_fuse
 from Tester import Tester
-#from Tester import Tester
 
 current_dir = os.getcwd()
 # add libr as source

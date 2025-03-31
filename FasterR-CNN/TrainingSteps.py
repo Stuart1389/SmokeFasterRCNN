@@ -19,9 +19,11 @@ from super_image import PanModel
 @torch.inference_mode()
 def upscale_images(device, image_tensors):
     combined_tensor = torch.stack(image_tensors, dim=0).to(device)
+    # initialise model to upscale
     upscale_model = PanModel.from_pretrained('eugenesiow/pan-bam', scale=setTrainValues("upscale_value"))
     upscale_model.to(device)
     upscale_model.eval()
+    # pass images through upscale model and return upscaled images
     upscale_outputs = upscale_model(combined_tensor)
     # undo stack for faster rcnn input
     formatted_tensors = list(torch.unbind(upscale_outputs, dim=0))
