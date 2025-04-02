@@ -116,7 +116,7 @@ CheckDataset is intended to be a simple way to check a bbox on a dataset image, 
 </annotation>
 ```
 
-<h1> Pipeline directory </h1>
+<h2> Pipeline directory </h2>
 
 ```bash
 Mode                 LastWriteTime         Length Name
@@ -157,9 +157,22 @@ d-----        02/04/2025     15:35                savedModels - Directory contai
 <h2> Modified site packages </h2>
 
 ```bash
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----        26/02/2025     01:19          54274 mean_ap.py - Fixed inconsistent exception
+-a----        02/04/2025     12:40          11219 feature_pyramid_network.py - Plot feature maps
+-a----        03/03/2025     13:40          40686 resnet.py - Modified to be compatible with quantization
+-a----        10/02/2025     20:27          11308 backbone_utils.py - Modified to be compatible with quantization
+-a----        12/01/2025     17:06          36024 roi_heads.py - Modified return values
+-a----        12/01/2025     15:42          16621 rpn.py - Modified return values
+-a----        02/02/2025     18:13           6033 generalized_rcnn.py - Modified return values
+-a----        04/03/2025     02:46          42491 faster_rcnn.py - Make FPNv2 available for other resnet backbones
+
+
+
+
 
 ```
-
 
 <h2> Training a model: </h2>
 <p>
