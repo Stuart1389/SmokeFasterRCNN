@@ -115,21 +115,51 @@ CheckDataset is intended to be a simple way to check a bbox on a dataset image, 
     </object>
 </annotation>
 ```
-<p>
-The pipeline structure can be seen below.
-</p>
+
+<h1> Pipeline directory </h1>
 
 ```bash
+Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d-----        03/03/2025     15:21                Dataset - Create and store any dataset folders here, as seen above
 d-----        04/02/2025     17:48                DatasetH5py - Create and store any hdf5 files here 
 d-----        03/03/2025     15:16                FasterR-CNN - Contains pipeline scripts, models will also be saved here automatically
-d-----        19/09/2024     18:18                Lib - Contains site packages, including Faster-RCNN, backbones, etc
+d-----        19/09/2024     18:18                Lib - Contains modified site packages, including Faster-RCNN, backbones, etc
 d-----        12/01/2025     15:00                Libr - Includes third-party scripts, including coco evaluator
-d-----        17/01/2025     15:31                Scripts
 -a----        03/03/2025     15:45            575 .gitignore
 -a----        03/03/2025     15:42           2485 README.md
 ```
+<h2> Main pipeline files </h2>
+
+```bash
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----        02/04/2025     15:35                savedModels - Directory contains files created during training/testing, e.g. model weights, logs, etc
+-a----        29/03/2025     21:13           2425 CheckDataset.py - Simple file to test image and annotations, plots image with ground truth overlayed
+-a----        31/03/2025     14:57          10849 Dataset.py - PyTorch dataset, used to get data ready for model input, including transforms/converting to tensor
+-a----        29/03/2025     21:30           4207 DatasetHdf5.py - Dataset to handle created HDF5 files, used instead of Dataset.py
+-a----        29/03/2025     21:30           1410 EpochSampler.py - Custom epoch sampler to keep track of position in HDF5 file, necessary for HDF5 dataset only
+-a----        02/04/2025     15:36           5783 GetValues.py - Contains pipeline settings, used as a convenient hub for model management
+-a----        02/04/2025     13:42            891 Logger.py - Used to log script output to console and txt files simultaneously
+-a----        29/03/2025     21:30           5833 PlotGraphs.py - Plots loss graphs for training and validation loss during training
+-a----        04/03/2025     02:22           4307 ShuffleData.py - Creates random train, validation and test splits, gets data ready for training
+-a----        31/03/2025     15:15          18804 SmokeModel.py - Initialises models and dataloaders
+-a----        29/03/2025     21:32           2841 SmokeUpscale.py - Can be used to AI upscale a dataset for repeated use, dynamic upscale is also available in Trainer/Tester
+-a----        30/03/2025     00:37           8523 SmokeUtils.py - Contains misc files that are likely to require modification during pipeline usage 
+-a----        29/03/2025     21:34           9604 SplitImageIntoSize.py - Splits images based on ground truth size, into small, medium and large dirs
+-a----        02/04/2025     15:36          50012 Tester.py - Can be used to test any models trained using this pipeline
+-a----        02/04/2025     12:55          17946 Trainer.py - Script to train a model on a target dataset/problem
+-a----        31/03/2025     15:48          11944 TrainingSteps.py - Contains training and validation steps used during model training
+-a----        29/03/2025     23:08           6777 WriteHdf5.py - Creates HDF5 files using Dataset.py, HDF5 file can then be loaded during training
+-a----        09/01/2025     14:22              0 __init__.py
+
+```
+<h2> Modified site packages </h2>
+
+```bash
+
+```
+
 
 <h2> Training a model: </h2>
 <p>
