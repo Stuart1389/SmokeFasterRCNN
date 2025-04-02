@@ -45,7 +45,6 @@ class Trainer:
         self.epochs_trained = 0 # number of epochs trained (tells us epochs trained for early stopping)
         self.model_name = setTrainValues("model_name")
         self.log_model_name = setTrainValues("model_id") + "_" + self.model_name
-        print(self.log_model_name)
         self.batch_size = setTrainValues("BATCH_SIZE")
         self.cur_train_iteration = 0
         self.cur_val_iteration = 0
@@ -97,7 +96,9 @@ class Trainer:
         if(not self.logWB):
             # disable wandb if GetValues.py logWB is disbaled
             os.environ["WANDB_MODE"] = "disabled"
-            print("wandbdisabled")
+            print(f"Model W&B name: N/A (W&B IS DISABLED) | Model OS name: {self.model_name}")
+        else:
+            print(f"Model W&B name: {self.log_model_name} | Model OS name: {self.model_name}")
 
 
         wandb.init(project="smoke-detection", name=self.log_model_name, config={
@@ -108,10 +109,8 @@ class Trainer:
             "gamma": self.gamma,
             "epochs": self.epochs,
             "batch_size": self.batch_size,
-            "patience": self.patience
+            "patience": self.patience,
         })
-
-
 
     # method saves model parameters
     def save_model(self):
@@ -182,6 +181,9 @@ class Trainer:
         # !!TRAINING LOOP START!!
         for epoch in range(self.epochs):
             if(self.start_profiler):
+                if(self.logWB):
+                    print("W&B conflicts with profiler")
+                    sys.exit(1)
                 profiler.start()
             # TRAINING STEP
             with torch.profiler.record_function("TRAINING"):

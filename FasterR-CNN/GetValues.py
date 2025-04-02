@@ -31,10 +31,10 @@ def setTrainValues(val_to_get):
         "BATCH_SIZE": 2,
         "EPOCHS": 2,
         "PATIENCE": 4,
-        "dataset": "Large data", # Name of dataset to use e.g. Example dataset structure in README
-        "model_name": "test", # Names model, including directory, weights, etc
-        "plotJSON_fname": "", # json and manual plot filename, leave black to make same as model
-        "model_id": "108", # model is is used for W&B runs only: id_modelname
+        "dataset": "Small data", # Name of dataset to use e.g. Example dataset structure in README (doesn't apply when using hdf5 file)
+        "model_name": "presentation_2080", # Names model, including directory, weights, etc
+        "plotJSON_fname": "", # json and manual plot filename, leave empty to make same as model
+        "model_id": "999", # model is is used for W&B runs only: id_modelname
         "save_at_end" : False, # forces the model to save at end of training, ignoring validation
 
         # HDF5 settings. TO create HDF5 file use WriteHdf5.py
@@ -46,13 +46,14 @@ def setTrainValues(val_to_get):
         # Loading hdf5
         "load_hdf5": True, # whether to load hdf5 file instead of default dataset
         "force_first_epoch": True,  # forces hdf5 to repeat the first epoch for all training epochs
-        "h5py_dir_load_name": "small_1_transform", # file name of hdf5 file to load
+        "h5py_dir_load_name": "test_file", # file name of hdf5 file to load
 
         # PROFILER
-        "start_profiler" : False,
-        "record_trace" : False,
+        "start_profiler" : True,
+        "record_trace" : True,
+
         # Enables or disables Weights&Biases logging
-        "logWB" : False,
+        "logWB" : False, # conflicts with profiler
 
         # TRAINING HYPERPARAMETERS
         "learning_rate": 0.004,
