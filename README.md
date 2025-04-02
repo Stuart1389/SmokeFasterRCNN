@@ -124,8 +124,8 @@ The pipeline structure can be seen below.
 d-----        03/03/2025     15:21                Dataset - Create and store any dataset folders here, as seen above
 d-----        04/02/2025     17:48                DatasetH5py - Create and store any hdf5 files here 
 d-----        03/03/2025     15:16                FasterR-CNN - Contains pipeline scripts, models will also be saved here automatically
-d-----        19/09/2024     18:18                Lib
-d-----        12/01/2025     15:00                Libr
+d-----        19/09/2024     18:18                Lib - Contains site packages, including Faster-RCNN, backbones, etc
+d-----        12/01/2025     15:00                Libr - Includes third-party scripts, including coco evaluator
 d-----        17/01/2025     15:31                Scripts
 -a----        03/03/2025     15:45            575 .gitignore
 -a----        03/03/2025     15:42           2485 README.md

@@ -94,8 +94,8 @@ def setTestValues(val_to_get):
     # TEST SETTINGS
     test_values = {
         "BATCH_SIZE": 4,
-        "dataset": "Large data", # dataset to load from
-        "model_name": "no_validation_2080", # name of model to load
+        "dataset": "Small data", # dataset to load from
+        "model_name": "transform_csj_a100", # name of model to load
         "test_on_val": False, # test on validation instead of test set
 
         "CPU_inference": False,  # force cpu inference even if cuda is available
@@ -113,7 +113,7 @@ def setTestValues(val_to_get):
         "calibrate_full_set": False, # calibrate on full dataset rather than 1 image
         "load_QAT_model": False, # this needs to be enabled if loading quant aware trained model
 
-        "half_precission": False, # convert tensor to float 16
+        "half_precission": True, # convert tensor to float 16
 
         #Pruning
         "prune_model": False,

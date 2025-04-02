@@ -38,13 +38,13 @@ class Tester:
 
         #PLOT MAIN IMAGE
         self.draw_highest_only = False # only draw bbox with highest score on plot
-        self.plot_image = False # plot images
-        self.save_plots = False # save plots to model folder/plots
+        self.plot_image = True # plot images
+        self.save_plots = True # save plots to model folder/plots
         self.plot_ground_truth = True # whether to plot ground truth
         self.draw_no_true_positive_only = False # only plot images with no true positives
 
         #SPLIT IMAGE
-        self.plot_split_images = True # if using partitioned/split images, whether to display each split
+        self.plot_split_images = False # if using partitioned/split images, whether to display each split
         self.save_split_image_plots = False
         self.combine_bboxes = False # merge touching bbox predictions when splitting image
         self.merge_tolerance = 4
@@ -58,7 +58,7 @@ class Tester:
             self.scale_height = None
             self.scale_width = None
 
-        # device agnostic code
+        # use gpu if available, else use cpu
         self.device = "cuda" if torch.cuda.is_available() else "cpu" # device agnostic
 
         self.batch_size = setTestValues("BATCH_SIZE")
@@ -172,8 +172,6 @@ class Tester:
         # and create new dir for plots
         if(self.save_split_image_plots):
             self.make_plot_dir(True)
-
-
 
         # Start timer
         self.start_time = time.time()
